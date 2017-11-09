@@ -40,9 +40,9 @@ requirements:
 outputs:
   - name: libflang
     files:
-      - "%LIBRARY_BIN%\flang.dll"             # [win]
-      - "%LIBRARY_BIN%\flangrti.dll"          # [win]
-      - "%LIBRARY_BIN%\ompstub.dll"           # [win]
+      - "%LIBRARY_BIN%\\flang.dll"             # [win]
+      - "%LIBRARY_BIN%\\flangrti.dll"          # [win]
+      - "%LIBRARY_BIN%\\ompstub.dll"           # [win]
       - $PREFIX/lib/libflang${SHLIB_EXT}      # [unix]
       - $PREFIX/lib/libflangrti${SHLIB_EXT}   # [unix]
       - $PREFIX/lib/libompstub${SHLIB_EXT}    # [unix]
