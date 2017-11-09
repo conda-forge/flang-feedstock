@@ -45,7 +45,8 @@ outputs:
       - clangdev =={{ version }}
       - openmp =={{ version }}
       - vc 14                     # [win]
-      - libflang {{ version }} {{ build_number }}
+      - libflang {{ version }} {{ build_number }}       # [unix]
+      - libflang {{ version }} vc14_{{ build_number }}  # [win]
 
 test:
   files:
