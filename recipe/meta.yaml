@@ -2,7 +2,7 @@
 {% set flang_commit = "ab1423f97274b472970efd53e01800a6d4f137f5" %}
 {% set version = "5.0.0" %}
 {% set sha256 = "01264da25bac23e27ca9298bbfd41f7226854247e92a3edea6f28decf42c7b09" %}
-{% set build_number = "0" %}
+{% set build_number = "1" %}
 
 package:
   name: flang
@@ -35,6 +35,19 @@ requirements:
     - clangdev =={{ version }}
     - openmp =={{ version }}
     - vc 14     # [win]
+    - libflang {{ version }} {{ build_number }}
+
+outputs:
+  - name: libflang
+    files:
+      - "%LIBRARY_BIN%\flang.dll"             # [win]
+      - "%LIBRARY_BIN%\flangrti.dll"          # [win]
+      - "%LIBRARY_BIN%\ompstub.dll"           # [win]
+      - $PREFIX/lib/libflang${SHLIB_EXT}      # [unix]
+      - $PREFIX/lib/libflangrti${SHLIB_EXT}   # [unix]
+      - $PREFIX/lib/libompstub${SHLIB_EXT}    # [unix]
+    requirements:
+      - vc 14     # [win]
 
 test:
   files:
