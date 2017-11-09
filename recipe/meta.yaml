@@ -31,23 +31,21 @@ requirements:
     - llvmdev =={{ version }}
     - flang-meta
     - vc 14     # [win]
-  run:
-    - clangdev =={{ version }}
-    - openmp =={{ version }}
-    - vc 14     # [win]
-    - libflang {{ version }} {{ build_number }}
 
 outputs:
   - name: libflang
-    files:
-      - "%LIBRARY_BIN%\\flang.dll"             # [win]
-      - "%LIBRARY_BIN%\\flangrti.dll"          # [win]
-      - "%LIBRARY_BIN%\\ompstub.dll"           # [win]
-      - $PREFIX/lib/libflang${SHLIB_EXT}      # [unix]
-      - $PREFIX/lib/libflangrti${SHLIB_EXT}   # [unix]
-      - $PREFIX/lib/libompstub${SHLIB_EXT}    # [unix]
+    script: install_libflang.sh   # [unix]
+    script: install_libflang.bat  # [win]
     requirements:
-      - vc 14     # [win]
+      - vc 14                     # [win]
+  - name: flang
+    script: install_flang.sh      # [unix]
+    script: install_flang.bat     # [win]
+    requirements:
+      - clangdev =={{ version }}
+      - openmp =={{ version }}
+      - vc 14                     # [win]
+      - libflang {{ version }} {{ build_number }}
 
 test:
   files:
