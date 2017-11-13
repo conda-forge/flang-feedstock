@@ -15,7 +15,6 @@ source:
 build:
   number: {{ build_number }}
   skip: true    # [osx]
-  skip: true    # [win32]
   msvc_compiler: 14.0
   features:
     - vc14      # [win]
@@ -54,6 +53,7 @@ test:
   commands:
     # TODO - Figure out why the following line is needed.
     - call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64  # [win64]
+    - call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86  # [win32]
     - flang --version
     - flang hello_world.f90
     - ./a.out   # [unix]
