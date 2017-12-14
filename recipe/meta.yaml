@@ -3,7 +3,7 @@
 {% set version = "2017.12.14" %}
 {% set llvm_version = "5.0.0" %}
 {% set sha256 = "4b3f12c2528d96c464e7d524942eaa609224ef2452754c1983d9595a94db8942" %}
-{% set build_number = "1" %}
+{% set build_number = "0" %}
 
 package:
   name: flang
