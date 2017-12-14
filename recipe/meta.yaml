@@ -1,8 +1,9 @@
 {% set clang_variant = os.environ.get('CLANG_VARIANT', 'flang') %}
-{% set flang_commit = "ab1423f97274b472970efd53e01800a6d4f137f5" %}
-{% set version = "5.0.0" %}
-{% set sha256 = "01264da25bac23e27ca9298bbfd41f7226854247e92a3edea6f28decf42c7b09" %}
-{% set build_number = "1" %}
+{% set flang_commit = "528304c136d60fd54f009f9c8533015bc23411b1" %}
+{% set version = "2017.12.14" %}
+{% set llvm_version = "5.0.0" %}
+{% set sha256 = "4b3f12c2528d96c464e7d524942eaa609224ef2452754c1983d9595a94db8942" %}
+{% set build_number = "0" %}
 
 package:
   name: flang
@@ -26,27 +27,11 @@ requirements:
   build:
     - toolchain
     - cmake >=3.4.3
-    - clangdev =={{ version }}
-    - openmp =={{ version }}
-    - llvmdev =={{ version }}
+    - clangdev =={{ llvm_version }}
+    - openmp =={{ llvm_version }}
+    - llvmdev =={{ llvm_version }}
     - flang-meta
     - vc 14     # [win]
-
-outputs:
-  - name: libflang
-    script: install_libflang.sh   # [unix]
-    script: install_libflang.bat  # [win]
-    requirements:
-      - vc 14                     # [win]
-  - name: flang
-    script: install_flang.sh      # [unix]
-    script: install_flang.bat     # [win]
-    requirements:
-      - clangdev =={{ version }}
-      - openmp =={{ version }}
-      - vc 14                     # [win]
-      - libflang {{ version }} {{ build_number }}       # [unix]
-      - libflang {{ version }} vc14_{{ build_number }}  # [win]
 
 test:
   files:
@@ -58,6 +43,22 @@ test:
     - flang hello_world.f90
     - ./a.out   # [unix]
     - a.exe     # [win]
+
+outputs:
+  - name: libflang
+    script: install_libflang.sh   # [unix]
+    script: install_libflang.bat  # [win]
+    requirements:
+      - vc 14                     # [win]
+  - name: flang
+    script: install_flang.sh      # [unix]
+    script: install_flang.bat     # [win]
+    requirements:
+      - clangdev =={{ llvm_version }}
+      - openmp =={{ llvm_version }}
+      - vc 14                     # [win]
+      - libflang {{ version }} {{ build_number }}       # [unix]
+      - libflang {{ version }} vc14_{{ build_number }}  # [win]
 
 about:
   home: http://github.com/flang-compiler/flang
