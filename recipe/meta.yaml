@@ -33,6 +33,17 @@ requirements:
     - flang-meta
     - vc 14     # [win]
 
+test:
+  files:
+    - hello_world.f90
+  commands:
+    # TODO - Figure out why the following line is needed.
+    - call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64  # [win64]
+    - flang --version
+    - flang hello_world.f90
+    - ./a.out   # [unix]
+    - a.exe     # [win]
+
 outputs:
   - name: libflang
     script: install_libflang.sh   # [unix]
@@ -48,17 +59,6 @@ outputs:
       - vc 14                     # [win]
       - libflang {{ version }} {{ build_number }}       # [unix]
       - libflang {{ version }} vc14_{{ build_number }}  # [win]
-
-test:
-  files:
-    - hello_world.f90
-  commands:
-    # TODO - Figure out why the following line is needed.
-    - call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64  # [win64]
-    - flang --version
-    - flang hello_world.f90
-    - ./a.out   # [unix]
-    - a.exe     # [win]
 
 about:
   home: http://github.com/flang-compiler/flang
