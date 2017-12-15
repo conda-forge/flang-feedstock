@@ -26,7 +26,7 @@ build:
 requirements:
   build:
     - toolchain
-    - cmake ==3.9.3
+    - cmake
     - clangdev =={{ llvm_version }}
     - openmp =={{ llvm_version }}
     - llvmdev =={{ llvm_version }}
