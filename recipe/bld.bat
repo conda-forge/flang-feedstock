@@ -1,7 +1,7 @@
 mkdir build
 cd build
 
-set PROCESSOR_ARCHITECTURE="AMD64"
+set "PROCESSOR_ARCHITECTURE=AMD64"
 
 cmake -G "NMake Makefiles" ^
     -DCMAKE_C_COMPILER=clang-cl ^
