@@ -1,9 +1,9 @@
 {% set clang_variant = os.environ.get('CLANG_VARIANT', 'flang') %}
-{% set flang_commit = "a1ac1cdf8b37a0ff309fbb52c721ff268f9ce85c" %}
+{% set flang_commit = "4ddc948697091af68df0a1c63d18e700af047eba" %}
 {% set llvm_version = "5.0.0" %}
 {% set version = llvm_version %}
-{% set sha256 = "ca474cad5780595c018a049a06b0937daf5e51d34ba6e1fabb301a2754df39af" %}
-{% set build_number = "20180101" %}
+{% set sha256 = "7078a7b24bb2b52789fc5551bd6eeee19082e2923e4d49c2834579e51b43ea74" %}
+{% set build_number = "20180207" %}
 
 package:
   name: flang
