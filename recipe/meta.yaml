@@ -3,7 +3,7 @@
 {% set llvm_version = "5.0.0" %}
 {% set version = llvm_version %}
 {% set sha256 = "7078a7b24bb2b52789fc5551bd6eeee19082e2923e4d49c2834579e51b43ea74" %}
-{% set build_number = "20180207" %}
+{% set build_number = "20180208" %}
 
 package:
   name: flang
@@ -50,6 +50,7 @@ outputs:
     script: install_libflang.bat  # [win]
     requirements:
       - vc 14                     # [win]
+      - openmp =={{ llvm_version }}
   - name: flang
     script: install_flang.sh      # [unix]
     script: install_flang.bat     # [win]
