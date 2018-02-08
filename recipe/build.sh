@@ -9,4 +9,4 @@ cmake \
   ..
 
 
-make
+make -j${CPU_COUNT}
