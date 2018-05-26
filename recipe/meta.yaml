@@ -58,6 +58,14 @@ outputs:
       strong:
         - libflang >={{ version }}
     requirements:
+      build:
+        - {{ compiler('c') }}
+        - {{ compiler('cxx') }}
+        - cmake
+        - clangdev =={{ llvm_version }}
+        - openmp =={{ llvm_version }}
+        - llvmdev =={{ llvm_version }}
+        - flang-meta
       run:
         - clangdev =={{ llvm_version }}
         - openmp =={{ llvm_version }}
