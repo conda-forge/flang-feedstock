@@ -32,15 +32,8 @@ requirements:
     - flang-meta
 
 test:
-  files:
-    - hello_world.f90
   commands:
-    # TODO - Figure out why the following line is needed.
-    - call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64  # [win64]
     - flang --version
-    - flang hello_world.f90
-    - ./a.out   # [unix]
-    - a.exe     # [win]
 
 outputs:
   - name: libflang
@@ -69,6 +62,15 @@ outputs:
         - clangdev =={{ llvm_version }}
         - openmp =={{ llvm_version }}
         - {{ pin_subpackage('libflang', exact=True) }}
+    test:
+      files:
+        - hello_world.f90
+      commands:
+        # TODO - Figure out why the following line is needed.
+        - call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64  # [win64]
+        - flang hello_world.f90
+        - ./a.out   # [unix]
+        - a.exe     # [win]
 
   - name: flang_{{ target_platform }}
     run_exports:
