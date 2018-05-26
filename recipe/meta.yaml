@@ -50,7 +50,11 @@ outputs:
       build:
         - {{ compiler('c') }}
         - {{ compiler('cxx') }}
-      host:
+        - cmake
+        - clangdev =={{ llvm_version }}
+        - openmp =={{ llvm_version }}
+        - llvmdev =={{ llvm_version }}
+        - flang-meta
       run:
         - openmp =={{ llvm_version }}
 
@@ -61,10 +65,6 @@ outputs:
       strong:
         - libflang >={{ version }}
     requirements:
-      build:
-        - {{ compiler('c') }}
-        - {{ compiler('cxx') }}
-      host:
       run:
         - clangdev =={{ llvm_version }}
         - openmp =={{ llvm_version }}
