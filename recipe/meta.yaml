@@ -30,6 +30,7 @@ requirements:
     - openmp =={{ llvm_version }}
     - llvmdev =={{ llvm_version }}
     - flang-meta
+  host:
 
 test:
   commands:
@@ -48,6 +49,7 @@ outputs:
         - openmp =={{ llvm_version }}
         - llvmdev =={{ llvm_version }}
         - flang-meta
+      host:
       run:
         - openmp =={{ llvm_version }}
 
@@ -66,6 +68,7 @@ outputs:
         - openmp =={{ llvm_version }}
         - llvmdev =={{ llvm_version }}
         - flang-meta
+      host:
       run:
         - clangdev =={{ llvm_version }}
         - openmp =={{ llvm_version }}
