@@ -9,3 +9,7 @@ target_platform:
 - win-64
 vc:
 - '14'
+zip_keys:
+- - c_compiler
+  - cxx_compiler
+  - vc
