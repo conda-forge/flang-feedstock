@@ -14,14 +14,18 @@ Summary: Flang is a Fortran compiler targeting LLVM.
 Current build status
 ====================
 
-Linux: [![Circle CI](https://circleci.com/gh/conda-forge/flang-feedstock.svg?style=shield)](https://circleci.com/gh/conda-forge/flang-feedstock)
-OSX: ![](https://cdn.rawgit.com/conda-forge/conda-smithy/90845bba35bec53edac7a16638aa4d77217a3713/conda_smithy/static/disabled.svg)
-Windows: [![AppVeyor](https://ci.appveyor.com/api/projects/status/github/conda-forge/flang-feedstock?svg=True)](https://ci.appveyor.com/project/conda-forge/flang-feedstock/branch/master)
+[![Linux](https://img.shields.io/circleci/project/github/conda-forge/flang-feedstock/master.svg?label=Linux)](https://circleci.com/gh/conda-forge/flang-feedstock)
+[![Windows](https://img.shields.io/appveyor/ci/conda-forge/flang-feedstock/master.svg?label=Windows)](https://ci.appveyor.com/project/conda-forge/flang-feedstock/branch/master)
+![OSX disabled](https://img.shields.io/badge/OSX-disabled-lightgrey.svg)
 
 Current release info
 ====================
-Version: [![Anaconda-Server Badge](https://anaconda.org/conda-forge/flang/badges/version.svg)](https://anaconda.org/conda-forge/flang)
-Downloads: [![Anaconda-Server Badge](https://anaconda.org/conda-forge/flang/badges/downloads.svg)](https://anaconda.org/conda-forge/flang)
+
+| Name | Downloads | Version | Platforms |
+| --- | --- | --- | --- |
+| [![Conda Recipe](https://img.shields.io/badge/recipe-flang-green.svg)](https://anaconda.org/conda-forge/flang) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/flang.svg)](https://anaconda.org/conda-forge/flang) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/flang.svg)](https://anaconda.org/conda-forge/flang) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/flang.svg)](https://anaconda.org/conda-forge/flang) |
+| [![Conda Recipe](https://img.shields.io/badge/recipe-flang_linux--64-green.svg)](https://anaconda.org/conda-forge/flang_linux-64) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/flang_linux-64.svg)](https://anaconda.org/conda-forge/flang_linux-64) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/flang_linux-64.svg)](https://anaconda.org/conda-forge/flang_linux-64) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/flang_linux-64.svg)](https://anaconda.org/conda-forge/flang_linux-64) |
+| [![Conda Recipe](https://img.shields.io/badge/recipe-libflang-green.svg)](https://anaconda.org/conda-forge/libflang) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/libflang.svg)](https://anaconda.org/conda-forge/libflang) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/libflang.svg)](https://anaconda.org/conda-forge/libflang) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/libflang.svg)](https://anaconda.org/conda-forge/libflang) |
 
 Installing flang
 ================
@@ -32,10 +36,10 @@ Installing `flang` from the `conda-forge` channel can be achieved by adding `con
 conda config --add channels conda-forge
 ```
 
-Once the `conda-forge` channel has been enabled, `flang` can be installed with:
+Once the `conda-forge` channel has been enabled, `flang, flang_linux-64, libflang` can be installed with:
 
 ```
-conda install flang
+conda install flang flang_linux-64 libflang
 ```
 
 It is possible to list all of the versions of `flang` available on your platform with:

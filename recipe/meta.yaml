@@ -3,7 +3,7 @@
 {% set llvm_version = "5.0.0" %}
 {% set version = llvm_version %}
 {% set sha256 = "7078a7b24bb2b52789fc5551bd6eeee19082e2923e4d49c2834579e51b43ea74" %}
-{% set build_number = "20180208" %}
+{% set build_number = "20180525" %}
 
 package:
   name: flang
@@ -17,49 +17,79 @@ build:
   number: {{ build_number }}
   skip: true    # [osx]
   skip: true    # [win32]
-  msvc_compiler: 14.0
-  features:
-    - vc14      # [win]
+  skip: true    # [win and vc<14]
   track_features:
     - flang
 
 requirements:
   build:
-    - toolchain
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
     - cmake
     - clangdev =={{ llvm_version }}
     - openmp =={{ llvm_version }}
     - llvmdev =={{ llvm_version }}
     - flang-meta
-    - vc 14     # [win]
+  host:
 
 test:
-  files:
-    - hello_world.f90
   commands:
-    # TODO - Figure out why the following line is needed.
-    - call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64  # [win64]
     - flang --version
-    - flang hello_world.f90
-    - ./a.out   # [unix]
-    - a.exe     # [win]
 
 outputs:
   - name: libflang
     script: install_libflang.sh   # [unix]
     script: install_libflang.bat  # [win]
     requirements:
-      - vc 14                     # [win]
-      - openmp =={{ llvm_version }}
+      build:
+        - {{ compiler('c') }}
+        - {{ compiler('cxx') }}
+        - cmake
+        - clangdev =={{ llvm_version }}
+        - openmp =={{ llvm_version }}
+        - llvmdev =={{ llvm_version }}
+        - flang-meta
+      host:
+      run:
+        - openmp =={{ llvm_version }}
+
   - name: flang
     script: install_flang.sh      # [unix]
     script: install_flang.bat     # [win]
+    run_exports:
+      strong:
+        - libflang >={{ version }}
     requirements:
-      - clangdev =={{ llvm_version }}
-      - openmp =={{ llvm_version }}
-      - vc 14                     # [win]
-      - libflang {{ version }} {{ build_number }}       # [unix]
-      - libflang {{ version }} vc14_{{ build_number }}  # [win]
+      build:
+        - {{ compiler('c') }}
+        - {{ compiler('cxx') }}
+        - cmake
+        - clangdev =={{ llvm_version }}
+        - openmp =={{ llvm_version }}
+        - llvmdev =={{ llvm_version }}
+        - flang-meta
+      host:
+      run:
+        - clangdev =={{ llvm_version }}
+        - openmp =={{ llvm_version }}
+        - {{ pin_subpackage('libflang', exact=True) }}
+    test:
+      files:
+        - hello_world.f90
+      commands:
+        # TODO - Figure out why the following line is needed.
+        - call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64  # [win64]
+        - flang hello_world.f90
+        - ./a.out   # [unix]
+        - a.exe     # [win]
+
+  - name: flang_{{ target_platform }}
+    run_exports:
+      strong:
+        - libflang >={{ version }}
+    requirements:
+      - {{ pin_subpackage('flang', exact=True) }}
+
 
 about:
   home: http://github.com/flang-compiler/flang
@@ -70,4 +100,3 @@ about:
 extra:
   recipe-maintainers:
     - isuruf
-    - xoviat
