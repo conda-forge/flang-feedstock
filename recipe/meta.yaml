@@ -55,6 +55,7 @@ outputs:
         - m2-gawk
       host:
       run:
+        - vc 17 # [win]
         - llvm-openmp =={{ llvm_version }}
 
   - name: flang
@@ -76,6 +77,7 @@ outputs:
         - m2-gawk
       host:
       run:
+        - vc 17 # [win]
         - clangdev =={{ llvm_version }}
         - llvm-openmp =={{ llvm_version }}
         - {{ pin_subpackage('libflang', exact=True) }}
