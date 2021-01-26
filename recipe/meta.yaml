@@ -6,7 +6,7 @@
 {% set build_number = "20200126" %}
 
 package:
-  name: flang
+  name: flang-split
   version: {{ version }}
 
 source:
@@ -106,3 +106,4 @@ about:
 extra:
   recipe-maintainers:
     - isuruf
+  feedstock-name: flang
