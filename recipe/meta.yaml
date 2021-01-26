@@ -30,6 +30,8 @@ requirements:
     - clangdev =={{ llvm_version }}
     - llvm-openmp =={{ llvm_version }}
     - llvmdev =={{ llvm_version }}
+    - m2-sed
+    - m2-gawk
   host:
 
 test:
@@ -49,6 +51,8 @@ outputs:
         - clangdev =={{ llvm_version }}
         - llvm-openmp =={{ llvm_version }}
         - llvmdev =={{ llvm_version }}
+        - m2-sed
+        - m2-gawk
       host:
       run:
         - llvm-openmp =={{ llvm_version }}
@@ -68,6 +72,8 @@ outputs:
         - clangdev =={{ llvm_version }}
         - llvm-openmp =={{ llvm_version }}
         - llvmdev =={{ llvm_version }}
+        - m2-sed
+        - m2-gawk
       host:
       run:
         - clangdev =={{ llvm_version }}
