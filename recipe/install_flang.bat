@@ -1,6 +1,6 @@
 cd %SRC_DIR%\build
 call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64
-nmake install
+cmake --build . --target install
 if errorlevel 1 exit 1
 
 rm %LIBRARY_BIN%\flang.dll
