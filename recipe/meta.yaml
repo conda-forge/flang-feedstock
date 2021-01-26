@@ -26,6 +26,7 @@ requirements:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
     - cmake
+    - ninja
     - clangdev =={{ llvm_version }}
     - llvm-openmp =={{ llvm_version }}
     - llvmdev =={{ llvm_version }}
@@ -44,6 +45,7 @@ outputs:
         - {{ compiler('c') }}
         - {{ compiler('cxx') }}
         - cmake
+        - ninja
         - clangdev =={{ llvm_version }}
         - llvm-openmp =={{ llvm_version }}
         - llvmdev =={{ llvm_version }}
@@ -62,6 +64,7 @@ outputs:
         - {{ compiler('c') }}
         - {{ compiler('cxx') }}
         - cmake
+        - ninja
         - clangdev =={{ llvm_version }}
         - llvm-openmp =={{ llvm_version }}
         - llvmdev =={{ llvm_version }}
