@@ -7,7 +7,7 @@
 {% set build_number = "20180526" %}
 
 package:
-  name: flang-split
+  name: flang_{{ target_platform }}
   version: {{ version }}
 
 source:
@@ -21,13 +21,13 @@ build:
   skip: true    # [win and vc<14]
   track_features:
     - flang
+  run_exports:
+    strong:
+      - libflang >={{ version }},<{{ version_upper }}
 
-  - name: flang_{{ target_platform }}
-    run_exports:
-      strong:
-        - libflang >={{ version }},<{{ version_upper }}
-    requirements:
-      - flang {{ version }}
+requirements:
+  run:
+    - flang {{ version }}
 
 about:
   home: http://github.com/flang-compiler/flang
