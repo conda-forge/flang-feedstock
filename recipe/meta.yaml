@@ -27,12 +27,12 @@ requirements:
     - {{ compiler('cxx') }}
     - cmake
     - ninja
-    - clangdev =={{ llvm_version }}
-    - llvm-openmp =={{ llvm_version }}
-    - llvmdev =={{ llvm_version }}
     - m2-sed
     - m2-gawk
   host:
+    - clangdev =={{ llvm_version }}
+    - llvm-openmp =={{ llvm_version }}
+    - llvmdev =={{ llvm_version }}
 
 test:
   commands:
@@ -48,12 +48,12 @@ outputs:
         - {{ compiler('cxx') }}
         - cmake
         - ninja
-        - clangdev =={{ llvm_version }}
-        - llvm-openmp =={{ llvm_version }}
-        - llvmdev =={{ llvm_version }}
         - m2-sed
         - m2-gawk
       host:
+        - clangdev =={{ llvm_version }}
+        - llvm-openmp =={{ llvm_version }}
+        - llvmdev =={{ llvm_version }}
       run:
         - llvm-openmp =={{ llvm_version }}
 
@@ -69,12 +69,12 @@ outputs:
         - {{ compiler('cxx') }}
         - cmake
         - ninja
-        - clangdev =={{ llvm_version }}
-        - llvm-openmp =={{ llvm_version }}
-        - llvmdev =={{ llvm_version }}
         - m2-sed
         - m2-gawk
       host:
+        - clangdev =={{ llvm_version }}
+        - llvm-openmp =={{ llvm_version }}
+        - llvmdev =={{ llvm_version }}
       run:
         - clangdev =={{ llvm_version }}
         - llvm-openmp =={{ llvm_version }}
