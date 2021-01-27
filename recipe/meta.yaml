@@ -29,6 +29,7 @@ requirements:
     - ninja
     - m2-sed   # [win]
     - m2-gawk  # [win]
+    - m2-grep  # [win]
   host:
     - clangdev =={{ llvm_version }}
     - llvm-openmp =={{ llvm_version }}
@@ -50,6 +51,7 @@ outputs:
         - ninja
         - m2-sed   # [win]
         - m2-gawk  # [win]
+        - m2-grep  # [win]
       host:
         - clangdev =={{ llvm_version }}
         - llvm-openmp =={{ llvm_version }}
@@ -71,6 +73,7 @@ outputs:
         - ninja
         - m2-sed   # [win]
         - m2-gawk  # [win]
+        - m2-grep  # [win]
       host:
         - clangdev =={{ llvm_version }}
         - llvm-openmp =={{ llvm_version }}
