@@ -2,7 +2,7 @@
 {% set flang_commit = "ce9a7208dbb7b81ffeefd2eeeba055e8a37230cd" %}
 {% set llvm_version = "11.0.1" %}
 {% set version = llvm_version %}
-{% set sha256 = "ac9d24b3864f0a979327e3aa1f13cfe0aade1cc9502b1daed53e8c0e9982472e" %}
+{% set sha256 = "d2fb4555b1010ade283bccdd05d72593c5cec936d2c8eb932b62b81d563119ec" %}
 {% set build_number = "20200126" %}
 
 package:
