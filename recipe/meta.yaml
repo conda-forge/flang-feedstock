@@ -27,8 +27,8 @@ requirements:
     - {{ compiler('cxx') }}
     - cmake
     - ninja
-    - m2-sed
-    - m2-gawk
+    - m2-sed   # [win]
+    - m2-gawk  # [win]
   host:
     - clangdev =={{ llvm_version }}
     - llvm-openmp =={{ llvm_version }}
@@ -48,8 +48,8 @@ outputs:
         - {{ compiler('cxx') }}
         - cmake
         - ninja
-        - m2-sed
-        - m2-gawk
+        - m2-sed   # [win]
+        - m2-gawk  # [win]
       host:
         - clangdev =={{ llvm_version }}
         - llvm-openmp =={{ llvm_version }}
@@ -69,8 +69,8 @@ outputs:
         - {{ compiler('cxx') }}
         - cmake
         - ninja
-        - m2-sed
-        - m2-gawk
+        - m2-sed   # [win]
+        - m2-gawk  # [win]
       host:
         - clangdev =={{ llvm_version }}
         - llvm-openmp =={{ llvm_version }}
