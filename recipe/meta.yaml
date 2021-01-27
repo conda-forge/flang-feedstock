@@ -2,8 +2,9 @@
 {% set flang_commit = "4ddc948697091af68df0a1c63d18e700af047eba" %}
 {% set llvm_version = "5.0.0" %}
 {% set version = llvm_version %}
+{% set version_upper = "6.0.0.a0" %}
 {% set sha256 = "7078a7b24bb2b52789fc5551bd6eeee19082e2923e4d49c2834579e51b43ea74" %}
-{% set build_number = "20180525" %}
+{% set build_number = "20180526" %}
 
 package:
   name: flang
@@ -58,7 +59,7 @@ outputs:
     script: install_flang.bat     # [win]
     run_exports:
       strong:
-        - libflang >={{ version }}
+        - libflang >={{ version }},<{{ version_upper }}
     requirements:
       build:
         - {{ compiler('c') }}
