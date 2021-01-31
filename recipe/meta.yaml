@@ -1,9 +1,9 @@
 {% set clang_variant = os.environ.get('CLANG_VARIANT', 'flang') %}
-{% set flang_commit = "ce9a7208dbb7b81ffeefd2eeeba055e8a37230cd" %}
+{% set flang_commit = "1192ff0775ddf94f7944dc40181406c088b4d575" %}
 {% set llvm_version = "11.0.1" %}
 {% set version = llvm_version %}
-{% set sha256 = "d2fb4555b1010ade283bccdd05d72593c5cec936d2c8eb932b62b81d563119ec" %}
-{% set build_number = "20200126" %}
+{% set sha256 = "e4fa46a0b29cabf4c4583231b79f923d6296efc4196099cbaebf5828f03a2607" %}
+{% set build_number = "20200131" %}
 
 package:
   name: flang-split
