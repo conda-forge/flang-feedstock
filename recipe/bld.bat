@@ -3,10 +3,9 @@ cd build
 
 set "PROCESSOR_ARCHITECTURE=AMD64"
 
-cmake -G "NMake Makefiles" ^
+cmake -G "Ninja" ^
     -DCMAKE_C_COMPILER=clang-cl ^
     -DCMAKE_CXX_COMPILER=clang-cl ^
-    -DCMAKE_Fortran_COMPILER=flang ^
     -DCMAKE_BUILD_TYPE="Release" ^
     -DCMAKE_PREFIX_PATH=%LIBRARY_PREFIX% ^
     -DCMAKE_INSTALL_PREFIX:PATH=%LIBRARY_PREFIX% ^
@@ -15,6 +14,6 @@ cmake -G "NMake Makefiles" ^
 
 if errorlevel 1 exit 1
 
-nmake
+cmake --build .
 if errorlevel 1 exit 1
 
