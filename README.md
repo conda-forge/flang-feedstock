@@ -47,7 +47,7 @@ Current release info
 | Name | Downloads | Version | Platforms |
 | --- | --- | --- | --- |
 | [![Conda Recipe](https://img.shields.io/badge/recipe-flang-green.svg)](https://anaconda.org/conda-forge/flang) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/flang.svg)](https://anaconda.org/conda-forge/flang) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/flang.svg)](https://anaconda.org/conda-forge/flang) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/flang.svg)](https://anaconda.org/conda-forge/flang) |
-| [![Conda Recipe](https://img.shields.io/badge/recipe-flang_linux--64-green.svg)](https://anaconda.org/conda-forge/flang_linux-64) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/flang_linux-64.svg)](https://anaconda.org/conda-forge/flang_linux-64) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/flang_linux-64.svg)](https://anaconda.org/conda-forge/flang_linux-64) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/flang_linux-64.svg)](https://anaconda.org/conda-forge/flang_linux-64) |
+| [![Conda Recipe](https://img.shields.io/badge/recipe-flang_win--64-green.svg)](https://anaconda.org/conda-forge/flang_win-64) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/flang_win-64.svg)](https://anaconda.org/conda-forge/flang_win-64) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/flang_win-64.svg)](https://anaconda.org/conda-forge/flang_win-64) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/flang_win-64.svg)](https://anaconda.org/conda-forge/flang_win-64) |
 | [![Conda Recipe](https://img.shields.io/badge/recipe-libflang-green.svg)](https://anaconda.org/conda-forge/libflang) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/libflang.svg)](https://anaconda.org/conda-forge/libflang) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/libflang.svg)](https://anaconda.org/conda-forge/libflang) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/libflang.svg)](https://anaconda.org/conda-forge/libflang) |
 
 Installing flang
@@ -57,12 +57,13 @@ Installing `flang` from the `conda-forge` channel can be achieved by adding `con
 
 ```
 conda config --add channels conda-forge
+conda config --set channel_priority strict
 ```
 
-Once the `conda-forge` channel has been enabled, `flang, flang_linux-64, libflang` can be installed with:
+Once the `conda-forge` channel has been enabled, `flang, flang_win-64, libflang` can be installed with:
 
 ```
-conda install flang flang_linux-64 libflang
+conda install flang flang_win-64 libflang
 ```
 
 It is possible to list all of the versions of `flang` available on your platform with:
@@ -75,7 +76,8 @@ conda search flang --channel conda-forge
 About conda-forge
 =================
 
-[![Powered by NumFOCUS](https://img.shields.io/badge/powered%20by-NumFOCUS-orange.svg?style=flat&colorA=E1523D&colorB=007D8A)](http://numfocus.org)
+[![Powered by
+NumFOCUS](https://img.shields.io/badge/powered%20by-NumFOCUS-orange.svg?style=flat&colorA=E1523D&colorB=007D8A)](https://numfocus.org)
 
 conda-forge is a community-led conda channel of installable packages.
 In order to provide high-quality builds, the process has been automated into the
@@ -127,13 +129,14 @@ build distinct package versions.
 
 In order to produce a uniquely identifiable distribution:
  * If the version of a package **is not** being increased, please add or increase
-   the [``build/number``](https://conda.io/docs/user-guide/tasks/build-packages/define-metadata.html#build-number-and-string).
+   the [``build/number``](https://docs.conda.io/projects/conda-build/en/latest/resources/define-metadata.html#build-number-and-string).
  * If the version of a package **is** being increased, please remember to return
-   the [``build/number``](https://conda.io/docs/user-guide/tasks/build-packages/define-metadata.html#build-number-and-string)
+   the [``build/number``](https://docs.conda.io/projects/conda-build/en/latest/resources/define-metadata.html#build-number-and-string)
    back to 0.
 
 Feedstock Maintainers
 =====================
 
 * [@isuruf](https://github.com/isuruf/)
+* [@wolfv](https://github.com/wolfv/)
 
