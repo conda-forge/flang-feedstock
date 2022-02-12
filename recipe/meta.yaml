@@ -110,4 +110,5 @@ about:
 extra:
   recipe-maintainers:
     - isuruf
+    - wolfv
   feedstock-name: flang
