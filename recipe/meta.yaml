@@ -1,24 +1,15 @@
-{% set clang_variant = os.environ.get('CLANG_VARIANT', 'flang') %}
-{% set flang_commit = "1192ff0775ddf94f7944dc40181406c088b4d575" %}
-{% set llvm_version = "11.0.1" %}
-{% set version = llvm_version %}
-{% set sha256 = "e4fa46a0b29cabf4c4583231b79f923d6296efc4196099cbaebf5828f03a2607" %}
-{% set build_number = "20210131" %}
+{% set version = "15.0.5" %}
 
 package:
   name: flang-split
   version: {{ version }}
 
 source:
-  url: https://github.com/xoviat/flang/archive/{{ flang_commit }}.tar.gz
-  sha256: {{ sha256 }}
+  url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version.replace(".rc", "-rc") }}/llvm-project-{{ version.replace(".rc", "rc") }}.src.tar.xz
+  sha256: 9c4278a6b8884eb7f4ae7dfe3c8e5445019824885e47cfdf1392563c47316fd6
 
 build:
-  number: {{ build_number }}
-  skip: true    # [osx]
-  skip: true    # [unix]
-  skip: true    # [win32]
-  skip: true    # [win and vc<14]
+  number: 0
   track_features:
     - flang
 
@@ -28,13 +19,12 @@ requirements:
     - {{ compiler('cxx') }}
     - cmake
     - ninja
-    - m2-sed   # [win]
-    - m2-gawk  # [win]
-    - m2-grep  # [win]
   host:
-    - clangdev =={{ llvm_version }}
-    - llvm-openmp =={{ llvm_version }}
-    - llvmdev =={{ llvm_version }}
+    - clangdev =={{ version }}
+    - compiler-rt =={{ version }}
+    - llvm-openmp =={{ version }}
+    - llvmdev =={{ version }}
+    - mlir =={{ version }}
 
 test:
   commands:
@@ -50,15 +40,14 @@ outputs:
         - {{ compiler('cxx') }}
         - cmake
         - ninja
-        - m2-sed   # [win]
-        - m2-gawk  # [win]
-        - m2-grep  # [win]
       host:
-        - clangdev =={{ llvm_version }}
-        - llvm-openmp =={{ llvm_version }}
-        - llvmdev =={{ llvm_version }}
+        - clangdev =={{ version }}
+        - compiler-rt =={{ version }}
+        - llvm-openmp =={{ version }}
+        - llvmdev =={{ version }}
+        - mlir =={{ version }}
       run:
-        - llvm-openmp =={{ llvm_version }}
+        - llvm-openmp =={{ version }}
 
   - name: flang
     script: install_flang.sh      # [unix]
@@ -72,16 +61,15 @@ outputs:
         - {{ compiler('cxx') }}
         - cmake
         - ninja
-        - m2-sed   # [win]
-        - m2-gawk  # [win]
-        - m2-grep  # [win]
       host:
-        - clangdev =={{ llvm_version }}
-        - llvm-openmp =={{ llvm_version }}
-        - llvmdev =={{ llvm_version }}
+        - clangdev =={{ version }}
+        - compiler-rt =={{ version }}
+        - llvm-openmp =={{ version }}
+        - llvmdev =={{ version }}
+        - mlir =={{ version }}
       run:
-        - clangdev =={{ llvm_version }}
-        - llvm-openmp =={{ llvm_version }}
+        - clangdev =={{ version }}
+        - llvm-openmp =={{ version }}
         - {{ pin_subpackage('libflang', exact=True) }}
     test:
       files:
@@ -102,10 +90,11 @@ outputs:
 
 
 about:
-  home: http://github.com/flang-compiler/flang
+  home: https://flang.llvm.org
   license: Apache-2.0
-  license_file: LICENSE.txt
+  license_file: flang/LICENSE.TXT
   summary: Flang is a Fortran compiler targeting LLVM.
+  dev_url: https://github.com/llvm/llvm-project
 
 extra:
   recipe-maintainers:
