@@ -2,6 +2,7 @@ mkdir build
 cd build
 
 cmake -G Ninja \
+    -DCLANG_DIR=$PREFIX/bin \
     -DClang_DIR=$PREFIX/lib/cmake/clang \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_CXX_STANDARD=17 \
