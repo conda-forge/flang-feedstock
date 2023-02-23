@@ -6,6 +6,7 @@ cd build
 set "PROCESSOR_ARCHITECTURE=AMD64"
 
 cmake -G "Ninja" ^
+    -DBUILD_SHARED_LIBS=ON ^
     -DCMAKE_C_COMPILER=clang-cl ^
     -DCMAKE_CXX_COMPILER=clang-cl ^
     -DCMAKE_BUILD_TYPE="Release" ^
