@@ -51,6 +51,28 @@ outputs:
         - mlir =={{ version }}
       run:
         - llvm-openmp =={{ version }}
+    test:
+      commands:
+        - test -f $PREFIX/lib/libFortranRuntime.so              # [linux]
+        - test -f $PREFIX/lib/libFortranRuntime.dylib           # [osx]
+        - if not exist %LIBRARY_BIN%\FortranRuntime.dll exit 1  # [win]
+
+  - name: libfortran-main
+    script: install_libfortran_main.sh   # [unix]
+    script: install_libfortran_main.bat  # [win]
+    requirements:
+      host:
+        - clangdev =={{ version }}
+        - compiler-rt =={{ version }}
+        - llvm-openmp =={{ version }}
+        - llvmdev =={{ version }}
+        - mlir =={{ version }}
+      run:
+        # not sure what we need here
+    test:
+      commands:
+        - test -f $PREFIX/lib/libFortran_main.a                 # [unix]
+        - if not exist %LIBRARY_LIB%\Fortran_main.lib exit 1    # [win]
 
   - name: flang
     script: install_flang.sh      # [unix]
@@ -75,6 +97,7 @@ outputs:
         - clangdev =={{ version }}
         - llvm-openmp =={{ version }}
         - {{ pin_subpackage('libflang', exact=True) }}
+        - {{ pin_subpackage('libfortran-main', exact=True) }}
     test:
       files:
         - hello_world.f90
@@ -91,6 +114,10 @@ outputs:
         - libflang >={{ version }}
     requirements:
       - {{ pin_subpackage('flang', exact=True) }}
+
+  - name: libfortran-main_{{ target_platform }}
+    requirements:
+      - {{ pin_subpackage('libfortran-main', exact=True) }}
 
 
 about:
