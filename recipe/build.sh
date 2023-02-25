@@ -21,4 +21,3 @@ cmake -G Ninja \
     ../flang
 
 cmake --build . -j1
-cmake --install .

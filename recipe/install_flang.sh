@@ -1,8 +1,15 @@
+#!/bin/bash
+set -ex
+
 cd $SRC_DIR/build
-make install
-rm $PREFIX/lib/libflang${SHLIB_EXT}
-rm $PREFIX/lib/libflangrti${SHLIB_EXT}
-rm $PREFIX/lib/libompstub${SHLIB_EXT}
+
+cmake --install .
+
+# don't repackage libflang output
+rm $PREFIX/lib/libFortranRuntime*
+rm $PREFIX/lib/libFortranDecimal*
+# same for libfortran-main
+rm $PREFIX/lib/libFortran_main.a
 
 for CHANGE in "activate" "deactivate"
 do
