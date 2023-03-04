@@ -2,12 +2,13 @@ cd %SRC_DIR%\build
 call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64
 
 cmake --build . --target install
-if errorlevel 1 exit 1
+if %ERRORLEVEL% neq 0 exit 1
 
-rm %LIBRARY_BIN%\flang.dll
-rm %LIBRARY_BIN%\flangrti.dll
-rm %LIBRARY_BIN%\ompstub.dll
-rm %LIBRARY_BIN%\pgmath.dll
+:: don't repackage libflang output
+rm %LIBRARY_BIN%\FortranRuntime.dll
+rm %LIBRARY_BIN%\FortranDecimal.dll
+:: same for libfortran-main
+rm %LIBRARY_LIB%\Fortran_main.lib
 
 :: Copy the [de]activate scripts to %PREFIX%\etc\conda\[de]activate.d.
 :: This will allow them to be run on environment activation.
