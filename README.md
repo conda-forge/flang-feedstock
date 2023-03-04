@@ -1,11 +1,11 @@
-About flang
-===========
+About flang-feedstock
+=====================
+
+Feedstock license: [BSD-3-Clause](https://github.com/conda-forge/flang-feedstock/blob/main/LICENSE.txt)
 
 Home: https://flang.llvm.org
 
 Package license: Apache-2.0
-
-Feedstock license: [BSD-3-Clause](https://github.com/conda-forge/flang-feedstock/blob/main/LICENSE.txt)
 
 Summary: Flang is a Fortran compiler targeting LLVM.
 
@@ -36,10 +36,31 @@ Current build status
                 </a>
               </td>
             </tr><tr>
+              <td>linux_aarch64</td>
+              <td>
+                <a href="https://dev.azure.com/conda-forge/feedstock-builds/_build/latest?definitionId=2931&branchName=main">
+                  <img src="https://dev.azure.com/conda-forge/feedstock-builds/_apis/build/status/flang-feedstock?branchName=main&jobName=linux&configuration=linux%20linux_aarch64_" alt="variant">
+                </a>
+              </td>
+            </tr><tr>
+              <td>linux_ppc64le</td>
+              <td>
+                <a href="https://dev.azure.com/conda-forge/feedstock-builds/_build/latest?definitionId=2931&branchName=main">
+                  <img src="https://dev.azure.com/conda-forge/feedstock-builds/_apis/build/status/flang-feedstock?branchName=main&jobName=linux&configuration=linux%20linux_ppc64le_" alt="variant">
+                </a>
+              </td>
+            </tr><tr>
               <td>osx_64</td>
               <td>
                 <a href="https://dev.azure.com/conda-forge/feedstock-builds/_build/latest?definitionId=2931&branchName=main">
                   <img src="https://dev.azure.com/conda-forge/feedstock-builds/_apis/build/status/flang-feedstock?branchName=main&jobName=osx&configuration=osx%20osx_64_" alt="variant">
+                </a>
+              </td>
+            </tr><tr>
+              <td>osx_arm64</td>
+              <td>
+                <a href="https://dev.azure.com/conda-forge/feedstock-builds/_build/latest?definitionId=2931&branchName=main">
+                  <img src="https://dev.azure.com/conda-forge/feedstock-builds/_apis/build/status/flang-feedstock?branchName=main&jobName=osx&configuration=osx%20osx_arm64_" alt="variant">
                 </a>
               </td>
             </tr><tr>
@@ -64,9 +85,19 @@ Current release info
 | --- | --- | --- | --- |
 | [![Conda Recipe](https://img.shields.io/badge/recipe-flang-green.svg)](https://anaconda.org/conda-forge/flang) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/flang.svg)](https://anaconda.org/conda-forge/flang) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/flang.svg)](https://anaconda.org/conda-forge/flang) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/flang.svg)](https://anaconda.org/conda-forge/flang) |
 | [![Conda Recipe](https://img.shields.io/badge/recipe-flang_linux--64-green.svg)](https://anaconda.org/conda-forge/flang_linux-64) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/flang_linux-64.svg)](https://anaconda.org/conda-forge/flang_linux-64) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/flang_linux-64.svg)](https://anaconda.org/conda-forge/flang_linux-64) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/flang_linux-64.svg)](https://anaconda.org/conda-forge/flang_linux-64) |
+| [![Conda Recipe](https://img.shields.io/badge/recipe-flang_linux--aarch64-green.svg)](https://anaconda.org/conda-forge/flang_linux-aarch64) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/flang_linux-aarch64.svg)](https://anaconda.org/conda-forge/flang_linux-aarch64) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/flang_linux-aarch64.svg)](https://anaconda.org/conda-forge/flang_linux-aarch64) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/flang_linux-aarch64.svg)](https://anaconda.org/conda-forge/flang_linux-aarch64) |
+| [![Conda Recipe](https://img.shields.io/badge/recipe-flang_linux--ppc64le-green.svg)](https://anaconda.org/conda-forge/flang_linux-ppc64le) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/flang_linux-ppc64le.svg)](https://anaconda.org/conda-forge/flang_linux-ppc64le) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/flang_linux-ppc64le.svg)](https://anaconda.org/conda-forge/flang_linux-ppc64le) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/flang_linux-ppc64le.svg)](https://anaconda.org/conda-forge/flang_linux-ppc64le) |
 | [![Conda Recipe](https://img.shields.io/badge/recipe-flang_osx--64-green.svg)](https://anaconda.org/conda-forge/flang_osx-64) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/flang_osx-64.svg)](https://anaconda.org/conda-forge/flang_osx-64) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/flang_osx-64.svg)](https://anaconda.org/conda-forge/flang_osx-64) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/flang_osx-64.svg)](https://anaconda.org/conda-forge/flang_osx-64) |
+| [![Conda Recipe](https://img.shields.io/badge/recipe-flang_osx--arm64-green.svg)](https://anaconda.org/conda-forge/flang_osx-arm64) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/flang_osx-arm64.svg)](https://anaconda.org/conda-forge/flang_osx-arm64) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/flang_osx-arm64.svg)](https://anaconda.org/conda-forge/flang_osx-arm64) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/flang_osx-arm64.svg)](https://anaconda.org/conda-forge/flang_osx-arm64) |
 | [![Conda Recipe](https://img.shields.io/badge/recipe-flang_win--64-green.svg)](https://anaconda.org/conda-forge/flang_win-64) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/flang_win-64.svg)](https://anaconda.org/conda-forge/flang_win-64) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/flang_win-64.svg)](https://anaconda.org/conda-forge/flang_win-64) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/flang_win-64.svg)](https://anaconda.org/conda-forge/flang_win-64) |
 | [![Conda Recipe](https://img.shields.io/badge/recipe-libflang-green.svg)](https://anaconda.org/conda-forge/libflang) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/libflang.svg)](https://anaconda.org/conda-forge/libflang) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/libflang.svg)](https://anaconda.org/conda-forge/libflang) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/libflang.svg)](https://anaconda.org/conda-forge/libflang) |
+| [![Conda Recipe](https://img.shields.io/badge/recipe-libfortran--main-green.svg)](https://anaconda.org/conda-forge/libfortran-main) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/libfortran-main.svg)](https://anaconda.org/conda-forge/libfortran-main) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/libfortran-main.svg)](https://anaconda.org/conda-forge/libfortran-main) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/libfortran-main.svg)](https://anaconda.org/conda-forge/libfortran-main) |
+| [![Conda Recipe](https://img.shields.io/badge/recipe-libfortran--main_linux--64-green.svg)](https://anaconda.org/conda-forge/libfortran-main_linux-64) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/libfortran-main_linux-64.svg)](https://anaconda.org/conda-forge/libfortran-main_linux-64) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/libfortran-main_linux-64.svg)](https://anaconda.org/conda-forge/libfortran-main_linux-64) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/libfortran-main_linux-64.svg)](https://anaconda.org/conda-forge/libfortran-main_linux-64) |
+| [![Conda Recipe](https://img.shields.io/badge/recipe-libfortran--main_linux--aarch64-green.svg)](https://anaconda.org/conda-forge/libfortran-main_linux-aarch64) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/libfortran-main_linux-aarch64.svg)](https://anaconda.org/conda-forge/libfortran-main_linux-aarch64) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/libfortran-main_linux-aarch64.svg)](https://anaconda.org/conda-forge/libfortran-main_linux-aarch64) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/libfortran-main_linux-aarch64.svg)](https://anaconda.org/conda-forge/libfortran-main_linux-aarch64) |
+| [![Conda Recipe](https://img.shields.io/badge/recipe-libfortran--main_linux--ppc64le-green.svg)](https://anaconda.org/conda-forge/libfortran-main_linux-ppc64le) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/libfortran-main_linux-ppc64le.svg)](https://anaconda.org/conda-forge/libfortran-main_linux-ppc64le) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/libfortran-main_linux-ppc64le.svg)](https://anaconda.org/conda-forge/libfortran-main_linux-ppc64le) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/libfortran-main_linux-ppc64le.svg)](https://anaconda.org/conda-forge/libfortran-main_linux-ppc64le) |
+| [![Conda Recipe](https://img.shields.io/badge/recipe-libfortran--main_osx--64-green.svg)](https://anaconda.org/conda-forge/libfortran-main_osx-64) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/libfortran-main_osx-64.svg)](https://anaconda.org/conda-forge/libfortran-main_osx-64) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/libfortran-main_osx-64.svg)](https://anaconda.org/conda-forge/libfortran-main_osx-64) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/libfortran-main_osx-64.svg)](https://anaconda.org/conda-forge/libfortran-main_osx-64) |
+| [![Conda Recipe](https://img.shields.io/badge/recipe-libfortran--main_osx--arm64-green.svg)](https://anaconda.org/conda-forge/libfortran-main_osx-arm64) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/libfortran-main_osx-arm64.svg)](https://anaconda.org/conda-forge/libfortran-main_osx-arm64) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/libfortran-main_osx-arm64.svg)](https://anaconda.org/conda-forge/libfortran-main_osx-arm64) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/libfortran-main_osx-arm64.svg)](https://anaconda.org/conda-forge/libfortran-main_osx-arm64) |
+| [![Conda Recipe](https://img.shields.io/badge/recipe-libfortran--main_win--64-green.svg)](https://anaconda.org/conda-forge/libfortran-main_win-64) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/libfortran-main_win-64.svg)](https://anaconda.org/conda-forge/libfortran-main_win-64) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/libfortran-main_win-64.svg)](https://anaconda.org/conda-forge/libfortran-main_win-64) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/libfortran-main_win-64.svg)](https://anaconda.org/conda-forge/libfortran-main_win-64) |
 
 Installing flang
 ================
@@ -78,16 +109,16 @@ conda config --add channels conda-forge
 conda config --set channel_priority strict
 ```
 
-Once the `conda-forge` channel has been enabled, `flang, flang_linux-64, flang_osx-64, flang_win-64, libflang` can be installed with `conda`:
+Once the `conda-forge` channel has been enabled, `flang, flang_linux-64, flang_linux-aarch64, flang_linux-ppc64le, flang_osx-64, flang_osx-arm64, flang_win-64, libflang, libfortran-main, libfortran-main_linux-64, libfortran-main_linux-aarch64, libfortran-main_linux-ppc64le, libfortran-main_osx-64, libfortran-main_osx-arm64, libfortran-main_win-64` can be installed with `conda`:
 
 ```
-conda install flang flang_linux-64 flang_osx-64 flang_win-64 libflang
+conda install flang flang_linux-64 flang_linux-aarch64 flang_linux-ppc64le flang_osx-64 flang_osx-arm64 flang_win-64 libflang libfortran-main libfortran-main_linux-64 libfortran-main_linux-aarch64 libfortran-main_linux-ppc64le libfortran-main_osx-64 libfortran-main_osx-arm64 libfortran-main_win-64
 ```
 
 or with `mamba`:
 
 ```
-mamba install flang flang_linux-64 flang_osx-64 flang_win-64 libflang
+mamba install flang flang_linux-64 flang_linux-aarch64 flang_linux-ppc64le flang_osx-64 flang_osx-arm64 flang_win-64 libflang libfortran-main libfortran-main_linux-64 libfortran-main_linux-aarch64 libfortran-main_linux-ppc64le libfortran-main_osx-64 libfortran-main_osx-arm64 libfortran-main_win-64
 ```
 
 It is possible to list all of the versions of `flang` available on your platform with `conda`:
