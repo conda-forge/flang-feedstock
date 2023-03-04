@@ -7,6 +7,7 @@ cmake --install .
 
 # don't repackage libflang output
 rm $PREFIX/lib/libFortranRuntime*
+rm $PREFIX/lib/libFortranDecimal*
 # same for libfortran-main
 rm $PREFIX/lib/libFortran_main.a
 
