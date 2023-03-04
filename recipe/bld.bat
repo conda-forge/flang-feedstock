@@ -13,7 +13,7 @@ cmake -G "Ninja" ^
     -DCMAKE_CXX_STANDARD=17 ^
     -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
     -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
-    -DCMAKE_MODULE_PATH=%SRC_DIR%\cmake\Modules ^
+    -DCMAKE_MODULE_PATH=..\cmake\Modules ^
     -DCMAKE_PREFIX_PATH=%LIBRARY_PREFIX% ^
     -DFLANG_ENABLE_WERROR=ON ^
     -DLLVM_BUILD_MAIN_SRC_DIR=.. ^
@@ -24,7 +24,7 @@ cmake -G "Ninja" ^
     -DFLANG_INCLUDE_TESTS=OFF ^
     -DMLIR_DIR=%LIBRARY_LIB%/cmake/mlir ^
     -DTARGET_ARCHITECTURE=AMD64 ^
-    %SRC_DIR%\flang
+    ..\flang
 if %ERRORLEVEL% neq 0 exit 1
 
 cmake --build .
