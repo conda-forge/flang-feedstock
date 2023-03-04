@@ -93,6 +93,9 @@ outputs:
         - llvm-openmp =={{ version }}
         - llvmdev =={{ version }}
         - mlir =={{ version }}
+        # for required run-exports
+        - llvm =={{ version }}
+        - libclang-cpp =={{ version }}
       run:
         - clangdev =={{ version }}
         - llvm-openmp =={{ version }}
