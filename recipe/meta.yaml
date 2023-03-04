@@ -20,7 +20,9 @@ requirements:
     - sysroot_linux-64 =2.17  # [linux64]
     - cmake
     - ninja
-    - mlir =={{ version }}    # [build_platform != target_platform]
+    # cannot use pinned mlir because that pins llvmdev/clang, and we
+    # don't have sufficiently new clang-compiler-activation builds yet
+    - mlir                    # [build_platform != target_platform]
   host:
     - clangdev =={{ version }}
     - compiler-rt =={{ version }}
