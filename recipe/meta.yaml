@@ -7,6 +7,8 @@ package:
 source:
   url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version.replace(".rc", "-rc") }}/llvm-project-{{ version.replace(".rc", "rc") }}.src.tar.xz
   sha256: 36e723b0befd0874a799253f5cfac8b00fe5bbfec3020ccf7b4fdae566a7e089
+  patches:
+    - patches/0001-always-link-in-compiler-rt-on-windows.patch
 
 build:
   number: 0
