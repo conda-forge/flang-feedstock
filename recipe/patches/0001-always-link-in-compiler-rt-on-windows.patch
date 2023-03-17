@@ -1,7 +1,7 @@
 From c7f5ded26990b71164e143abbbf37c737de7d7a4 Mon Sep 17 00:00:00 2001
 From: "H. Vetinari" <h.vetinari@gmx.com>
 Date: Thu, 16 Mar 2023 13:57:03 +1100
-Subject: [PATCH] always link in compiler-rt on windows
+Subject: [PATCH 1/2] always link in compiler-rt on windows
 
 ---
  flang/CMakeLists.txt | 2 +-

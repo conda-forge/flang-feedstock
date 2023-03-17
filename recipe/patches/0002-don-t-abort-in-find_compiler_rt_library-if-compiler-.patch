@@ -1,0 +1,29 @@
+From 7d13869ab8f06b3cffc89b8e0a67fd9b8bbbed44 Mon Sep 17 00:00:00 2001
+From: "H. Vetinari" <h.vetinari@gmx.com>
+Date: Fri, 17 Mar 2023 15:12:31 +1100
+Subject: [PATCH 2/2] don't abort in find_compiler_rt_library if compiler isn't
+ clang
+
+clang can be available without being the CMAKE_CXX_COMPILER
+---
+ cmake/Modules/HandleCompilerRT.cmake | 4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/cmake/Modules/HandleCompilerRT.cmake b/cmake/Modules/HandleCompilerRT.cmake
+index 6865f45175..a543def123 100644
+--- a/cmake/Modules/HandleCompilerRT.cmake
++++ b/cmake/Modules/HandleCompilerRT.cmake
+@@ -54,10 +54,6 @@ function(find_compiler_rt_library name variable)
+   cmake_parse_arguments(ARG "" "TARGET;FLAGS" "" ${ARGN})
+   # While we can use compiler-rt runtimes with other compilers, we need to
+   # query the compiler for runtime location and thus we require Clang.
+-  if(NOT CMAKE_CXX_COMPILER_ID MATCHES Clang)
+-    set(${variable} "NOTFOUND" PARENT_SCOPE)
+-    return()
+-  endif()
+   set(target "${ARG_TARGET}")
+   if(NOT target AND CMAKE_CXX_COMPILER_TARGET)
+     set(target "${CMAKE_CXX_COMPILER_TARGET}")
+-- 
+2.38.1.windows.1
+

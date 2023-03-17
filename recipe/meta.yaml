@@ -9,6 +9,7 @@ source:
   sha256: 36e723b0befd0874a799253f5cfac8b00fe5bbfec3020ccf7b4fdae566a7e089
   patches:
     - patches/0001-always-link-in-compiler-rt-on-windows.patch
+    - patches/0002-don-t-abort-in-find_compiler_rt_library-if-compiler-.patch
 
 build:
   number: 0
