@@ -6,9 +6,3 @@ c_compiler_version:            # [linux or (osx and arm64)]
 cxx_compiler_version:          # [linux or (osx and arm64)]
   - 12                         # [linux]
   - '*'                        # [osx and arm64]
-
-channel_targets:
-  - conda-forge llvm_rc
-
-channel_sources:
-  - conda-forge/label/llvm_rc,conda-forge
