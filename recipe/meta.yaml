@@ -1,4 +1,4 @@
-{% set version = "16.0.0.rc4" %}
+{% set version = "16.0.1" %}
 
 package:
   name: flang-split
@@ -6,7 +6,7 @@ package:
 
 source:
   url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version.replace(".rc", "-rc") }}/llvm-project-{{ version.replace(".rc", "rc") }}.src.tar.xz
-  sha256: 36e723b0befd0874a799253f5cfac8b00fe5bbfec3020ccf7b4fdae566a7e089
+  sha256: ab7e3b95adb88fd5b669ca8c1d3c1e8d2a601c4478290d3ae31d8d70e96f2064
   patches:
     - patches/0001-always-link-in-compiler-rt-on-windows.patch
     - patches/0002-don-t-abort-in-find_compiler_rt_library-if-compiler-.patch
