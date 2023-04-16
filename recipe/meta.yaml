@@ -102,6 +102,7 @@ outputs:
         - llvm =={{ version }}
         - libclang-cpp =={{ version }}
       run:
+        - sysroot_{{ target_platform }}  # [linux]
         - clangdev =={{ version }}
         - llvm-openmp =={{ version }}
         - {{ pin_subpackage('libflang', exact=True) }}
