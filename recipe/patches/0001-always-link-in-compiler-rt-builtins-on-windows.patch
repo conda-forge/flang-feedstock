@@ -1,0 +1,54 @@
+From fb86ff2a2d8b22380157bd510be3a2c9a29a1b6c Mon Sep 17 00:00:00 2001
+From: "H. Vetinari" <h.vetinari@gmx.com>
+Date: Thu, 16 Mar 2023 13:57:03 +1100
+Subject: [PATCH] always link in compiler-rt builtins on windows
+
+don't abort in find_compiler_rt_library if compiler isn't clang,
+clang can be available without being the CMAKE_CXX_COMPILER.
+---
+ cmake/Modules/HandleCompilerRT.cmake | 10 ++++++++--
+ flang/CMakeLists.txt                 |  2 +-
+ 2 files changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/cmake/Modules/HandleCompilerRT.cmake b/cmake/Modules/HandleCompilerRT.cmake
+index 6865f45175..b9e275f699 100644
+--- a/cmake/Modules/HandleCompilerRT.cmake
++++ b/cmake/Modules/HandleCompilerRT.cmake
+@@ -52,13 +52,19 @@ endfunction()
+ # repeated invocations with the same `name` and `target`.
+ function(find_compiler_rt_library name variable)
+   cmake_parse_arguments(ARG "" "TARGET;FLAGS" "" ${ARGN})
++  set(target "${ARG_TARGET}")
+   # While we can use compiler-rt runtimes with other compilers, we need to
+   # query the compiler for runtime location and thus we require Clang.
+   if(NOT CMAKE_CXX_COMPILER_ID MATCHES Clang)
+-    set(${variable} "NOTFOUND" PARENT_SCOPE)
++    if(MSVC)
++      file(TO_CMAKE_PATH "$ENV{LIBRARY_LIB}/clang/$ENV{PKG_VERSION}/lib/windows/clang_rt.builtins-x86_64.lib" library_file)
++      cache_compiler_rt_library(${had_error} builtins "${target}" "${library_file}")
++      set(${variable} "${COMPILER_RT_LIBRARY_builtins_${target}}" PARENT_SCOPE)
++    else()
++      set(${variable} "NOTFOUND" PARENT_SCOPE)
++    endif()
+     return()
+   endif()
+-  set(target "${ARG_TARGET}")
+   if(NOT target AND CMAKE_CXX_COMPILER_TARGET)
+     set(target "${CMAKE_CXX_COMPILER_TARGET}")
+   endif()
+diff --git a/flang/CMakeLists.txt b/flang/CMakeLists.txt
+index b048ea220e..99887069b3 100644
+--- a/flang/CMakeLists.txt
++++ b/flang/CMakeLists.txt
+@@ -46,7 +46,7 @@ endif()
+ include(GNUInstallDirs)
+ 
+ # MSVC + clang-cl build requires clang_rt.builtin.${target} library
+-if (MSVC AND CMAKE_CXX_COMPILER_ID MATCHES Clang)
++if (MSVC)
+   include(HandleCompilerRT)
+   find_compiler_rt_library(builtins CLANG_RT_BUILTINS_LIBRARY)
+   get_filename_component(LIBDIR "${CLANG_RT_BUILTINS_LIBRARY}" DIRECTORY)
+-- 
+2.38.1.windows.1
+
