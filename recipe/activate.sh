@@ -10,4 +10,8 @@ else
     export CPATH=$CPATH:$CONDA_PREFIX/include
     export LIBRARY_PATH=$LIBRARY_PATH:$CONDA_PREFIX/lib
     export FORTRANFLAGS="$FORTRANFLAGS -isystem ${PREFIX}/include -fdebug-prefix-map=${SRC_DIR}=/usr/local/src/conda/${PKG_NAME}-${PKG_VERSION} -fdebug-prefix-map=${PREFIX}=/usr/local/src/conda-prefix"
+    export FORTRANFLAGS="$FORTRANFLAGS --sysroot=$CONDA_BUILD_SYSROOT"
 fi
+
+export FFLAGS=$FORTRANFLAGS
+export Fortran_FLAGS=$FORTRANFLAGS
