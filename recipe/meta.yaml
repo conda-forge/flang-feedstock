@@ -8,8 +8,8 @@ source:
   url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version.replace(".rc", "-rc") }}/llvm-project-{{ version.replace(".rc", "rc") }}.src.tar.xz
   sha256: ab7e3b95adb88fd5b669ca8c1d3c1e8d2a601c4478290d3ae31d8d70e96f2064
   patches:
-    - patches/0001-always-link-in-compiler-rt-builtins-on-windows-apple.patch
-    - patches/0002-look-in-different-folder-for-libclang_rt.builtins.patch
+    # don't apply patch on osx-64 because we hardcoded path for osx-arm64 on apple
+    - patches/0001-always-link-in-compiler-rt-builtins-on-windows-apple.patch  # [not osx64]
 
 build:
   number: 0

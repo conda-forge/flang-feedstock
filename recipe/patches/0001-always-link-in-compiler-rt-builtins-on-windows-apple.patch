@@ -1,19 +1,19 @@
-From 5e205589aee1203520eed691fd6ff8d731151b99 Mon Sep 17 00:00:00 2001
+From 1192d821d6829e1469f23972991e8440ed18a898 Mon Sep 17 00:00:00 2001
 From: "H. Vetinari" <h.vetinari@gmx.com>
 Date: Mon, 17 Apr 2023 23:38:48 +1100
-Subject: [PATCH 1/2] always link in compiler-rt builtins on windows & apple
+Subject: [PATCH] always link in compiler-rt builtins on windows & apple
 
-on windows, rather than patching HandleCompilerRT.cmake, we just
+rather than patching HandleCompilerRT.cmake, we just
 use the fact that we know where the library is located
 ---
- flang/CMakeLists.txt | 12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+ flang/CMakeLists.txt | 13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
 diff --git a/flang/CMakeLists.txt b/flang/CMakeLists.txt
-index b048ea220e..197d6faf5d 100644
+index b048ea220e..2cd55105aa 100644
 --- a/flang/CMakeLists.txt
 +++ b/flang/CMakeLists.txt
-@@ -46,9 +46,15 @@ endif()
+@@ -46,9 +46,16 @@ endif()
  include(GNUInstallDirs)
  
  # MSVC + clang-cl build requires clang_rt.builtin.${target} library
@@ -26,8 +26,9 @@ index b048ea220e..197d6faf5d 100644
 +               NORMALIZE
 +               "$ENV{LIBRARY_LIB}/clang/$ENV{PKG_VERSION}/lib/windows/clang_rt.builtins-x86_64.lib")
 +  else()
-+    include(HandleCompilerRT)
-+    find_compiler_rt_library(builtins CLANG_RT_BUILTINS_LIBRARY)
++    cmake_path(SET CLANG_RT_BUILTINS_LIBRARY
++               NORMALIZE
++               "$ENV{PREFIX}/lib/clang/$ENV{PKG_VERSION}/lib/libclang_rt.builtins_arm64_osx.a")
 +  endif()
    get_filename_component(LIBDIR "${CLANG_RT_BUILTINS_LIBRARY}" DIRECTORY)
    if (IS_DIRECTORY "${LIBDIR}")
