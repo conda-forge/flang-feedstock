@@ -97,6 +97,7 @@ outputs:
         - llvm-openmp =={{ version }}
         - llvmdev =={{ version }}
         - mlir =={{ version }}
+        - sysroot_linux-64 ==2.17        # [linux64]
         # for required run-exports
         - llvm =={{ version }}
         - libclang-cpp =={{ version }}
