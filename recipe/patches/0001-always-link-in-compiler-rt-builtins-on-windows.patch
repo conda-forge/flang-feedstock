@@ -1,4 +1,4 @@
-From fb86ff2a2d8b22380157bd510be3a2c9a29a1b6c Mon Sep 17 00:00:00 2001
+From 30bd4f808430c5ca2e9d55577c62475076282c71 Mon Sep 17 00:00:00 2001
 From: "H. Vetinari" <h.vetinari@gmx.com>
 Date: Thu, 16 Mar 2023 13:57:03 +1100
 Subject: [PATCH] always link in compiler-rt builtins on windows
@@ -11,7 +11,7 @@ clang can be available without being the CMAKE_CXX_COMPILER.
  2 files changed, 9 insertions(+), 3 deletions(-)
 
 diff --git a/cmake/Modules/HandleCompilerRT.cmake b/cmake/Modules/HandleCompilerRT.cmake
-index 6865f45175..b9e275f699 100644
+index 6865f45175..fb7f7d0236 100644
 --- a/cmake/Modules/HandleCompilerRT.cmake
 +++ b/cmake/Modules/HandleCompilerRT.cmake
 @@ -52,13 +52,19 @@ endfunction()
@@ -24,7 +24,7 @@ index 6865f45175..b9e275f699 100644
    if(NOT CMAKE_CXX_COMPILER_ID MATCHES Clang)
 -    set(${variable} "NOTFOUND" PARENT_SCOPE)
 +    if(MSVC)
-+      file(TO_CMAKE_PATH "$ENV{LIBRARY_LIB}/clang/$ENV{PKG_VERSION}/lib/windows/clang_rt.builtins-x86_64.lib" library_file)
++      cmake_path(NORMAL_PATH "$ENV{LIBRARY_LIB}/clang/$ENV{PKG_VERSION}/lib/windows/clang_rt.builtins-x86_64.lib" NORMALIZE OUTPUT_VARIABLE library_file)
 +      cache_compiler_rt_library(${had_error} builtins "${target}" "${library_file}")
 +      set(${variable} "${COMPILER_RT_LIBRARY_builtins_${target}}" PARENT_SCOPE)
 +    else()
