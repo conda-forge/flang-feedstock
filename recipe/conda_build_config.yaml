@@ -1,8 +1,6 @@
-# osx-arm needs newest compilers because we need mlir as a build
-# dependency (for cross-compilation), which pins llvmdev/clang
-c_compiler_version:            # [linux or (osx and arm64)]
+c_compiler_version:            # [unix]
   - 12                         # [linux]
-  - '*'                        # [osx and arm64]
-cxx_compiler_version:          # [linux or (osx and arm64)]
+  - 16                         # [osx]
+cxx_compiler_version:          # [unix]
   - 12                         # [linux]
-  - '*'                        # [osx and arm64]
+  - 16                         # [osx]
