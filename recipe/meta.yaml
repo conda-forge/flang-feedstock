@@ -99,6 +99,9 @@ outputs:
         - {{ pin_subpackage('libflang', exact=True) }}
         - {{ pin_subpackage('libfortran-main', exact=True) }}
     test:
+      requires:
+        - {{ compiler('c') }}
+        - {{ compiler('cxx') }}
       files:
         - hello_world.f90
       commands:
