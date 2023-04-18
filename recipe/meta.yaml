@@ -20,10 +20,10 @@ requirements:
   build:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
-    - sysroot_linux-64 =2.17  # [linux64]
     - cmake
     - ninja
-    - mlir =={{ version }}    # [build_platform != target_platform]
+    - sysroot_linux-64 ==2.17  # [linux64]
+    - mlir =={{ version }}     # [build_platform != target_platform]
   host:
     - clangdev =={{ version }}
     - compiler-rt =={{ version }}
@@ -42,12 +42,6 @@ outputs:
     script: install_libflang.sh   # [unix]
     script: install_libflang.bat  # [win]
     requirements:
-      build:
-        - {{ compiler('c') }}
-        - {{ compiler('cxx') }}
-        - sysroot_linux-64 =2.17  # [linux64]
-        - cmake
-        - ninja
       host:
         - clangdev =={{ version }}
         - compiler-rt =={{ version }}
@@ -87,23 +81,18 @@ outputs:
         - libflang >={{ version }}
     requirements:
       build:
-        - {{ compiler('c') }}
-        - {{ compiler('cxx') }}
-        - sysroot_linux-64 =2.17  # [linux64]
         - cmake
-        - ninja
       host:
         - clangdev =={{ version }}
         - compiler-rt =={{ version }}
         - llvm-openmp =={{ version }}
         - llvmdev =={{ version }}
         - mlir =={{ version }}
-        - sysroot_linux-64 ==2.17        # [linux64]
         # for required run-exports
         - llvm =={{ version }}
         - libclang-cpp =={{ version }}
       run:
-        - sysroot_{{ target_platform }}  # [linux]
+        - sysroot_{{ target_platform }} ==2.17  # [linux]
         - clangdev =={{ version }}
         - llvm-openmp =={{ version }}
         - {{ pin_subpackage('libflang', exact=True) }}
