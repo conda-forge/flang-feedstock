@@ -13,6 +13,9 @@ source:
 
 build:
   number: 0
+  # currently not compilable due to divergent long double types (together with old linux):
+  # `error: Invalid mixing of IEEE 128-bit and IBM 128-bit floating point types`
+  skip: true  # [ppc64le]
   track_features:
     - flang
 
