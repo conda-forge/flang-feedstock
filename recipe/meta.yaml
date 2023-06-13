@@ -42,6 +42,10 @@ outputs:
     script: install_libflang.sh   # [unix]
     script: install_libflang.bat  # [win]
     requirements:
+      build:
+        # for strong run-exports
+        - {{ compiler('c') }}
+        - {{ compiler('cxx') }}
       host:
         - clangdev =={{ version }}
         - compiler-rt =={{ version }}
@@ -60,6 +64,9 @@ outputs:
     script: install_libfortran_main.sh   # [unix]
     script: install_libfortran_main.bat  # [win]
     requirements:
+      build:
+        - {{ compiler('c') }}    # [win]
+        - {{ compiler('cxx') }}  # [win]
       host:
         - clangdev =={{ version }}
         - compiler-rt =={{ version }}
@@ -82,6 +89,9 @@ outputs:
     requirements:
       build:
         - cmake
+        # for strong run-exports
+        - {{ compiler('c') }}
+        - {{ compiler('cxx') }}
       host:
         - clangdev =={{ version }}
         - compiler-rt =={{ version }}
