@@ -53,9 +53,12 @@ outputs:
         - llvm-openmp =={{ version }}
     test:
       commands:
+        # shared lib on linux
         - test -f $PREFIX/lib/libFortranRuntime.so              # [linux]
-        - test -f $PREFIX/lib/libFortranRuntime.dylib           # [osx]
-        - if not exist %LIBRARY_BIN%\FortranRuntime.dll exit 1  # [win]
+        # static lib on osx (segfaults with shared ones)
+        - test -f $PREFIX/lib/libFortranRuntime.a               # [osx]
+        # static lib on win (fails to export symbols for shared build)
+        - if not exist %LIBRARY_LIB%\FortranRuntime.lib exit 1  # [win]
 
   - name: libfortran-main
     script: install_libfortran_main.sh   # [unix]
