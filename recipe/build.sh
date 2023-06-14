@@ -9,6 +9,7 @@ if [[ "$CONDA_BUILD_CROSS_COMPILATION" == "1" ]]; then
 fi
 
 if [[ "${target_platform}" == linux-* ]]; then
+    # unclear segfaults with shared builds on osx
     CMAKE_ARGS="$CMAKE_ARGS -DBUILD_SHARED_LIBS=ON"
 fi
 

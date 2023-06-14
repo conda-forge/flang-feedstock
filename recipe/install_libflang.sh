@@ -7,7 +7,7 @@ if [[ "${target_platform}" == linux-* ]]; then
     # same for libFortranDecimal
     cp $SRC_DIR/build/lib/libFortranDecimal*${SHLIB_EXT}* $PREFIX/lib
 else
-    # try static builds on unix due to segfaults with shared ones
+    # static builds on unix due to segfaults with shared ones
     cp $SRC_DIR/build/lib/libFortranRuntime.a $PREFIX/lib
     cp $SRC_DIR/build/lib/libFortranDecimal.a $PREFIX/lib
 fi
