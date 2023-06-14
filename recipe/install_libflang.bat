@@ -1,6 +1,7 @@
 @echo on
 
-dir build
+dir build\lib
+dir build\bin
 
-cp build\FortranRuntime.lib %LIBRARY_LIB%
-cp build\FortranDecimal.lib %LIBRARY_LIB%
+cp build\lib\FortranRuntime.lib %LIBRARY_LIB%
+cp build\lib\FortranDecimal.lib %LIBRARY_LIB%

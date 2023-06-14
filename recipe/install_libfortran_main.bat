@@ -1,5 +1,3 @@
 @echo on
 
-dir build
-
-cp build\Fortran_main.lib %LIBRARY_LIB%
+cp build\lib\Fortran_main.lib %LIBRARY_LIB%
