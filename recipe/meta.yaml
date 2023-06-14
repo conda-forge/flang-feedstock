@@ -92,6 +92,7 @@ outputs:
     requirements:
       build:
         - cmake
+        - ninja
         # for strong run-exports
         - {{ compiler('c') }}
         - {{ compiler('cxx') }}
