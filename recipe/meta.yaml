@@ -58,6 +58,9 @@ outputs:
         - mlir =={{ version }}
       run:
         - llvm-openmp =={{ version }}
+        # necessary to link on windows (even for static lib), e.g.
+        # FortranDecimal.lib(binary-to-decimal.cpp.obj) : error LNK2019: unresolved external symbol __udivti3 ...
+        - compiler-rt =={{ version }}  # [win]
     test:
       commands:
         # shared lib on linux
