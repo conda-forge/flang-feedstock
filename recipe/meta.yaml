@@ -60,7 +60,7 @@ outputs:
     test:
       commands:
         - test -f $PREFIX/lib/libFortranRuntime.so              # [linux]
-        - test -f $PREFIX/lib/libFortranRuntime.a               # [osx]
+        - test -f $PREFIX/lib/libFortranRuntime.dylib           # [osx]
         - if not exist %LIBRARY_LIB%\FortranRuntime.lib exit 1  # [win]
 
   - name: libfortran-main
