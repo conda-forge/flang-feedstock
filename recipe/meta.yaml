@@ -8,8 +8,9 @@ source:
   url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version.replace(".rc", "-rc") }}/llvm-project-{{ version.replace(".rc", "rc") }}.src.tar.xz
   sha256: 37f540124b9cfd4680666e649f557077f9937c9178489cea285a672e714b2863
   patches:
-    # don't apply patch on osx-64 because we hardcoded path for osx-arm64 on apple
-    - patches/0001-always-link-in-compiler-rt-builtins-on-windows-apple.patch  # [not osx64]
+    # link compiler-rt libs (upstream's find_compiler_rt_library doesn't work correctly);
+    # probably related to https://github.com/llvm/llvm-project/issues/63286
+    - patches/0001-always-link-in-compiler-rt-builtins-on-windows-apple.patch
 
 build:
   number: 0
