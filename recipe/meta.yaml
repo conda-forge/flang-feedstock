@@ -70,16 +70,14 @@ outputs:
   - name: libfortran-main
     script: install_libfortran_main.sh   # [unix]
     script: install_libfortran_main.bat  # [win]
+    build:
+      ignore_run_exports_from:
+        - llvm-openmp
     requirements:
       build:
         - {{ compiler('c') }}    # [win]
         - {{ compiler('cxx') }}  # [win]
       host:
-        - clangdev =={{ version }}
-        - compiler-rt =={{ version }}
-        - llvm-openmp =={{ version }}
-        - llvmdev =={{ version }}
-        - mlir =={{ version }}
       run:
         # not sure what we need here
     test:
