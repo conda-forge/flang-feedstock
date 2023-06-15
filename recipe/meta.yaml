@@ -73,19 +73,14 @@ outputs:
   - name: libfortran-main
     script: install_libfortran_main.sh   # [unix]
     script: install_libfortran_main.bat  # [win]
-    build:
-      ignore_run_exports_from:
-        - llvm-openmp
     requirements:
-      build:
-        - {{ compiler('c') }}    # [win]
-        - {{ compiler('cxx') }}  # [win]
       host:
       run:
         # not sure what we need here
     test:
       commands:
         - test -f $PREFIX/lib/libFortran_main.a                 # [unix]
+        - dir %LIBRARY_LIB%                                     # [win]
         - if not exist %LIBRARY_LIB%\Fortran_main.lib exit 1    # [win]
 
   - name: flang
