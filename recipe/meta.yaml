@@ -74,7 +74,13 @@ outputs:
     script: install_libfortran_main.sh   # [unix]
     script: install_libfortran_main.bat  # [win]
     requirements:
+      build:
+        # if there's no build env, windows fails with EnvironmentLocationNotFound (what?!)
+        - {{ compiler('c') }}    # [win]
+        - {{ compiler('cxx') }}  # [win]
       host:
+        # this is just here to have a non-empty host environment
+        - {{ pin_subpackage('libflang', exact=True) }}
       run:
         # not sure what we need here
     test:
