@@ -55,11 +55,9 @@ outputs:
       host:
         - clangdev =={{ version }}
         - compiler-rt =={{ version }}
-        - llvm-openmp =={{ version }}
         - llvmdev =={{ version }}
         - mlir =={{ version }}
       run:
-        - llvm-openmp =={{ version }}
         # necessary to link on windows (even for static lib), e.g.
         # FortranDecimal.lib(binary-to-decimal.cpp.obj) : error LNK2019: unresolved external symbol __udivti3 ...
         - compiler-rt =={{ version }}  # [win]
