@@ -89,7 +89,6 @@ outputs:
     test:
       commands:
         - test -f $PREFIX/lib/libFortran_main.a                 # [unix]
-        - dir %LIBRARY_LIB%                                     # [win]
         - if not exist %LIBRARY_LIB%\Fortran_main.lib exit 1    # [win]
 
   - name: flang
