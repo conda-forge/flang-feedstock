@@ -17,6 +17,8 @@ build:
   # currently not compilable due to divergent long double types (together with old linux):
   # `error: Invalid mixing of IEEE 128-bit and IBM 128-bit floating point types`
   skip: true  # [ppc64le]
+  # debug
+  skip: true  # [not win]
   # avoid issues with llvm-openmp run-exports vs. libgomp that comes with gcc
   merge_build_host: false
   track_features:
