@@ -1,7 +1,7 @@
-From df3c0c85c00ce0cda604f63c46aeb3b5349cfd46 Mon Sep 17 00:00:00 2001
+From bd2a2c0e635395c9f7a16c1d032bfa6dff92ab3d Mon Sep 17 00:00:00 2001
 From: "H. Vetinari" <h.vetinari@gmx.com>
 Date: Mon, 17 Apr 2023 23:38:48 +1100
-Subject: [PATCH] always link in compiler-rt builtins on windows & apple
+Subject: [PATCH 1/2] always link in compiler-rt builtins on windows & apple
 
 rather than patching HandleCompilerRT.cmake, we just
 use the fact that we know where the library is located
@@ -10,7 +10,7 @@ use the fact that we know where the library is located
  1 file changed, 16 insertions(+), 3 deletions(-)
 
 diff --git a/flang/CMakeLists.txt b/flang/CMakeLists.txt
-index b048ea220e..80ed2b0223 100644
+index b048ea220e2..80ed2b0223b 100644
 --- a/flang/CMakeLists.txt
 +++ b/flang/CMakeLists.txt
 @@ -46,9 +46,22 @@ endif()
