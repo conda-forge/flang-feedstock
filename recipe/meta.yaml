@@ -11,6 +11,8 @@ source:
     # link compiler-rt libs (upstream's find_compiler_rt_library doesn't work correctly);
     # probably related to https://github.com/llvm/llvm-project/issues/63286
     - patches/0001-always-link-in-compiler-rt-builtins-on-windows-apple.patch
+    # backport https://github.com/llvm/llvm-project/commit/21bff9ca42e4735a52aa1e981b1ccd0d3b274b34
+    - patches/0002-NFC-flang-Fixed-typo-in-AVOID_NATIVE_UINT128_T-macro.patch
 
 build:
   number: 0

@@ -1,0 +1,23 @@
+From 022f9fde8fe312e26018a224a8f494f4646477b4 Mon Sep 17 00:00:00 2001
+From: Slava Zakharin <szakharin@nvidia.com>
+Date: Mon, 24 Apr 2023 13:16:55 -0700
+Subject: [PATCH 2/2] [NFC][flang] Fixed typo in AVOID_NATIVE_UINT128_T macro.
+ Differential Revision: https://reviews.llvm.org/D149097
+
+---
+ flang/include/flang/Common/uint128.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/flang/include/flang/Common/uint128.h b/flang/include/flang/Common/uint128.h
+index b12e1729341..bfd2eef01f6 100644
+--- a/flang/include/flang/Common/uint128.h
++++ b/flang/include/flang/Common/uint128.h
+@@ -261,7 +261,7 @@ private:
+ using UnsignedInt128 = Int128<false>;
+ using SignedInt128 = Int128<true>;
+ 
+-#if !AVOID_NATIVE_UINT128_t && (defined __GNUC__ || defined __clang__) && \
++#if !AVOID_NATIVE_UINT128_T && (defined __GNUC__ || defined __clang__) && \
+     defined __SIZEOF_INT128__
+ using uint128_t = __uint128_t;
+ using int128_t = __int128_t;
