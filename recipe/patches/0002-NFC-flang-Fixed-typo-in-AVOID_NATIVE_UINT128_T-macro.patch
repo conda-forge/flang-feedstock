@@ -1,7 +1,7 @@
 From 022f9fde8fe312e26018a224a8f494f4646477b4 Mon Sep 17 00:00:00 2001
 From: Slava Zakharin <szakharin@nvidia.com>
 Date: Mon, 24 Apr 2023 13:16:55 -0700
-Subject: [PATCH 2/2] [NFC][flang] Fixed typo in AVOID_NATIVE_UINT128_T macro.
+Subject: [PATCH 2/3] [NFC][flang] Fixed typo in AVOID_NATIVE_UINT128_T macro.
  Differential Revision: https://reviews.llvm.org/D149097
 
 ---

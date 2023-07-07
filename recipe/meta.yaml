@@ -13,6 +13,8 @@ source:
     - patches/0001-always-link-in-compiler-rt-builtins-on-windows-apple.patch
     # backport https://github.com/llvm/llvm-project/commit/21bff9ca42e4735a52aa1e981b1ccd0d3b274b34
     - patches/0002-NFC-flang-Fixed-typo-in-AVOID_NATIVE_UINT128_T-macro.patch
+    # backport https://reviews.llvm.org/D154660
+    - patches/0003-flang-Allow-runtime-build-with-AVOID_NATIVE_INT128_T.patch
 
 build:
   number: 0

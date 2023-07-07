@@ -1,7 +1,7 @@
 From bd2a2c0e635395c9f7a16c1d032bfa6dff92ab3d Mon Sep 17 00:00:00 2001
 From: "H. Vetinari" <h.vetinari@gmx.com>
 Date: Mon, 17 Apr 2023 23:38:48 +1100
-Subject: [PATCH 1/2] always link in compiler-rt builtins on windows & apple
+Subject: [PATCH 1/3] always link in compiler-rt builtins on windows & apple
 
 rather than patching HandleCompilerRT.cmake, we just
 use the fact that we know where the library is located
