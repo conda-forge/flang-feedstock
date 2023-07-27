@@ -1,0 +1,218 @@
+From 060ffd3f6425a1cfbc93a2a8b9c8f320f3d3d2d0 Mon Sep 17 00:00:00 2001
+From: Peter Klausler <pklausler@nvidia.com>
+Date: Thu, 6 Jul 2023 15:07:00 -0700
+Subject: [PATCH 2/2] [flang] Allow runtime build with AVOID_NATIVE_INT128_T=1
+
+---
+ flang/runtime/command.cpp | 10 +++++++---
+ flang/runtime/io-api.cpp  |  4 +++-
+ flang/runtime/numeric.cpp | 24 ++++++++++++------------
+ flang/runtime/tools.h     | 19 +++++++++++++++++--
+ 4 files changed, 39 insertions(+), 18 deletions(-)
+
+diff --git a/flang/runtime/command.cpp b/flang/runtime/command.cpp
+index 6c4f611daaa..b81a0791c5e 100644
+--- a/flang/runtime/command.cpp
++++ b/flang/runtime/command.cpp
+@@ -107,9 +107,13 @@ static void StoreLengthToDescriptor(
+ }
+ 
+ template <int KIND> struct FitsInIntegerKind {
+-  bool operator()(std::int64_t value) {
+-    return value <= std::numeric_limits<Fortran::runtime::CppTypeFor<
+-                        Fortran::common::TypeCategory::Integer, KIND>>::max();
++  bool operator()([[maybe_unused]] std::int64_t value) {
++    if constexpr (KIND >= 8) {
++      return true;
++    } else {
++      return value <= std::numeric_limits<Fortran::runtime::CppTypeFor<
++                          Fortran::common::TypeCategory::Integer, KIND>>::max();
++    }
+   }
+ };
+ 
+diff --git a/flang/runtime/io-api.cpp b/flang/runtime/io-api.cpp
+index fe58bbc75f8..bf05c79ae8f 100644
+--- a/flang/runtime/io-api.cpp
++++ b/flang/runtime/io-api.cpp
+@@ -1483,7 +1483,9 @@ static enum Iostat CheckUnitNumberInRangeImpl(INT unit, bool handleError,
+     // Only provide the bad unit number in the message if SignalError can print
+     // it accurately. Otherwise, the generic IostatUnitOverflow message will be
+     // used.
+-    if (static_cast<std::intmax_t>(unit) == unit) {
++    if constexpr (sizeof(INT) > sizeof(std::intmax_t)) {
++      errorHandler.SignalError(IostatUnitOverflow);
++    } else if (static_cast<std::intmax_t>(unit) == unit) {
+       errorHandler.SignalError(IostatUnitOverflow,
+           "UNIT number %jd is out of range", static_cast<std::intmax_t>(unit));
+     } else {
+diff --git a/flang/runtime/numeric.cpp b/flang/runtime/numeric.cpp
+index 5376bcb569f..21ee91a8681 100644
+--- a/flang/runtime/numeric.cpp
++++ b/flang/runtime/numeric.cpp
+@@ -306,7 +306,7 @@ CppTypeFor<TypeCategory::Integer, 8> RTNAME(Ceiling4_8)(
+     CppTypeFor<TypeCategory::Real, 4> x) {
+   return Ceiling<CppTypeFor<TypeCategory::Integer, 8>>(x);
+ }
+-#ifdef __SIZEOF_INT128__
++#if defined __SIZEOF_INT128__ && !AVOID_NATIVE_UINT128_T
+ CppTypeFor<TypeCategory::Integer, 16> RTNAME(Ceiling4_16)(
+     CppTypeFor<TypeCategory::Real, 4> x) {
+   return Ceiling<CppTypeFor<TypeCategory::Integer, 16>>(x);
+@@ -328,7 +328,7 @@ CppTypeFor<TypeCategory::Integer, 8> RTNAME(Ceiling8_8)(
+     CppTypeFor<TypeCategory::Real, 8> x) {
+   return Ceiling<CppTypeFor<TypeCategory::Integer, 8>>(x);
+ }
+-#ifdef __SIZEOF_INT128__
++#if defined __SIZEOF_INT128__ && !AVOID_NATIVE_UINT128_T
+ CppTypeFor<TypeCategory::Integer, 16> RTNAME(Ceiling8_16)(
+     CppTypeFor<TypeCategory::Real, 8> x) {
+   return Ceiling<CppTypeFor<TypeCategory::Integer, 16>>(x);
+@@ -351,7 +351,7 @@ CppTypeFor<TypeCategory::Integer, 8> RTNAME(Ceiling10_8)(
+     CppTypeFor<TypeCategory::Real, 10> x) {
+   return Ceiling<CppTypeFor<TypeCategory::Integer, 8>>(x);
+ }
+-#ifdef __SIZEOF_INT128__
++#if defined __SIZEOF_INT128__ && !AVOID_NATIVE_UINT128_T
+ CppTypeFor<TypeCategory::Integer, 16> RTNAME(Ceiling10_16)(
+     CppTypeFor<TypeCategory::Real, 10> x) {
+   return Ceiling<CppTypeFor<TypeCategory::Integer, 16>>(x);
+@@ -374,7 +374,7 @@ CppTypeFor<TypeCategory::Integer, 8> RTNAME(Ceiling16_8)(
+     CppTypeFor<TypeCategory::Real, 16> x) {
+   return Ceiling<CppTypeFor<TypeCategory::Integer, 8>>(x);
+ }
+-#ifdef __SIZEOF_INT128__
++#if defined __SIZEOF_INT128__ && !AVOID_NATIVE_UINT128_T
+ CppTypeFor<TypeCategory::Integer, 16> RTNAME(Ceiling16_16)(
+     CppTypeFor<TypeCategory::Real, 16> x) {
+   return Ceiling<CppTypeFor<TypeCategory::Integer, 16>>(x);
+@@ -434,7 +434,7 @@ CppTypeFor<TypeCategory::Integer, 8> RTNAME(Floor4_8)(
+     CppTypeFor<TypeCategory::Real, 4> x) {
+   return Floor<CppTypeFor<TypeCategory::Integer, 8>>(x);
+ }
+-#ifdef __SIZEOF_INT128__
++#if defined __SIZEOF_INT128__ && !AVOID_NATIVE_UINT128_T
+ CppTypeFor<TypeCategory::Integer, 16> RTNAME(Floor4_16)(
+     CppTypeFor<TypeCategory::Real, 4> x) {
+   return Floor<CppTypeFor<TypeCategory::Integer, 16>>(x);
+@@ -456,7 +456,7 @@ CppTypeFor<TypeCategory::Integer, 8> RTNAME(Floor8_8)(
+     CppTypeFor<TypeCategory::Real, 8> x) {
+   return Floor<CppTypeFor<TypeCategory::Integer, 8>>(x);
+ }
+-#ifdef __SIZEOF_INT128__
++#if defined __SIZEOF_INT128__ && !AVOID_NATIVE_UINT128_T
+ CppTypeFor<TypeCategory::Integer, 16> RTNAME(Floor8_16)(
+     CppTypeFor<TypeCategory::Real, 8> x) {
+   return Floor<CppTypeFor<TypeCategory::Integer, 16>>(x);
+@@ -479,7 +479,7 @@ CppTypeFor<TypeCategory::Integer, 8> RTNAME(Floor10_8)(
+     CppTypeFor<TypeCategory::Real, 10> x) {
+   return Floor<CppTypeFor<TypeCategory::Integer, 8>>(x);
+ }
+-#ifdef __SIZEOF_INT128__
++#if defined __SIZEOF_INT128__ && !AVOID_NATIVE_UINT128_T
+ CppTypeFor<TypeCategory::Integer, 16> RTNAME(Floor10_16)(
+     CppTypeFor<TypeCategory::Real, 10> x) {
+   return Floor<CppTypeFor<TypeCategory::Integer, 16>>(x);
+@@ -502,7 +502,7 @@ CppTypeFor<TypeCategory::Integer, 8> RTNAME(Floor16_8)(
+     CppTypeFor<TypeCategory::Real, 16> x) {
+   return Floor<CppTypeFor<TypeCategory::Integer, 8>>(x);
+ }
+-#ifdef __SIZEOF_INT128__
++#if defined __SIZEOF_INT128__ && !AVOID_NATIVE_UINT128_T
+ CppTypeFor<TypeCategory::Integer, 16> RTNAME(Floor16_16)(
+     CppTypeFor<TypeCategory::Real, 16> x) {
+   return Floor<CppTypeFor<TypeCategory::Integer, 16>>(x);
+@@ -710,7 +710,7 @@ CppTypeFor<TypeCategory::Integer, 8> RTNAME(Nint4_8)(
+     CppTypeFor<TypeCategory::Real, 4> x) {
+   return Nint<CppTypeFor<TypeCategory::Integer, 8>>(x);
+ }
+-#ifdef __SIZEOF_INT128__
++#if defined __SIZEOF_INT128__ && !AVOID_NATIVE_UINT128_T
+ CppTypeFor<TypeCategory::Integer, 16> RTNAME(Nint4_16)(
+     CppTypeFor<TypeCategory::Real, 4> x) {
+   return Nint<CppTypeFor<TypeCategory::Integer, 16>>(x);
+@@ -732,7 +732,7 @@ CppTypeFor<TypeCategory::Integer, 8> RTNAME(Nint8_8)(
+     CppTypeFor<TypeCategory::Real, 8> x) {
+   return Nint<CppTypeFor<TypeCategory::Integer, 8>>(x);
+ }
+-#ifdef __SIZEOF_INT128__
++#if defined __SIZEOF_INT128__ && !AVOID_NATIVE_UINT128_T
+ CppTypeFor<TypeCategory::Integer, 16> RTNAME(Nint8_16)(
+     CppTypeFor<TypeCategory::Real, 8> x) {
+   return Nint<CppTypeFor<TypeCategory::Integer, 16>>(x);
+@@ -755,7 +755,7 @@ CppTypeFor<TypeCategory::Integer, 8> RTNAME(Nint10_8)(
+     CppTypeFor<TypeCategory::Real, 10> x) {
+   return Nint<CppTypeFor<TypeCategory::Integer, 8>>(x);
+ }
+-#ifdef __SIZEOF_INT128__
++#if defined __SIZEOF_INT128__ && !AVOID_NATIVE_UINT128_T
+ CppTypeFor<TypeCategory::Integer, 16> RTNAME(Nint10_16)(
+     CppTypeFor<TypeCategory::Real, 10> x) {
+   return Nint<CppTypeFor<TypeCategory::Integer, 16>>(x);
+@@ -778,7 +778,7 @@ CppTypeFor<TypeCategory::Integer, 8> RTNAME(Nint16_8)(
+     CppTypeFor<TypeCategory::Real, 16> x) {
+   return Nint<CppTypeFor<TypeCategory::Integer, 8>>(x);
+ }
+-#ifdef __SIZEOF_INT128__
++#if defined __SIZEOF_INT128__ && !AVOID_NATIVE_UINT128_T
+ CppTypeFor<TypeCategory::Integer, 16> RTNAME(Nint16_16)(
+     CppTypeFor<TypeCategory::Real, 16> x) {
+   return Nint<CppTypeFor<TypeCategory::Integer, 16>>(x);
+diff --git a/flang/runtime/tools.h b/flang/runtime/tools.h
+index d22093a2ada..72d14982ce4 100644
+--- a/flang/runtime/tools.h
++++ b/flang/runtime/tools.h
+@@ -131,7 +131,7 @@ inline RT_API_ATTRS RESULT ApplyType(
+       return FUNC<TypeCategory::Integer, 4>{}(std::forward<A>(x)...);
+     case 8:
+       return FUNC<TypeCategory::Integer, 8>{}(std::forward<A>(x)...);
+-#ifdef __SIZEOF_INT128__
++#if defined __SIZEOF_INT128__ && !AVOID_NATIVE_UINT128_T
+     case 16:
+       return FUNC<TypeCategory::Integer, 16>{}(std::forward<A>(x)...);
+ #endif
+@@ -230,7 +230,7 @@ inline RT_API_ATTRS RESULT ApplyIntegerKind(
+     return FUNC<4>{}(std::forward<A>(x)...);
+   case 8:
+     return FUNC<8>{}(std::forward<A>(x)...);
+-#ifdef __SIZEOF_INT128__
++#if defined __SIZEOF_INT128__ && !AVOID_NATIVE_UINT128_T
+   case 16:
+     return FUNC<16>{}(std::forward<A>(x)...);
+ #endif
+@@ -310,6 +310,11 @@ std::optional<std::pair<TypeCategory, int>> inline constexpr GetResultType(
+       return std::make_pair(TypeCategory::Integer, maxKind);
+     case TypeCategory::Real:
+     case TypeCategory::Complex:
++#if !(defined __SIZEOF_INT128__ && !AVOID_NATIVE_UINT128_T)
++      if (xKind == 16) {
++        break;
++      }
++#endif
+       return std::make_pair(yCat, yKind);
+     default:
+       break;
+@@ -318,6 +323,11 @@ std::optional<std::pair<TypeCategory, int>> inline constexpr GetResultType(
+   case TypeCategory::Real:
+     switch (yCat) {
+     case TypeCategory::Integer:
++#if !(defined __SIZEOF_INT128__ && !AVOID_NATIVE_UINT128_T)
++      if (yKind == 16) {
++        break;
++      }
++#endif
+       return std::make_pair(TypeCategory::Real, xKind);
+     case TypeCategory::Real:
+     case TypeCategory::Complex:
+@@ -329,6 +339,11 @@ std::optional<std::pair<TypeCategory, int>> inline constexpr GetResultType(
+   case TypeCategory::Complex:
+     switch (yCat) {
+     case TypeCategory::Integer:
++#if !(defined __SIZEOF_INT128__ && !AVOID_NATIVE_UINT128_T)
++      if (yKind == 16) {
++        break;
++      }
++#endif
+       return std::make_pair(TypeCategory::Complex, xKind);
+     case TypeCategory::Real:
+     case TypeCategory::Complex:
