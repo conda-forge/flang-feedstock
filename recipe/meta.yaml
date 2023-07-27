@@ -1,12 +1,14 @@
-{% set version = "16.0.5" %}
+{% set version = "17.0.0.dev0" %}
 
 package:
   name: flang-split
   version: {{ version }}
 
 source:
-  url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version.replace(".rc", "-rc") }}/llvm-project-{{ version.replace(".rc", "rc") }}.src.tar.xz
-  sha256: 37f540124b9cfd4680666e649f557077f9937c9178489cea285a672e714b2863
+  git_url: https://github.com/llvm/llvm-project.git
+  git_rev: a4f4d82c35b80b681687b545200456e79a82d9c2
+  # url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version.replace(".rc", "-rc") }}/llvm-project-{{ version.replace(".rc", "rc") }}.src.tar.xz
+  # sha256: 37f540124b9cfd4680666e649f557077f9937c9178489cea285a672e714b2863
   patches:
     # link compiler-rt libs (upstream's find_compiler_rt_library doesn't work correctly);
     # probably related to https://github.com/llvm/llvm-project/issues/63286
