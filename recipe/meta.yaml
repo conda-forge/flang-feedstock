@@ -18,6 +18,8 @@ source:
 
 build:
   number: 0
+  # intentionally only windows (main target) & linux (debuggability)
+  skip: true  # [osx]
   track_features:
     - flang
 
