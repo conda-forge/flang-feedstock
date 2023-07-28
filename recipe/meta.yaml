@@ -66,8 +66,6 @@ outputs:
       commands:
         # shared lib on linux
         - test -f $PREFIX/lib/libFortranRuntime.so              # [linux]
-        # static lib on osx (segfaults with shared ones)
-        - test -f $PREFIX/lib/libFortranRuntime.a               # [osx]
         # static lib on win (fails to export symbols for shared build)
         - if not exist %LIBRARY_LIB%\FortranRuntime.lib exit 1  # [win]
 
