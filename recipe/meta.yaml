@@ -139,10 +139,6 @@ outputs:
     requirements:
       - {{ pin_subpackage('flang', exact=True) }}
 
-  - name: libfortran-main_{{ target_platform }}
-    requirements:
-      - {{ pin_subpackage('libfortran-main', exact=True) }}
-
 
 about:
   home: https://flang.llvm.org
