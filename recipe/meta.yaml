@@ -119,8 +119,8 @@ outputs:
         - {{ pin_subpackage('libfortran-main', exact=True) }}
     test:
       requires:
-        - {{ compiler('c') }}
-        - {{ compiler('cxx') }}
+        - {{ compiler('c') }}       # [win]
+        - {{ compiler('cxx') }}     # [win]
       files:
         - hello_world.f90
       commands:
