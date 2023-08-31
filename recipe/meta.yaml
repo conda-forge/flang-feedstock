@@ -10,7 +10,7 @@ source:
   patches:
     # link compiler-rt libs (upstream's find_compiler_rt_library doesn't work correctly);
     # probably related to https://github.com/llvm/llvm-project/issues/63286
-    - patches/0001-always-link-in-compiler-rt-builtins-on-windows-apple.patch
+    # - patches/0001-always-link-in-compiler-rt-builtins-on-windows-apple.patch
     # backport https://reviews.llvm.org/D154660
     - patches/0002-flang-Allow-runtime-build-with-AVOID_NATIVE_INT128_T.patch
 
