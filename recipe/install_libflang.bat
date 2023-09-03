@@ -1,4 +1,4 @@
-cp %SRC_DIR%/build/bin/flang.dll %LIBRARY_BIN%\
-cp %SRC_DIR%/build/bin/flangrti.dll %LIBRARY_BIN%\
-cp %SRC_DIR%/build/bin/ompstub.dll %LIBRARY_BIN%\
-cp %SRC_DIR%/build/bin/pgmath.dll %LIBRARY_BIN%\
+@echo on
+
+cp build\lib\FortranRuntime.lib %LIBRARY_LIB%
+cp build\lib\FortranDecimal.lib %LIBRARY_LIB%

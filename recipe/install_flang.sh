@@ -1,8 +1,9 @@
+#!/bin/bash
+set -ex
+
 cd $SRC_DIR/build
-make install
-rm $PREFIX/lib/libflang${SHLIB_EXT}
-rm $PREFIX/lib/libflangrti${SHLIB_EXT}
-rm $PREFIX/lib/libompstub${SHLIB_EXT}
+
+cmake --install .
 
 for CHANGE in "activate" "deactivate"
 do

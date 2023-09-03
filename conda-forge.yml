@@ -1,3 +1,7 @@
+azure:
+  settings_win:
+    variables:
+      SET_PAGEFILE: "True"
 conda_forge_output_validation: true
 github:
   branch_name: main
