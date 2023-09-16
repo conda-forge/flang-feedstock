@@ -2,6 +2,8 @@ azure:
   settings_win:
     variables:
       SET_PAGEFILE: "True"
+# necessary for osx during rc-phase
+channel_priority: flexible
 conda_forge_output_validation: true
 github:
   branch_name: main
