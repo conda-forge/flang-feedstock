@@ -13,6 +13,9 @@ if [[ "${target_platform}" == linux-* ]]; then
 else
     # unclear segfaults with shared builds on osx
     CMAKE_ARGS="$CMAKE_ARGS -DBUILD_SHARED_LIBS=OFF"
+    # clang on osx still picks up libstdcxx by default for some reason (unless LLVM_ENABLE_LIBCXX), see
+    # https://github.com/llvm/llvm-project/blob/llvmorg-17.0.0-rc4/llvm/cmake/modules/CheckCompilerVersion.cmake#L66-L88
+    CMAKE_ARGS="$CMAKE_ARGS -DLLVM_ENABLE_LIBCXX=ON"
 fi
 
 cmake -G Ninja \
