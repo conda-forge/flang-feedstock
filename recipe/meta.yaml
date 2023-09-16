@@ -16,8 +16,8 @@ source:
 
 build:
   number: 0
-  # intentionally only windows (main target) & linux (debuggability)
-  skip: true  # [osx]
+  # intentionally only x64 builds; win (main target), linux (debuggability)
+  # plus osx to be able to test a consistent llvm stack not just on windows.
   track_features:
     - flang
 
