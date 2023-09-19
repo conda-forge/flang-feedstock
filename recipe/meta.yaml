@@ -16,8 +16,8 @@ source:
 
 build:
   number: 0
-  # intentionally only windows (main target) & linux (debuggability)
-  skip: true  # [osx]
+  # intentionally only x64 builds; win (main target), linux (debuggability)
+  # plus osx to be able to test a consistent llvm stack not just on windows.
   track_features:
     - flang
 
@@ -64,6 +64,8 @@ outputs:
       commands:
         # shared lib on linux
         - test -f $PREFIX/lib/libFortranRuntime.so              # [linux]
+        # static lib on osx (segfaults with shared ones)
+        - test -f $PREFIX/lib/libFortranRuntime.a               # [osx]
         # static lib on win (fails to export symbols for shared build)
         - if not exist %LIBRARY_LIB%\FortranRuntime.lib exit 1  # [win]
 
