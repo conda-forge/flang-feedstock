@@ -148,4 +148,5 @@ about:
 extra:
   recipe-maintainers:
     - isuruf
+    - h-vetinari
   feedstock-name: flang
