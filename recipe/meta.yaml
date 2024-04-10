@@ -9,7 +9,7 @@ source:
   sha256: 2929f62d69dec0379e529eb632c40e15191e36f3bd58c2cb2df0413a0dc48651
 
 build:
-  number: 0
+  number: 1
   # intentionally only windows (main target) & linux (debuggability)
   skip: true  # [osx]
   track_features:
