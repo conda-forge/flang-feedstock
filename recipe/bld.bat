@@ -25,5 +25,5 @@ cmake -G "Ninja" ^
     ..\flang
 if %ERRORLEVEL% neq 0 exit 1
 
-cmake --build .
+cmake --build . -j1
 if %ERRORLEVEL% neq 0 exit 1
