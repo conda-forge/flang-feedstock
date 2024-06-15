@@ -69,6 +69,7 @@ outputs:
       build:
         # if there's no build env, windows fails with EnvironmentLocationNotFound (what?!)
         - {{ compiler('c') }}    # [win]
+        - {{ stdlib('c') }}      # [win]
         - {{ compiler('cxx') }}  # [win]
       host:
         # this is just here to have a non-empty host environment
