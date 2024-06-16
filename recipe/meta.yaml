@@ -64,25 +64,6 @@ outputs:
         # static lib on win (fails to export symbols for shared build)
         - if not exist %LIBRARY_LIB%\FortranRuntime.lib exit 1  # [win]
 
-  - name: libfortran-main
-    script: install_libfortran_main.sh  # [unix]
-    script: install_libfortran_main.bat  # [win]
-    requirements:
-      build:
-        # if there's no build env, windows fails with EnvironmentLocationNotFound (what?!)
-        - {{ compiler('c') }}    # [win]
-        - {{ stdlib('c') }}      # [win]
-        - {{ compiler('cxx') }}  # [win]
-      host:
-        # this is just here to have a non-empty host environment
-        - {{ pin_subpackage('libflang', exact=True) }}
-      run:
-        # not sure what we need here
-    test:
-      commands:
-        - test -f $PREFIX/lib/libFortran_main.a                 # [unix]
-        - if not exist %LIBRARY_LIB%\Fortran_main.lib exit 1    # [win]
-
   - name: flang
     script: install_flang.sh  # [unix]
     script: install_flang.bat  # [win]
@@ -109,12 +90,10 @@ outputs:
         - zlib  # [win]
         - zstd  # [win]
         - {{ pin_subpackage('libflang', exact=True) }}
-        - {{ pin_subpackage('libfortran-main', exact=True) }}
       run:
         - sysroot_{{ target_platform }} >={{ c_stdlib_version }}    # [linux]
         - clangdev =={{ version }}
         - {{ pin_subpackage('libflang', exact=True) }}
-        - {{ pin_subpackage('libfortran-main', exact=True) }}
     test:
       requires:
         - {{ compiler('c') }}       # [win]
