@@ -1,15 +1,16 @@
-{% set version = "18.1.7" %}
+{% set version = "19.0.0.dev0" %}
 
 package:
   name: flang-split
   version: {{ version }}
 
 source:
-  url: https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-{{ version.replace(".rc", "-rc") }}.tar.gz
-  sha256: b60df7cbe02cef2523f7357120fb0d46cbb443791cde3a5fb36b82c335c0afc9
+  # url: https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-{{ version.replace(".rc", "-rc") }}.tar.gz
+  url: https://github.com/llvm/llvm-project/archive/edf5782f1780f480c3ae3fc0a44bf5432f9aa48b.tar.gz
+  sha256: 34129ca709be4fcc1cf3ae5565cb4ed93e497594923f32603e545aa5cd57bb7b
 
 build:
-  number: 0
+  number: 1
   # intentionally only windows (main target) & linux (debuggability)
   skip: true  # [osx]
   track_features:
@@ -23,6 +24,8 @@ requirements:
     - cmake
     - ninja
     - mlir =={{ version }}     # [build_platform != target_platform]
+    # for showing CPU info of CI agent
+    - numpy *
   host:
     - clangdev =={{ version }}
     - compiler-rt =={{ version }}
@@ -62,24 +65,6 @@ outputs:
         # static lib on win (fails to export symbols for shared build)
         - if not exist %LIBRARY_LIB%\FortranRuntime.lib exit 1  # [win]
 
-  - name: libfortran-main
-    script: install_libfortran_main.sh  # [unix]
-    script: install_libfortran_main.bat  # [win]
-    requirements:
-      build:
-        # if there's no build env, windows fails with EnvironmentLocationNotFound (what?!)
-        - {{ compiler('c') }}    # [win]
-        - {{ compiler('cxx') }}  # [win]
-      host:
-        # this is just here to have a non-empty host environment
-        - {{ pin_subpackage('libflang', exact=True) }}
-      run:
-        # not sure what we need here
-    test:
-      commands:
-        - test -f $PREFIX/lib/libFortran_main.a                 # [unix]
-        - if not exist %LIBRARY_LIB%\Fortran_main.lib exit 1    # [win]
-
   - name: flang
     script: install_flang.sh  # [unix]
     script: install_flang.bat  # [win]
@@ -105,14 +90,13 @@ outputs:
         - libclang-cpp =={{ version }}
         # ninja really wants to find z.lib on win
         - zlib  # [win]
+        - zstd  # [win]
         - {{ pin_subpackage('libflang', exact=True) }}
-        - {{ pin_subpackage('libfortran-main', exact=True) }}
       run:
         - sysroot_{{ target_platform }} >={{ c_stdlib_version }}    # [linux]
         - clangdev =={{ version }}
         - llvm-openmp =={{ version }}
         - {{ pin_subpackage('libflang', exact=True) }}
-        - {{ pin_subpackage('libfortran-main', exact=True) }}
     test:
       requires:
         - {{ compiler('c') }}       # [win]
