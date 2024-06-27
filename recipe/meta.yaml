@@ -23,6 +23,8 @@ requirements:
     - cmake
     - ninja
     - mlir =={{ version }}     # [build_platform != target_platform]
+    # for showing CPU info of CI agent
+    - numpy *
   host:
     - clangdev =={{ version }}
     - compiler-rt =={{ version }}
