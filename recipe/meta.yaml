@@ -106,6 +106,7 @@ outputs:
         - libclang-cpp =={{ version }}
         # ninja really wants to find z.lib on win
         - zlib  # [win]
+        - zstd  # [win]
         - {{ pin_subpackage('libflang', exact=True) }}
         - {{ pin_subpackage('libfortran-main', exact=True) }}
       run:
