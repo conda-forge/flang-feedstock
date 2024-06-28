@@ -9,7 +9,7 @@ source:
   sha256: 09c08693a9afd6236f27a2ebae62cda656eba19021ef3f94d59e931d662d4856
 
 build:
-  number: 0
+  number: 1
   # intentionally only windows (main target) & linux (debuggability)
   skip: true  # [osx]
   track_features:
@@ -100,7 +100,6 @@ outputs:
       host:
         - clangdev =={{ version }}
         - compiler-rt =={{ version }}
-        - llvm-openmp =={{ version }}
         - llvmdev =={{ version }}
         - mlir =={{ version }}
         # for required run-exports
@@ -114,7 +113,6 @@ outputs:
       run:
         - sysroot_{{ target_platform }} >={{ c_stdlib_version }}    # [linux]
         - clangdev =={{ version }}
-        - llvm-openmp =={{ version }}
         - {{ pin_subpackage('libflang', exact=True) }}
         - {{ pin_subpackage('libfortran-main', exact=True) }}
     test:
