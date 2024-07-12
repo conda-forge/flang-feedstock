@@ -1,0 +1,193 @@
+From dd02a5c451595940b438fea6b59352cdb2b1e48d Mon Sep 17 00:00:00 2001
+From: serge-sans-paille <sguelton@mozilla.com>
+Date: Fri, 5 Jul 2024 16:58:31 +0200
+Subject: [PATCH 4/4] Patches to build flang runtime with emcc
+
+---
+ flang/runtime/CMakeLists.txt       | 46 +++++++++++++++---------------
+ flang/runtime/copy.cpp             |  4 +--
+ flang/runtime/derived.cpp          |  4 +--
+ flang/runtime/edit-input.cpp       |  9 ++++++
+ flang/runtime/exceptions.cpp       |  9 ++++++
+ flang/runtime/stop.cpp             |  9 ++++++
+ flang/runtime/transformational.cpp |  6 ++--
+ 7 files changed, 57 insertions(+), 30 deletions(-)
+
+diff --git a/flang/runtime/CMakeLists.txt b/flang/runtime/CMakeLists.txt
+index d587fd44b167..dadc05114f6d 100644
+--- a/flang/runtime/CMakeLists.txt
++++ b/flang/runtime/CMakeLists.txt
+@@ -103,7 +103,7 @@ append(${NO_LTO_FLAGS} CMAKE_CXX_FLAGS)
+ add_definitions(-U_GLIBCXX_ASSERTIONS)
+ add_definitions(-U_LIBCPP_ENABLE_ASSERTIONS)
+ 
+-add_subdirectory(Float128Math)
++#add_subdirectory(Float128Math)
+ 
+ set(sources
+   ISO_Fortran_binding.cpp
+@@ -230,28 +230,28 @@ set(supported_files
+ enable_cuda_compilation(FortranRuntime "${supported_files}")
+ enable_omp_offload_compilation("${supported_files}")
+ 
+-if (NOT TARGET FortranFloat128Math)
+-  # If FortranFloat128Math is not defined, then we are not building
+-  # standalone FortranFloat128Math library. Instead, include
+-  # the relevant sources into FortranRuntime itself.
+-  # The information is provided via FortranFloat128MathILib
+-  # interface library.
+-  get_target_property(f128_sources
+-    FortranFloat128MathILib INTERFACE_SOURCES
+-    )
+-  if (f128_sources)
+-    # The interface may define special macros for Float128Math files,
+-    # so we need to propagate them.
+-    get_target_property(f128_defs
+-      FortranFloat128MathILib INTERFACE_COMPILE_DEFINITIONS
+-      )
+-    set_property(SOURCE ${f128_sources}
+-      APPEND PROPERTY COMPILE_DEFINITIONS
+-      ${f128_defs}
+-      )
+-    list(APPEND sources ${f128_sources})
+-  endif()
+-endif()
++#if (NOT TARGET FortranFloat128Math)
++#  # If FortranFloat128Math is not defined, then we are not building
++#  # standalone FortranFloat128Math library. Instead, include
++#  # the relevant sources into FortranRuntime itself.
++#  # The information is provided via FortranFloat128MathILib
++#  # interface library.
++#  get_target_property(f128_sources
++#    FortranFloat128MathILib INTERFACE_SOURCES
++#    )
++#  if (f128_sources)
++#    # The interface may define special macros for Float128Math files,
++#    # so we need to propagate them.
++#    get_target_property(f128_defs
++#      FortranFloat128MathILib INTERFACE_COMPILE_DEFINITIONS
++#      )
++#    set_property(SOURCE ${f128_sources}
++#      APPEND PROPERTY COMPILE_DEFINITIONS
++#      ${f128_defs}
++#      )
++#    list(APPEND sources ${f128_sources})
++#  endif()
++#endif()
+ 
+ if (NOT DEFINED MSVC)
+   add_flang_library(FortranRuntime
+diff --git a/flang/runtime/copy.cpp b/flang/runtime/copy.cpp
+index 7cf948365414..f7f3d5e8dd6d 100644
+--- a/flang/runtime/copy.cpp
++++ b/flang/runtime/copy.cpp
+@@ -51,8 +51,8 @@ RT_API_ATTRS void CopyElement(const Descriptor &to, const SubscriptValue toAt[],
+           SubscriptValue extents[maxRank];
+           const typeInfo::Value *bounds{component->bounds()};
+           for (int dim{0}; dim < component->rank(); ++dim) {
+-            SubscriptValue lb{bounds[2 * dim].GetValue(&to).value_or(0)};
+-            SubscriptValue ub{bounds[2 * dim + 1].GetValue(&to).value_or(0)};
++            SubscriptValue lb = bounds[2 * dim].GetValue(&to).value_or(0);
++            SubscriptValue ub = bounds[2 * dim + 1].GetValue(&to).value_or(0);
+             extents[dim] = ub >= lb ? ub - lb + 1 : 0;
+           }
+           const typeInfo::DerivedType &compType{*component->derivedType()};
+diff --git a/flang/runtime/derived.cpp b/flang/runtime/derived.cpp
+index 659f54fa344b..b408ce45aced 100644
+--- a/flang/runtime/derived.cpp
++++ b/flang/runtime/derived.cpp
+@@ -23,8 +23,8 @@ static RT_API_ATTRS void GetComponentExtents(SubscriptValue (&extents)[maxRank],
+     const typeInfo::Component &comp, const Descriptor &derivedInstance) {
+   const typeInfo::Value *bounds{comp.bounds()};
+   for (int dim{0}; dim < comp.rank(); ++dim) {
+-    auto lb{bounds[2 * dim].GetValue(&derivedInstance).value_or(0)};
+-    auto ub{bounds[2 * dim + 1].GetValue(&derivedInstance).value_or(0)};
++    auto lb = bounds[2 * dim].GetValue(&derivedInstance).value_or(0);
++    auto ub = bounds[2 * dim + 1].GetValue(&derivedInstance).value_or(0);
+     extents[dim] = ub >= lb ? static_cast<SubscriptValue>(ub - lb + 1) : 0;
+   }
+ }
+diff --git a/flang/runtime/edit-input.cpp b/flang/runtime/edit-input.cpp
+index 37989bbcee0a..d936d7108a34 100644
+--- a/flang/runtime/edit-input.cpp
++++ b/flang/runtime/edit-input.cpp
+@@ -16,6 +16,15 @@
+ #include <algorithm>
+ #include <cfenv>
+ 
++#ifdef __EMSCRIPTEN__
++#define FE_UNDERFLOW 0
++#define FE_OVERFLOW 0
++#define FE_INEXACT 0
++#define FE_INVALID 0
++#define FE_DIVBYZERO 0
++#define FE_ALL_EXCEPT 0
++#endif
++
+ namespace Fortran::runtime::io {
+ RT_OFFLOAD_API_GROUP_BEGIN
+ 
+diff --git a/flang/runtime/exceptions.cpp b/flang/runtime/exceptions.cpp
+index dfd3b812e22a..ddde854415b3 100644
+--- a/flang/runtime/exceptions.cpp
++++ b/flang/runtime/exceptions.cpp
+@@ -13,6 +13,15 @@
+ #include "flang/Runtime/magic-numbers.h"
+ #include <cfenv>
+ 
++#ifdef __EMSCRIPTEN__
++#define FE_UNDERFLOW 0
++#define FE_OVERFLOW 0
++#define FE_INEXACT 0
++#define FE_INVALID 0
++#define FE_DIVBYZERO 0
++#define FE_ALL_EXCEPT 0
++#endif
++
+ #ifndef __FE_DENORM
+ #define __FE_DENORM 0 // denorm is nonstandard
+ #endif
+diff --git a/flang/runtime/stop.cpp b/flang/runtime/stop.cpp
+index 98324da1d91e..1f12b604ff82 100644
+--- a/flang/runtime/stop.cpp
++++ b/flang/runtime/stop.cpp
+@@ -16,6 +16,15 @@
+ #include <cstdio>
+ #include <cstdlib>
+ 
++#ifdef __EMSCRIPTEN__
++#define FE_UNDERFLOW 0
++#define FE_OVERFLOW 0
++#define FE_INEXACT 0
++#define FE_INVALID 0
++#define FE_DIVBYZERO 0
++#define FE_ALL_EXCEPT 0
++#endif
++
+ extern "C" {
+ 
+ static void DescribeIEEESignaledExceptions() {
+diff --git a/flang/runtime/transformational.cpp b/flang/runtime/transformational.cpp
+index cf1e61c0844d..a582e1f41703 100644
+--- a/flang/runtime/transformational.cpp
++++ b/flang/runtime/transformational.cpp
+@@ -507,8 +507,8 @@ void RTDEF(CshiftVector)(Descriptor &result, const Descriptor &source,
+   AllocateResult(result, source, 1, &extent, terminator, "CSHIFT");
+   SubscriptValue lb{sourceDim.LowerBound()};
+   for (SubscriptValue j{0}; j < extent; ++j) {
+-    SubscriptValue resultAt{1 + j};
+-    SubscriptValue sourceAt{lb + (j + shift) % extent};
++    SubscriptValue resultAt = 1 + j;
++    SubscriptValue sourceAt = lb + (j + shift) % extent;
+     if (sourceAt < lb) {
+       sourceAt += extent;
+     }
+@@ -619,7 +619,7 @@ void RTDEF(EoshiftVector)(Descriptor &result, const Descriptor &source,
+   }
+   SubscriptValue lb{source.GetDimension(0).LowerBound()};
+   for (SubscriptValue j{1}; j <= extent; ++j) {
+-    SubscriptValue sourceAt{lb + j - 1 + shift};
++    SubscriptValue sourceAt = lb + j - 1 + shift;
+     if (sourceAt >= lb && sourceAt < lb + extent) {
+       CopyElement(result, &j, source, &sourceAt, terminator);
+     } else if (boundary) {
