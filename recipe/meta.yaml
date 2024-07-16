@@ -1,4 +1,9 @@
 {% set version = "18.1.8" %}
+{% set build_number = 0 %}
+
+{% if not variant %}
+{% set variant = "default" %}
+{% endif %}
 
 package:
   name: flang-split
@@ -7,9 +12,12 @@ package:
 source:
   url: https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-{{ version.replace(".rc", "-rc") }}.tar.gz
   sha256: 09c08693a9afd6236f27a2ebae62cda656eba19021ef3f94d59e931d662d4856
+  # TODO: add patches for this emscripten variant only
+  # patches:
+  #   - patches/emscripten/0001....patch # [variant and variant.startswith("emscripten_")]
 
 build:
-  number: 1
+  number: {{ build_number }}
   # intentionally only windows (main target) & linux (debuggability)
   skip: true  # [osx]
   track_features:
@@ -42,6 +50,10 @@ outputs:
   - name: libflang
     script: install_libflang.sh  # [unix]
     script: install_libflang.bat  # [win]
+    build:
+      track_features:
+        - emscripten
+      string: {{ variant }}_h{{ PKG_HASH }}_{{ build_number }} # [variant and variant.startswith("emscripten_")]
     requirements:
       build:
         # for strong run-exports
@@ -86,6 +98,10 @@ outputs:
   - name: flang
     script: install_flang.sh  # [unix]
     script: install_flang.bat  # [win]
+    build:
+      track_features:
+        - emscripten
+      string: {{ variant }}_h{{ PKG_HASH }}_{{ build_number }} # [variant and variant.startswith("emscripten_")]
     run_exports:
       strong:
         - libflang >={{ version }}
@@ -129,6 +145,10 @@ outputs:
         - a.exe     # [win]
 
   - name: flang_{{ target_platform }}
+    build:
+      track_features:
+        - emscripten
+      string: {{ variant }}_h{{ PKG_HASH }}_{{ build_number }} # [variant and variant.startswith("emscripten_")]
     run_exports:
       strong:
         - libflang >={{ version }}

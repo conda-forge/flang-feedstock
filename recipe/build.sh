@@ -11,6 +11,10 @@ if [[ "$CONDA_BUILD_CROSS_COMPILATION" == "1" ]]; then
     CMAKE_ARGS="$CMAKE_ARGS -DLLVM_CONFIG_PATH=$BUILD_PREFIX/bin/llvm-config -DMLIR_TABLEGEN_EXE=$BUILD_PREFIX/bin/mlir-tblgen"
 fi
 
+if [[ "$variant" == "emscripten"* ]]; then
+    # TODO add required arguments for wasm32-unknown-emscripten
+fi
+
 cmake -G Ninja \
     ${CMAKE_ARGS} \
     -DBUILD_SHARED_LIBS=ON \
