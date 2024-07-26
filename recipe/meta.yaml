@@ -1,15 +1,15 @@
-{% set version = "18.1.0.rc4" %}
+{% set version = "18.1.8" %}
 
 package:
   name: flang-split
   version: {{ version }}
 
 source:
-  url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version.replace(".rc", "-rc") }}/llvm-project-{{ version.replace(".rc", "rc") }}.src.tar.xz
-  sha256: bc1d243472ee4868e20760c100049078343a89aa34549c69dbab389c68e0c473
+  url: https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-{{ version.replace(".rc", "-rc") }}.tar.gz
+  sha256: 09c08693a9afd6236f27a2ebae62cda656eba19021ef3f94d59e931d662d4856
 
 build:
-  number: 0
+  number: 1
   # intentionally only windows (main target) & linux (debuggability)
   skip: true  # [osx]
   track_features:
@@ -18,11 +18,13 @@ build:
 requirements:
   build:
     - {{ compiler('c') }}
+    - {{ stdlib('c') }}
     - {{ compiler('cxx') }}
     - cmake
     - ninja
-    - sysroot_linux-64 ==2.17  # [linux64]
     - mlir =={{ version }}     # [build_platform != target_platform]
+    # for showing CPU info of CI agent
+    - numpy *
   host:
     - clangdev =={{ version }}
     - compiler-rt =={{ version }}
@@ -44,6 +46,7 @@ outputs:
       build:
         # for strong run-exports
         - {{ compiler('c') }}
+        - {{ stdlib('c') }}
         - {{ compiler('cxx') }}
       host:
         - clangdev =={{ version }}
@@ -68,6 +71,7 @@ outputs:
       build:
         # if there's no build env, windows fails with EnvironmentLocationNotFound (what?!)
         - {{ compiler('c') }}    # [win]
+        - {{ stdlib('c') }}      # [win]
         - {{ compiler('cxx') }}  # [win]
       host:
         # this is just here to have a non-empty host environment
@@ -91,11 +95,11 @@ outputs:
         - ninja
         # for strong run-exports
         - {{ compiler('c') }}
+        - {{ stdlib('c') }}
         - {{ compiler('cxx') }}
       host:
         - clangdev =={{ version }}
         - compiler-rt =={{ version }}
-        - llvm-openmp =={{ version }}
         - llvmdev =={{ version }}
         - mlir =={{ version }}
         # for required run-exports
@@ -103,12 +107,12 @@ outputs:
         - libclang-cpp =={{ version }}
         # ninja really wants to find z.lib on win
         - zlib  # [win]
+        - zstd  # [win]
         - {{ pin_subpackage('libflang', exact=True) }}
         - {{ pin_subpackage('libfortran-main', exact=True) }}
       run:
-        - sysroot_{{ target_platform }} ==2.17  # [linux]
+        - sysroot_{{ target_platform }} >={{ c_stdlib_version }}    # [linux]
         - clangdev =={{ version }}
-        - llvm-openmp =={{ version }}
         - {{ pin_subpackage('libflang', exact=True) }}
         - {{ pin_subpackage('libfortran-main', exact=True) }}
     test:
