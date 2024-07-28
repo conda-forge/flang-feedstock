@@ -29,7 +29,6 @@ requirements:
     - clangdev =={{ version }}
     - compiler-rt =={{ version }}
     - lit =={{ version }}
-    - llvm-openmp =={{ version }}
     - llvmdev =={{ version }}
     - mlir =={{ version }}
     - zlib
