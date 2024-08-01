@@ -12,9 +12,9 @@ package:
 source:
   url: https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-{{ version.replace(".rc", "-rc") }}.tar.gz
   sha256: 09c08693a9afd6236f27a2ebae62cda656eba19021ef3f94d59e931d662d4856
-  # TODO: add patches for this emscripten variant only
-  # patches:
-  #   - patches/emscripten/0001....patch # [variant and variant.startswith("emscripten_")]
+  patches:
+    - patches/wasm/01-Minimal-WASM-support-for-flang.patch  # [variant and variant.startswith("emscripten_")]
+    - patches/wasm/02-Specialize-Flang-to-target-WASM.patch # [variant and variant.startswith("emscripten_")]
 
 build:
   number: {{ build_number }}

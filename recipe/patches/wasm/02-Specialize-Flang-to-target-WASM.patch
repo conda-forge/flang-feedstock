@@ -1,0 +1,169 @@
+From ac95dc16256ce4285c7f4a644ce0f59625b3b481 Mon Sep 17 00:00:00 2001
+From: serge-sans-paille <sguelton@mozilla.com>
+Date: Wed, 10 Jul 2024 22:42:19 +0200
+Subject: [PATCH 2/2] Specialize Flang to target WASM
+
+Many values were explicitly encoded under the assumption that host and target have
+the same architecture.
+---
+ .../Optimizer/Builder/Runtime/RTBuilder.h     | 23 ++++++++++---------
+ .../flang/Optimizer/Support/DataLayout.h      | 16 +++++++++++++
+ flang/lib/Optimizer/CodeGen/CodeGen.cpp       |  8 +++++--
+ 3 files changed, 34 insertions(+), 13 deletions(-)
+
+diff --git a/flang/include/flang/Optimizer/Builder/Runtime/RTBuilder.h b/flang/include/flang/Optimizer/Builder/Runtime/RTBuilder.h
+index 99558cf03d4f..964edf69bef2 100644
+--- a/flang/include/flang/Optimizer/Builder/Runtime/RTBuilder.h
++++ b/flang/include/flang/Optimizer/Builder/Runtime/RTBuilder.h
+@@ -22,6 +22,7 @@
+ #include "flang/Optimizer/Builder/FIRBuilder.h"
+ #include "flang/Optimizer/Dialect/FIRDialect.h"
+ #include "flang/Optimizer/Dialect/FIRType.h"
++#include "flang/Optimizer/Support/DataLayout.h"
+ #include "mlir/IR/BuiltinTypes.h"
+ #include "mlir/IR/MLIRContext.h"
+ #include "llvm/ADT/SmallVector.h"
+@@ -72,20 +73,20 @@ static constexpr TypeBuilderFunc getModel();
+ template <>
+ constexpr TypeBuilderFunc getModel<unsigned int>() {
+   return [](mlir::MLIRContext *context) -> mlir::Type {
+-    return mlir::IntegerType::get(context, 8 * sizeof(unsigned int));
++    return mlir::IntegerType::get(context, 8 * FLANG_TARGET_SIZEOF_UINT);
+   };
+ }
+ 
+ template <>
+ constexpr TypeBuilderFunc getModel<short int>() {
+   return [](mlir::MLIRContext *context) -> mlir::Type {
+-    return mlir::IntegerType::get(context, 8 * sizeof(short int));
++    return mlir::IntegerType::get(context, 8 * FLANG_TARGET_SIZEOF_SHORT);
+   };
+ }
+ template <>
+ constexpr TypeBuilderFunc getModel<int>() {
+   return [](mlir::MLIRContext *context) -> mlir::Type {
+-    return mlir::IntegerType::get(context, 8 * sizeof(int));
++    return mlir::IntegerType::get(context, 8 * FLANG_TARGET_SIZEOF_INT);
+   };
+ }
+ template <>
+@@ -120,13 +121,13 @@ constexpr TypeBuilderFunc getModel<const char32_t *>() {
+ template <>
+ constexpr TypeBuilderFunc getModel<char>() {
+   return [](mlir::MLIRContext *context) -> mlir::Type {
+-    return mlir::IntegerType::get(context, 8 * sizeof(char));
++    return mlir::IntegerType::get(context, 8 * FLANG_TARGET_SIZEOF_CHAR);
+   };
+ }
+ template <>
+ constexpr TypeBuilderFunc getModel<signed char>() {
+   return [](mlir::MLIRContext *context) -> mlir::Type {
+-    return mlir::IntegerType::get(context, 8 * sizeof(signed char));
++    return mlir::IntegerType::get(context, 8 * FLANG_TARGET_SIZEOF_SCHAR);
+   };
+ }
+ template <>
+@@ -146,7 +147,7 @@ constexpr TypeBuilderFunc getModel<void **>() {
+ template <>
+ constexpr TypeBuilderFunc getModel<long>() {
+   return [](mlir::MLIRContext *context) -> mlir::Type {
+-    return mlir::IntegerType::get(context, 8 * sizeof(long));
++    return mlir::IntegerType::get(context, 8 * FLANG_TARGET_SIZEOF_LONG);
+   };
+ }
+ template <>
+@@ -163,7 +164,7 @@ constexpr TypeBuilderFunc getModel<long *>() {
+ template <>
+ constexpr TypeBuilderFunc getModel<long long>() {
+   return [](mlir::MLIRContext *context) -> mlir::Type {
+-    return mlir::IntegerType::get(context, 8 * sizeof(long long));
++    return mlir::IntegerType::get(context, 8 * FLANG_TARGET_SIZEOF_LONGLONG);
+   };
+ }
+ template <>
+@@ -187,13 +188,13 @@ constexpr TypeBuilderFunc getModel<long long *>() {
+ template <>
+ constexpr TypeBuilderFunc getModel<unsigned long>() {
+   return [](mlir::MLIRContext *context) -> mlir::Type {
+-    return mlir::IntegerType::get(context, 8 * sizeof(unsigned long));
++    return mlir::IntegerType::get(context, 8 * FLANG_TARGET_SIZEOF_ULONG);
+   };
+ }
+ template <>
+ constexpr TypeBuilderFunc getModel<unsigned long long>() {
+   return [](mlir::MLIRContext *context) -> mlir::Type {
+-    return mlir::IntegerType::get(context, 8 * sizeof(unsigned long long));
++    return mlir::IntegerType::get(context, 8 * FLANG_TARGET_SIZEOF_ULONGLONG);
+   };
+ }
+ template <>
+@@ -260,13 +261,13 @@ constexpr TypeBuilderFunc getModel<std::complex<double> &>() {
+ template <>
+ constexpr TypeBuilderFunc getModel<c_float_complex_t>() {
+   return [](mlir::MLIRContext *context) -> mlir::Type {
+-    return fir::ComplexType::get(context, sizeof(float));
++    return fir::ComplexType::get(context, FLANG_TARGET_SIZEOF_FLOAT);
+   };
+ }
+ template <>
+ constexpr TypeBuilderFunc getModel<c_double_complex_t>() {
+   return [](mlir::MLIRContext *context) -> mlir::Type {
+-    return fir::ComplexType::get(context, sizeof(double));
++    return fir::ComplexType::get(context, FLANG_TARGET_SIZEOF_DOUBLE);
+   };
+ }
+ template <>
+diff --git a/flang/include/flang/Optimizer/Support/DataLayout.h b/flang/include/flang/Optimizer/Support/DataLayout.h
+index d21576bb95f7..5372039d8702 100644
+--- a/flang/include/flang/Optimizer/Support/DataLayout.h
++++ b/flang/include/flang/Optimizer/Support/DataLayout.h
+@@ -23,6 +23,22 @@ namespace llvm {
+ class DataLayout;
+ }
+ 
++constexpr size_t FLANG_TARGET_SIZEOF_UINT = 4;
++constexpr size_t FLANG_TARGET_SIZEOF_INT = 4;
++constexpr size_t FLANG_TARGET_SIZEOF_SHORT = 2;
++constexpr size_t FLANG_TARGET_SIZEOF_CHAR = 1;
++constexpr size_t FLANG_TARGET_SIZEOF_SCHAR = 1;
++constexpr size_t FLANG_TARGET_SIZEOF_UCHAR = 1;
++constexpr size_t FLANG_TARGET_SIZEOF_CHAR16 = 2;
++constexpr size_t FLANG_TARGET_SIZEOF_CHAR32 = 4;
++constexpr size_t FLANG_TARGET_SIZEOF_LONG = 4;
++constexpr size_t FLANG_TARGET_SIZEOF_LONGLONG = 8;
++constexpr size_t FLANG_TARGET_SIZEOF_ULONG = 4;
++constexpr size_t FLANG_TARGET_SIZEOF_ULONGLONG = 8;
++constexpr size_t FLANG_TARGET_SIZEOF_SIZE_T = 4;
++constexpr size_t FLANG_TARGET_SIZEOF_FLOAT = 4;
++constexpr size_t FLANG_TARGET_SIZEOF_DOUBLE = 8;
++
+ namespace fir::support {
+ /// Create an mlir::DataLayoutSpecInterface attribute from an llvm::DataLayout
+ /// and set it on the provided mlir::ModuleOp.
+diff --git a/flang/lib/Optimizer/CodeGen/CodeGen.cpp b/flang/lib/Optimizer/CodeGen/CodeGen.cpp
+index ba5946415b6f..0b797c9e2d33 100644
+--- a/flang/lib/Optimizer/CodeGen/CodeGen.cpp
++++ b/flang/lib/Optimizer/CodeGen/CodeGen.cpp
+@@ -1225,7 +1225,8 @@ getMalloc(fir::AllocMemOp op, mlir::ConversionPatternRewriter &rewriter) {
+     return mlir::SymbolRefAttr::get(userMalloc);
+   mlir::OpBuilder moduleBuilder(
+       op->getParentOfType<mlir::ModuleOp>().getBodyRegion());
+-  auto indexType = mlir::IntegerType::get(op.getContext(), 64);
++  auto indexType =
++      mlir::IntegerType::get(op.getContext(), 8 * FLANG_TARGET_SIZEOF_SIZE_T);
+   auto mallocDecl = moduleBuilder.create<mlir::LLVM::LLVMFuncOp>(
+       op.getLoc(), mallocName,
+       mlir::LLVM::LLVMFunctionType::get(getLlvmPtrType(op.getContext()),
+@@ -1292,8 +1293,11 @@ struct AllocMemOpConversion : public FIROpConversion<fir::AllocMemOp> {
+       size = rewriter.create<mlir::LLVM::MulOp>(
+           loc, ity, size, integerCast(loc, rewriter, ity, opnd));
+     heap->setAttr("callee", getMalloc(heap, rewriter));
++    auto szt_ty = mlir::IntegerType::get(rewriter.getContext(),
++                                         8 * FLANG_TARGET_SIZEOF_SIZE_T);
++    auto size_szt = integerCast(loc, rewriter, szt_ty, size);
+     rewriter.replaceOpWithNewOp<mlir::LLVM::CallOp>(
+-        heap, ::getLlvmPtrType(heap.getContext()), size, heap->getAttrs());
++        heap, ::getLlvmPtrType(heap.getContext()), size_szt, heap->getAttrs());
+     return mlir::success();
+   }
+ 
