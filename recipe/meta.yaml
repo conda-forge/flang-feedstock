@@ -1,5 +1,4 @@
 {% set version = "18.1.8" %}
-{% set build_number = 0 %}
 
 {% if not variant %}
 {% set variant = "default" %}
@@ -17,7 +16,7 @@ source:
     - patches/wasm/02-Specialize-Flang-to-target-WASM.patch # [variant and variant.startswith("emscripten_")]
 
 build:
-  number: {{ build_number }}
+  number: 2
   # intentionally only windows (main target) & linux (debuggability)
   skip: true  # [osx]
   track_features:
