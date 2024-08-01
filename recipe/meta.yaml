@@ -50,10 +50,6 @@ outputs:
   - name: libflang
     script: install_libflang.sh  # [unix]
     script: install_libflang.bat  # [win]
-    build:
-      track_features:
-        - emscripten
-      string: {{ variant }}_h{{ PKG_HASH }}_{{ build_number }} # [variant and variant.startswith("emscripten_")]
     requirements:
       build:
         # for strong run-exports
