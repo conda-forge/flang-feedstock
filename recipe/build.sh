@@ -11,12 +11,6 @@ if [[ "$CONDA_BUILD_CROSS_COMPILATION" == "1" ]]; then
     CMAKE_ARGS="$CMAKE_ARGS -DLLVM_CONFIG_PATH=$BUILD_PREFIX/bin/llvm-config -DMLIR_TABLEGEN_EXE=$BUILD_PREFIX/bin/mlir-tblgen"
 fi
 
-if [[ "$variant" == "emscripten"* ]]; then
-    CMAKE_ARGS="$CMAKE_ARGS \
-        -DLLVM_DEFAULT_TARGET_TRIPLE=wasm32-unknown-emscripten \
-        -DLLVM_TARGETS_TO_BUILD=WebAssembly"
-fi
-
 cmake -G Ninja \
     ${CMAKE_ARGS} \
     -DBUILD_SHARED_LIBS=ON \
@@ -32,6 +26,7 @@ cmake -G Ninja \
     -DCLANG_DIR=$PREFIX/lib/cmake/clang \
     -DFLANG_INCLUDE_TESTS=OFF \
     -DMLIR_DIR=$PREFIX/lib/cmake/mlir \
+    -DLLVM_TARGETS_TO_BUILD="X86;WebAssembly" \
     ../flang
 
 cmake --build . -j1
