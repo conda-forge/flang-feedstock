@@ -128,7 +128,9 @@ outputs:
         - libflang >={{ version }}
     requirements:
       - {{ pin_subpackage('flang', exact=True) }}
-
+    test:
+      commands:
+        - echo "tested in other outputs"
 
 about:
   home: https://flang.llvm.org
