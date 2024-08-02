@@ -9,11 +9,9 @@ source:
   sha256: 09c08693a9afd6236f27a2ebae62cda656eba19021ef3f94d59e931d662d4856
 
 build:
-  number: 1
+  number: 2
   # intentionally only windows (main target) & linux (debuggability)
   skip: true  # [osx]
-  track_features:
-    - flang
 
 requirements:
   build:
@@ -33,10 +31,6 @@ requirements:
     - llvmdev =={{ version }}
     - mlir =={{ version }}
     - zlib
-
-test:
-  commands:
-    - flang --version
 
 outputs:
   - name: libflang
@@ -134,7 +128,9 @@ outputs:
         - libflang >={{ version }}
     requirements:
       - {{ pin_subpackage('flang', exact=True) }}
-
+    test:
+      commands:
+        - echo "tested in other outputs"
 
 about:
   home: https://flang.llvm.org
