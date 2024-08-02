@@ -15,7 +15,6 @@ if [[ "$variant" == "emscripten"* ]]; then
     CMAKE_ARGS="$CMAKE_ARGS \
         -DLLVM_DEFAULT_TARGET_TRIPLE=wasm32-unknown-emscripten \
         -DLLVM_TARGETS_TO_BUILD=WebAssembly \
-        -DLLVM_ENABLE_PROJECTS='clang;flang;mlir'"
 fi
 
 cmake -G Ninja \
