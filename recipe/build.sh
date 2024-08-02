@@ -26,6 +26,7 @@ cmake -G Ninja \
     -DCLANG_DIR=$PREFIX/lib/cmake/clang \
     -DFLANG_INCLUDE_TESTS=OFF \
     -DMLIR_DIR=$PREFIX/lib/cmake/mlir \
+    -DLLVM_TARGETS_TO_BUILD="X86;WebAssembly" \
     ../flang
 
 cmake --build . -j1
