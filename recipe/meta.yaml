@@ -106,7 +106,8 @@ outputs:
         - {{ pin_subpackage('libfortran-main', exact=True) }}
       run:
         - sysroot_{{ target_platform }} >={{ c_stdlib_version }}    # [linux]
-        - clangdev =={{ version }}
+        - clang =={{ version }}
+        - compiler-rt =={{ version }}
         - {{ pin_subpackage('libflang', exact=True) }}
         - {{ pin_subpackage('libfortran-main', exact=True) }}
     test:
