@@ -9,7 +9,7 @@ source:
   sha256: cd3b42caf8e78c497712a661303672c1a6279eb1a5ff8735488087319ab95214
 
 build:
-  number: 2
+  number: 3
   # intentionally only windows (main target) & linux (debuggability)
   skip: true  # [osx]
 
@@ -46,10 +46,6 @@ outputs:
         - compiler-rt =={{ version }}
         - llvmdev =={{ version }}
         - mlir =={{ version }}
-      run:
-        # necessary to link on windows (even for static lib), e.g.
-        # FortranDecimal.lib(binary-to-decimal.cpp.obj) : error LNK2019: unresolved external symbol __udivti3 ...
-        - compiler-rt =={{ version }}  # [win]
     test:
       commands:
         # shared lib on linux
@@ -88,7 +84,8 @@ outputs:
       run:
         - sysroot_{{ target_platform }} >={{ c_stdlib_version }}    # [linux]
         - clang =={{ version }}
-        - compiler-rt =={{ version }}
+        - compiler-rt =={{ version }}   # [win]
+        - lld                           # [win]
         - {{ pin_subpackage('libflang', exact=True) }}
     test:
       requires:
@@ -101,7 +98,8 @@ outputs:
       commands:
         # see naming discussion: https://discourse.llvm.org/t/reviving-rename-flang-new-to-flang/68130/2
         # - flang hello_world.f90
-        - flang-new hello_world.f90
+        - flang-new $FFLAGS hello_world.f90     # [unix]
+        - flang-new %FFLAGS% hello_world.f90    # [win]
         - ./a.out   # [unix]
         - a.exe     # [win]
         # check if activation worked
