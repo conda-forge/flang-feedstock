@@ -9,7 +9,7 @@ source:
   sha256: cd3b42caf8e78c497712a661303672c1a6279eb1a5ff8735488087319ab95214
 
 build:
-  number: 1
+  number: 2
   # intentionally only windows (main target) & linux (debuggability)
   skip: true  # [osx]
 
@@ -67,6 +67,8 @@ outputs:
       build:
         - cmake
         - ninja
+        - sed     # [unix]
+        - m2-sed  # [win]
         # for strong run-exports
         - {{ compiler('c') }}
         - {{ stdlib('c') }}
@@ -85,12 +87,15 @@ outputs:
         - {{ pin_subpackage('libflang', exact=True) }}
       run:
         - sysroot_{{ target_platform }} >={{ c_stdlib_version }}    # [linux]
-        - clangdev =={{ version }}
+        - clang =={{ version }}
+        - compiler-rt =={{ version }}
         - {{ pin_subpackage('libflang', exact=True) }}
     test:
       requires:
         - {{ compiler('c') }}       # [win]
         - {{ compiler('cxx') }}     # [win]
+        - grep                      # [unix]
+        - m2-grep                   # [win]
       files:
         - hello_world.f90
       commands:
@@ -99,6 +104,8 @@ outputs:
         - flang-new hello_world.f90
         - ./a.out   # [unix]
         - a.exe     # [win]
+        # check if activation worked
+        - env | grep "FC="
 
   - name: flang_{{ target_platform }}
     run_exports:
