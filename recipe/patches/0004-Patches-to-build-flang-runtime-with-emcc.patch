@@ -1,21 +1,20 @@
-From db1495daab062025360a51fe1be1e43128930674 Mon Sep 17 00:00:00 2001
+From dd02a5c451595940b438fea6b59352cdb2b1e48d Mon Sep 17 00:00:00 2001
 From: serge-sans-paille <sguelton@mozilla.com>
 Date: Fri, 5 Jul 2024 16:58:31 +0200
 Subject: [PATCH 4/4] Patches to build flang runtime with emcc
 
 ---
  flang/runtime/CMakeLists.txt       | 46 +++++++++++++++---------------
- flang/runtime/command.cpp          |  6 ++--
  flang/runtime/copy.cpp             |  4 +--
- flang/runtime/derived.cpp          |  6 ++--
+ flang/runtime/derived.cpp          |  4 +--
  flang/runtime/edit-input.cpp       |  9 ++++++
  flang/runtime/exceptions.cpp       |  9 ++++++
  flang/runtime/stop.cpp             |  9 ++++++
  flang/runtime/transformational.cpp |  6 ++--
- 8 files changed, 61 insertions(+), 34 deletions(-)
+ 7 files changed, 57 insertions(+), 30 deletions(-)
 
 diff --git a/flang/runtime/CMakeLists.txt b/flang/runtime/CMakeLists.txt
-index a826980e1941..be9c845b6c86 100644
+index d587fd44b167..dadc05114f6d 100644
 --- a/flang/runtime/CMakeLists.txt
 +++ b/flang/runtime/CMakeLists.txt
 @@ -103,7 +103,7 @@ append(${NO_LTO_FLAGS} CMAKE_CXX_FLAGS)
@@ -27,7 +26,7 @@ index a826980e1941..be9c845b6c86 100644
  
  set(sources
    ISO_Fortran_binding.cpp
-@@ -229,28 +229,28 @@ set(supported_files
+@@ -230,28 +230,28 @@ set(supported_files
  enable_cuda_compilation(FortranRuntime "${supported_files}")
  enable_omp_offload_compilation("${supported_files}")
  
@@ -78,23 +77,6 @@ index a826980e1941..be9c845b6c86 100644
  
  if (NOT DEFINED MSVC)
    add_flang_library(FortranRuntime
-diff --git a/flang/runtime/command.cpp b/flang/runtime/command.cpp
-index e642248a25e6..289ddd2ae3ae 100644
---- a/flang/runtime/command.cpp
-+++ b/flang/runtime/command.cpp
-@@ -50,9 +50,9 @@ static std::int64_t StringLength(const char *string) {
-   if constexpr (sizeof(std::size_t) < sizeof(std::int64_t)) {
-     return static_cast<std::int64_t>(length);
-   } else {
--    std::size_t max{std::numeric_limits<std::int64_t>::max()};
--    return length > max ? 0 // Just fail.
--                        : static_cast<std::int64_t>(length);
-+    return length > std::numeric_limits<std::int64_t>::max()
-+        ? 0 // Just fail.
-+        : static_cast<std::int64_t>(length);
-   }
- }
- 
 diff --git a/flang/runtime/copy.cpp b/flang/runtime/copy.cpp
 index 7cf948365414..f7f3d5e8dd6d 100644
 --- a/flang/runtime/copy.cpp
@@ -111,20 +93,18 @@ index 7cf948365414..f7f3d5e8dd6d 100644
            }
            const typeInfo::DerivedType &compType{*component->derivedType()};
 diff --git a/flang/runtime/derived.cpp b/flang/runtime/derived.cpp
-index 0d9e033df4e2..45253d638af2 100644
+index 659f54fa344b..b408ce45aced 100644
 --- a/flang/runtime/derived.cpp
 +++ b/flang/runtime/derived.cpp
-@@ -23,9 +23,9 @@ static RT_API_ATTRS void GetComponentExtents(SubscriptValue (&extents)[maxRank],
+@@ -23,8 +23,8 @@ static RT_API_ATTRS void GetComponentExtents(SubscriptValue (&extents)[maxRank],
      const typeInfo::Component &comp, const Descriptor &derivedInstance) {
    const typeInfo::Value *bounds{comp.bounds()};
    for (int dim{0}; dim < comp.rank(); ++dim) {
--    SubscriptValue lb{bounds[2 * dim].GetValue(&derivedInstance).value_or(0)};
--    SubscriptValue ub{
--        bounds[2 * dim + 1].GetValue(&derivedInstance).value_or(0)};
-+    SubscriptValue lb = bounds[2 * dim].GetValue(&derivedInstance).value_or(0);
-+    SubscriptValue ub =
-+        bounds[2 * dim + 1].GetValue(&derivedInstance).value_or(0);
-     extents[dim] = ub >= lb ? ub - lb + 1 : 0;
+-    auto lb{bounds[2 * dim].GetValue(&derivedInstance).value_or(0)};
+-    auto ub{bounds[2 * dim + 1].GetValue(&derivedInstance).value_or(0)};
++    auto lb = bounds[2 * dim].GetValue(&derivedInstance).value_or(0);
++    auto ub = bounds[2 * dim + 1].GetValue(&derivedInstance).value_or(0);
+     extents[dim] = ub >= lb ? static_cast<SubscriptValue>(ub - lb + 1) : 0;
    }
  }
 diff --git a/flang/runtime/edit-input.cpp b/flang/runtime/edit-input.cpp
