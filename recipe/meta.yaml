@@ -9,7 +9,7 @@ source:
   sha256: 09c08693a9afd6236f27a2ebae62cda656eba19021ef3f94d59e931d662d4856
 
 build:
-  number: 4
+  number: 5
   # intentionally only windows (main target) & linux (debuggability)
   skip: true  # [osx]
 
@@ -120,8 +120,8 @@ outputs:
       commands:
         # see naming discussion: https://discourse.llvm.org/t/reviving-rename-flang-new-to-flang/68130/2
         # - flang hello_world.f90
-        - flang-new $FFLAGS hello_world.f90     # [unix]
-        - flang-new %FFLAGS% hello_world.f90    # [win]
+        - flang-new $FFLAGS hello_world.f90             # [unix]
+        - flang-new %FFLAGS% hello_world.f90 %LDFLAGS%  # [win]
         - ./a.out   # [unix]
         - a.exe     # [win]
         # check if activation worked
