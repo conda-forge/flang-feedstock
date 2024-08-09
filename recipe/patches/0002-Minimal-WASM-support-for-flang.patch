@@ -1,7 +1,7 @@
-From e6bd169ba2c3065712005ae510fe45d2794b7072 Mon Sep 17 00:00:00 2001
+From 582eb2b0305e7979a73c9d8aff8bc6917dd9f6a2 Mon Sep 17 00:00:00 2001
 From: serge-sans-paille <sguelton@mozilla.com>
 Date: Tue, 18 Jun 2024 22:19:09 +0200
-Subject: [PATCH 2/4] Minimal WASM support for flang
+Subject: [PATCH 2/7] Minimal WASM support for flang
 
 Original patch from https://gws.phd/posts/fortran_wasm/
 ---
@@ -9,7 +9,7 @@ Original patch from https://gws.phd/posts/fortran_wasm/
  1 file changed, 41 insertions(+)
 
 diff --git a/flang/lib/Optimizer/CodeGen/Target.cpp b/flang/lib/Optimizer/CodeGen/Target.cpp
-index 25141102a8c4..715daefc0ba5 100644
+index 652e2bddc1b8..d7c369616e85 100644
 --- a/flang/lib/Optimizer/CodeGen/Target.cpp
 +++ b/flang/lib/Optimizer/CodeGen/Target.cpp
 @@ -1055,6 +1055,44 @@ struct TargetLoongArch64 : public GenericTarget<TargetLoongArch64> {

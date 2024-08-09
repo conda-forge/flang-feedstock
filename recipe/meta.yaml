@@ -12,7 +12,13 @@ source:
     - patches/0001-Instructions-for-building-a-functional-Flang-cross-c.patch
     - patches/0002-Minimal-WASM-support-for-flang.patch
     - patches/0003-Specialize-Flang-to-target-WASM.patch
-    - patches/0004-Patches-to-build-flang-runtime-with-emcc.patch
+    # see https://github.com/llvm/llvm-project/pull/99465
+    - patches/0004-Fix-implicit-conversion-warning-when-targeting-32bit.patch
+    # see https://github.com/llvm/llvm-project/pull/99822
+    - patches/0005-Explicitly-convert-shift-value-to-SubscriptValue.patch
+    # see https://github.com/llvm/llvm-project/pull/101242
+    - patches/0006-Handle-missing-definitions-in-cfenv.patch
+    - patches/0007-Patches-to-build-flang-runtime-with-emcc.patch
 
 build:
   number: 0
