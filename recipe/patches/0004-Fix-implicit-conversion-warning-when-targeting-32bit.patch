@@ -1,0 +1,28 @@
+From 4c2b2fac044fb1b0ad1c3fda3dc5547eda9a22f9 Mon Sep 17 00:00:00 2001
+From: serge-sans-paille <sguelton@mozilla.com>
+Date: Fri, 9 Aug 2024 07:51:07 +0200
+Subject: [PATCH 4/7] Fix implicit conversion warning when targeting 32bit
+
+See https://github.com/llvm/llvm-project/pull/99465
+---
+ flang/runtime/derived.cpp | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/flang/runtime/derived.cpp b/flang/runtime/derived.cpp
+index 0d9e033df4e2..659f54fa344b 100644
+--- a/flang/runtime/derived.cpp
++++ b/flang/runtime/derived.cpp
+@@ -23,10 +23,9 @@ static RT_API_ATTRS void GetComponentExtents(SubscriptValue (&extents)[maxRank],
+     const typeInfo::Component &comp, const Descriptor &derivedInstance) {
+   const typeInfo::Value *bounds{comp.bounds()};
+   for (int dim{0}; dim < comp.rank(); ++dim) {
+-    SubscriptValue lb{bounds[2 * dim].GetValue(&derivedInstance).value_or(0)};
+-    SubscriptValue ub{
+-        bounds[2 * dim + 1].GetValue(&derivedInstance).value_or(0)};
+-    extents[dim] = ub >= lb ? ub - lb + 1 : 0;
++    auto lb{bounds[2 * dim].GetValue(&derivedInstance).value_or(0)};
++    auto ub{bounds[2 * dim + 1].GetValue(&derivedInstance).value_or(0)};
++    extents[dim] = ub >= lb ? static_cast<SubscriptValue>(ub - lb + 1) : 0;
+   }
+ }
+ 
