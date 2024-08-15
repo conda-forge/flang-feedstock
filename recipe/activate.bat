@@ -1,8 +1,12 @@
-set "_LIB=%LIB%"
-set "_CPATH=%CPATH%"
+set "_OLD_FC=%FC%"
+set "_OLD_FFLAGS=%FFLAGS%"
+set "_OLD_LD=%LD%"
+set "_OLD_LDFLAGS=%LDFLAGS%"
 
-if "%CONDA_PREFIX%"=="" set "LIB=%LIB%;%PREFIX%\Library\lib"
-if "%CONDA_PREFIX%"=="" set "CPATH=%CPATH%;%PREFIX%\Library\include"
+:: flang 18 still uses "temporary" name
+set "FC=flang-new"
+set "LD=lld-link.exe"
 
-if not "%CONDA_PREFIX%"=="" set "LIB=%LIB%;%CONDA_PREFIX%\Library\lib"
-if not "%CONDA_PREFIX%"=="" set "CPATH=%CPATH%;%CONDA_PREFIX%\Library\include"
+:: following https://github.com/conda-forge/clang-win-activation-feedstock/blob/main/recipe/activate-clang_win-64.bat
+set "FFLAGS=-D_CRT_SECURE_NO_WARNINGS -fms-runtime-lib=dll -fuse-ld=lld -I%LIBRARY_INC%"
+set "LDFLAGS=-Wl,-defaultlib:%CONDA_PREFIX:\=/%/lib/clang/@MAJOR_VER@/lib/windows/clang_rt.builtins-x86_64.lib"

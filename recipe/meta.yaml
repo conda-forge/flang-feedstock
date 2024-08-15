@@ -1,20 +1,29 @@
-{% set version = "19.0.0.dev0" %}
+{% set version = "19.1.0.rc2" %}
 
 package:
   name: flang-split
   version: {{ version }}
 
 source:
-  # url: https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-{{ version.replace(".rc", "-rc") }}.tar.gz
-  url: https://github.com/llvm/llvm-project/archive/3bb25636414ee5b5eaf99c0bdcc191052c9d7ffb.tar.gz
-  sha256: 72bb3117472025b4e6a6fd6b04041abc735fedbe7f023e56c0413c0cfeb3ca0c
+  url: https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-{{ version.replace(".rc", "-rc") }}.tar.gz
+  sha256: 5332e77a658136c778fc32ec2a3687de4d63e0ff48010be205c4e7af6e76f1f1
+  patches:
+    # from https://github.com/serge-sans-paille/llvm-project/tree/feature/flang-wasm
+    - patches/0001-Instructions-for-building-a-functional-Flang-cross-c.patch
+    - patches/0002-Minimal-WASM-support-for-flang.patch
+    - patches/0003-Specialize-Flang-to-target-WASM.patch
+    # see https://github.com/llvm/llvm-project/pull/99822
+    - patches/0004-Flang-Runtime-Explicitly-convert-shift-value-to-Subs.patch
+    # see https://github.com/llvm/llvm-project/pull/101242 (plus a necessary precursor)
+    - patches/0005-flang-IEEE_NEXT_AFTER-IEEE_NEXT_DOWN-IEEE_NEXT_UP-NE.patch
+    - patches/0006-Flang-Runtime-Handle-missing-definitions-in-cfenv.patch
+    # hard wasm overrides for building runtime with emcc
+    - patches/0007-Patches-to-build-flang-runtime-with-emcc.patch
 
 build:
-  number: 3
+  number: 0
   # intentionally only windows (main target) & linux (debuggability)
   skip: true  # [osx]
-  track_features:
-    - flang
 
 requirements:
   build:
@@ -30,14 +39,9 @@ requirements:
     - clangdev =={{ version }}
     - compiler-rt =={{ version }}
     - lit =={{ version }}
-    - llvm-openmp =={{ version }}
     - llvmdev =={{ version }}
     - mlir =={{ version }}
     - zlib
-
-test:
-  commands:
-    - flang --version
 
 outputs:
   - name: libflang
@@ -54,10 +58,6 @@ outputs:
         - compiler-rt =={{ version }}
         - llvmdev =={{ version }}
         - mlir =={{ version }}
-      run:
-        # necessary to link on windows (even for static lib), e.g.
-        # FortranDecimal.lib(binary-to-decimal.cpp.obj) : error LNK2019: unresolved external symbol __udivti3 ...
-        - compiler-rt =={{ version }}  # [win]
     test:
       commands:
         # shared lib on linux
@@ -75,6 +75,8 @@ outputs:
       build:
         - cmake
         - ninja
+        - sed     # [unix]
+        - m2-sed  # [win]
         # for strong run-exports
         - {{ compiler('c') }}
         - {{ stdlib('c') }}
@@ -93,20 +95,27 @@ outputs:
         - {{ pin_subpackage('libflang', exact=True) }}
       run:
         - sysroot_{{ target_platform }} >={{ c_stdlib_version }}    # [linux]
-        - clangdev =={{ version }}
+        - clang =={{ version }}
+        - compiler-rt =={{ version }}   # [win]
+        - lld                           # [win]
         - {{ pin_subpackage('libflang', exact=True) }}
     test:
       requires:
         - {{ compiler('c') }}       # [win]
         - {{ compiler('cxx') }}     # [win]
+        - grep                      # [unix]
+        - m2-grep                   # [win]
       files:
         - hello_world.f90
       commands:
         # see naming discussion: https://discourse.llvm.org/t/reviving-rename-flang-new-to-flang/68130/2
         # - flang hello_world.f90
-        - flang-new hello_world.f90
+        - flang-new $FFLAGS hello_world.f90             # [unix]
+        - flang-new %FFLAGS% hello_world.f90 %LDFLAGS%  # [win]
         - ./a.out   # [unix]
         - a.exe     # [win]
+        # check if activation worked
+        - env | grep "FC="
 
   - name: flang_{{ target_platform }}
     run_exports:
@@ -114,7 +123,9 @@ outputs:
         - libflang >={{ version }}
     requirements:
       - {{ pin_subpackage('flang', exact=True) }}
-
+    test:
+      commands:
+        - echo "tested in other outputs"
 
 about:
   home: https://flang.llvm.org
