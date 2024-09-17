@@ -56,55 +56,53 @@ Current release info
 | Name | Downloads | Version | Platforms |
 | --- | --- | --- | --- |
 | [![Conda Recipe](https://img.shields.io/badge/recipe-flang-green.svg)](https://anaconda.org/conda-forge/flang) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/flang.svg)](https://anaconda.org/conda-forge/flang) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/flang.svg)](https://anaconda.org/conda-forge/flang) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/flang.svg)](https://anaconda.org/conda-forge/flang) |
-| [![Conda Recipe](https://img.shields.io/badge/recipe-flang_linux--64-green.svg)](https://anaconda.org/conda-forge/flang_linux-64) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/flang_linux-64.svg)](https://anaconda.org/conda-forge/flang_linux-64) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/flang_linux-64.svg)](https://anaconda.org/conda-forge/flang_linux-64) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/flang_linux-64.svg)](https://anaconda.org/conda-forge/flang_linux-64) |
-| [![Conda Recipe](https://img.shields.io/badge/recipe-flang_win--64-green.svg)](https://anaconda.org/conda-forge/flang_win-64) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/flang_win-64.svg)](https://anaconda.org/conda-forge/flang_win-64) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/flang_win-64.svg)](https://anaconda.org/conda-forge/flang_win-64) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/flang_win-64.svg)](https://anaconda.org/conda-forge/flang_win-64) |
 | [![Conda Recipe](https://img.shields.io/badge/recipe-libflang-green.svg)](https://anaconda.org/conda-forge/libflang) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/libflang.svg)](https://anaconda.org/conda-forge/libflang) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/libflang.svg)](https://anaconda.org/conda-forge/libflang) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/libflang.svg)](https://anaconda.org/conda-forge/libflang) |
 
 Installing flang
 ================
 
-Installing `flang` from the `conda-forge/label/llvm_rc` channel can be achieved by adding `conda-forge/label/llvm_rc` to your channels with:
+Installing `flang` from the `conda-forge` channel can be achieved by adding `conda-forge` to your channels with:
 
 ```
-conda config --add channels conda-forge/label/llvm_rc
+conda config --add channels conda-forge
 conda config --set channel_priority strict
 ```
 
-Once the `conda-forge/label/llvm_rc` channel has been enabled, `flang, flang_linux-64, flang_win-64, libflang` can be installed with `conda`:
+Once the `conda-forge` channel has been enabled, `flang, libflang` can be installed with `conda`:
 
 ```
-conda install flang flang_linux-64 flang_win-64 libflang
+conda install flang libflang
 ```
 
 or with `mamba`:
 
 ```
-mamba install flang flang_linux-64 flang_win-64 libflang
+mamba install flang libflang
 ```
 
 It is possible to list all of the versions of `flang` available on your platform with `conda`:
 
 ```
-conda search flang --channel conda-forge/label/llvm_rc
+conda search flang --channel conda-forge
 ```
 
 or with `mamba`:
 
 ```
-mamba search flang --channel conda-forge/label/llvm_rc
+mamba search flang --channel conda-forge
 ```
 
 Alternatively, `mamba repoquery` may provide more information:
 
 ```
 # Search all versions available on your platform:
-mamba repoquery search flang --channel conda-forge/label/llvm_rc
+mamba repoquery search flang --channel conda-forge
 
 # List packages depending on `flang`:
-mamba repoquery whoneeds flang --channel conda-forge/label/llvm_rc
+mamba repoquery whoneeds flang --channel conda-forge
 
 # List dependencies of `flang`:
-mamba repoquery depends flang --channel conda-forge/label/llvm_rc
+mamba repoquery depends flang --channel conda-forge
 ```
 
 
