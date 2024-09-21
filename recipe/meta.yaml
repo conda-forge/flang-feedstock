@@ -1,4 +1,4 @@
-{% set version = "18.1.8" %}
+{% set version = "19.1.0" %}
 
 package:
   name: flang-split
@@ -6,10 +6,10 @@ package:
 
 source:
   url: https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-{{ version.replace(".rc", "-rc") }}.tar.gz
-  sha256: 09c08693a9afd6236f27a2ebae62cda656eba19021ef3f94d59e931d662d4856
+  sha256: 0a08341036ca99a106786f50f9c5cb3fbe458b3b74cab6089fd368d0edb2edfe
 
 build:
-  number: 5
+  number: 0
   # intentionally only windows (main target) & linux (debuggability)
   skip: true  # [osx]
 
@@ -27,7 +27,6 @@ requirements:
     - clangdev =={{ version }}
     - compiler-rt =={{ version }}
     - lit =={{ version }}
-    - llvm-openmp =={{ version }}
     - llvmdev =={{ version }}
     - mlir =={{ version }}
     - zlib
@@ -54,25 +53,6 @@ outputs:
         # static lib on win (fails to export symbols for shared build)
         - if not exist %LIBRARY_LIB%\FortranRuntime.lib exit 1  # [win]
 
-  - name: libfortran-main
-    script: install_libfortran_main.sh  # [unix]
-    script: install_libfortran_main.bat  # [win]
-    requirements:
-      build:
-        # if there's no build env, windows fails with EnvironmentLocationNotFound (what?!)
-        - {{ compiler('c') }}    # [win]
-        - {{ stdlib('c') }}      # [win]
-        - {{ compiler('cxx') }}  # [win]
-      host:
-        # this is just here to have a non-empty host environment
-        - {{ pin_subpackage('libflang', exact=True) }}
-      run:
-        # not sure what we need here
-    test:
-      commands:
-        - test -f $PREFIX/lib/libFortran_main.a                 # [unix]
-        - if not exist %LIBRARY_LIB%\Fortran_main.lib exit 1    # [win]
-
   - name: flang
     script: install_flang.sh  # [unix]
     script: install_flang.bat  # [win]
@@ -83,8 +63,6 @@ outputs:
       build:
         - cmake
         - ninja
-        - sed     # [unix]
-        - m2-sed  # [win]
         # for strong run-exports
         - {{ compiler('c') }}
         - {{ stdlib('c') }}
@@ -101,41 +79,16 @@ outputs:
         - zlib  # [win]
         - zstd  # [win]
         - {{ pin_subpackage('libflang', exact=True) }}
-        - {{ pin_subpackage('libfortran-main', exact=True) }}
       run:
         - sysroot_{{ target_platform }} >={{ c_stdlib_version }}    # [linux]
         - clang =={{ version }}
         - compiler-rt =={{ version }}   # [win]
-        - lld                           # [win]
         - {{ pin_subpackage('libflang', exact=True) }}
-        - {{ pin_subpackage('libfortran-main', exact=True) }}
     test:
-      requires:
-        - {{ compiler('c') }}       # [win]
-        - {{ compiler('cxx') }}     # [win]
-        - grep                      # [unix]
-        - m2-grep                   # [win]
-      files:
-        - hello_world.f90
       commands:
         # see naming discussion: https://discourse.llvm.org/t/reviving-rename-flang-new-to-flang/68130/2
-        # - flang hello_world.f90
-        - flang-new $FFLAGS hello_world.f90             # [unix]
-        - flang-new %FFLAGS% hello_world.f90 %LDFLAGS%  # [win]
-        - ./a.out   # [unix]
-        - a.exe     # [win]
-        # check if activation worked
-        - env | grep "FC="
-
-  - name: flang_{{ target_platform }}
-    run_exports:
-      strong:
-        - libflang >={{ version }}
-    requirements:
-      - {{ pin_subpackage('flang', exact=True) }}
-    test:
-      commands:
-        - echo "tested in other outputs"
+        - test -f $PREFIX/bin/flang-new                     # [linux]
+        - if not exist %LIBRARY_BIN%\flang-new.exe exit 1   # [win]
 
 about:
   home: https://flang.llvm.org
