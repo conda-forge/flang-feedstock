@@ -1,4 +1,4 @@
-From 07055b7d13d55f5f218d550057920e425f007bfa Mon Sep 17 00:00:00 2001
+From 434c425ac249c3fb7845682b447520163ff90cb1 Mon Sep 17 00:00:00 2001
 From: Michael Kruse <llvm-project@meinersbur.de>
 Date: Fri, 27 Sep 2024 09:18:49 +0200
 Subject: [PATCH 4/4] [Flang] LLVM_ENABLE_RUNTIMES=flang-rt

@@ -1,4 +1,4 @@
-From 904d5ae0b2fb13c09ff1537db06c24d50ee26f5f Mon Sep 17 00:00:00 2001
+From 75ef18de4ff52952d118b2ee2a64247b7f50a5c8 Mon Sep 17 00:00:00 2001
 From: Michael Kruse <llvm-project@meinersbur.de>
 Date: Fri, 27 Sep 2024 17:20:13 +0200
 Subject: [PATCH 3/4] [Flang][NFC] Move runtime library files to flang-rt
@@ -324,7 +324,7 @@ Subject: [PATCH 3/4] [Flang][NFC] Move runtime library files to flang-rt
  .../Transforms/AssumedRankOpConversion.cpp    |  2 +-
  .../Optimizer/Transforms/CUFDeviceGlobal.cpp  |  2 +-
  .../Transforms/CUFGPUToLLVMConversion.cpp     |  2 +-
- .../Optimizer/Transforms/CUFOpConversion.cpp  |  5 ++--
+ .../Optimizer/Transforms/CUFOpConversion.cpp  |  4 +--
  .../Transforms/ExternalNameConversion.cpp     |  2 +-
  .../Optimizer/Transforms/LoopVersioning.cpp   |  2 +-
  .../Transforms/SimplifyIntrinsics.cpp         |  2 +-
@@ -378,7 +378,7 @@ Subject: [PATCH 3/4] [Flang][NFC] Move runtime library files to flang-rt
  flang/unittests/Evaluate/logical.cpp          |  2 +-
  flang/unittests/Evaluate/real.cpp             |  4 +--
  flang/unittests/Evaluate/uint128.cpp          |  2 +-
- 374 files changed, 1118 insertions(+), 844 deletions(-)
+ 374 files changed, 1117 insertions(+), 844 deletions(-)
  create mode 100644 flang-rt/.clang-format
  create mode 100644 flang-rt/cmake/config.h.cmake.in
  rename {flang/include/flang/Runtime => flang-rt/include/flang-rt}/CUDA/allocator.h (80%)
@@ -7704,20 +7704,19 @@ index c64f35542a6e..a840e07962ed 100644
  #include "mlir/Dialect/GPU/IR/GPUDialect.h"
  #include "mlir/Pass/Pass.h"
 diff --git a/flang/lib/Optimizer/Transforms/CUFOpConversion.cpp b/flang/lib/Optimizer/Transforms/CUFOpConversion.cpp
-index b14a1c338e08..eb2e0a3f5115 100644
+index b14a1c338e08..21fff452370b 100644
 --- a/flang/lib/Optimizer/Transforms/CUFOpConversion.cpp
 +++ b/flang/lib/Optimizer/Transforms/CUFOpConversion.cpp
-@@ -6,8 +6,7 @@
+@@ -6,8 +6,6 @@
  //
  //===----------------------------------------------------------------------===//
  
 -#include "flang/Optimizer/Transforms/CUFOpConversion.h"
 -#include "flang/Common/Fortran.h"
-+#include "flang/Optimizer/Transforms/CufOpConversion.h"
  #include "flang/Optimizer/Builder/Runtime/RTBuilder.h"
  #include "flang/Optimizer/CodeGen/TypeConverter.h"
  #include "flang/Optimizer/Dialect/CUF/CUFOps.h"
-@@ -16,11 +15,13 @@
+@@ -16,11 +14,13 @@
  #include "flang/Optimizer/HLFIR/HLFIROps.h"
  #include "flang/Optimizer/Support/DataLayout.h"
  #include "flang/Optimizer/Transforms/CUFCommon.h"
