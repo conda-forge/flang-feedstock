@@ -45,6 +45,9 @@ outputs:
   - name: libflang
     script: install_libflang.sh  # [unix]
     script: install_libflang.bat  # [win]
+    build:
+      # skip for now
+      skip: true
     requirements:
       build:
         # for strong run-exports
