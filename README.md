@@ -35,13 +35,6 @@ Current build status
                   <img src="https://dev.azure.com/conda-forge/feedstock-builds/_apis/build/status/flang-feedstock?branchName=main&jobName=linux&configuration=linux%20linux_64_" alt="variant">
                 </a>
               </td>
-            </tr><tr>
-              <td>win_64</td>
-              <td>
-                <a href="https://dev.azure.com/conda-forge/feedstock-builds/_build/latest?definitionId=2931&branchName=main">
-                  <img src="https://dev.azure.com/conda-forge/feedstock-builds/_apis/build/status/flang-feedstock?branchName=main&jobName=win&configuration=win%20win_64_" alt="variant">
-                </a>
-              </td>
             </tr>
           </tbody>
         </table>
@@ -61,14 +54,14 @@ Current release info
 Installing flang
 ================
 
-Installing `flang` from the `conda-forge` channel can be achieved by adding `conda-forge` to your channels with:
+Installing `flang` from the `conda-forge/label/emscripten` channel can be achieved by adding `conda-forge/label/emscripten` to your channels with:
 
 ```
-conda config --add channels conda-forge
+conda config --add channels conda-forge/label/emscripten
 conda config --set channel_priority strict
 ```
 
-Once the `conda-forge` channel has been enabled, `flang, libflang` can be installed with `conda`:
+Once the `conda-forge/label/emscripten` channel has been enabled, `flang, libflang` can be installed with `conda`:
 
 ```
 conda install flang libflang
@@ -83,26 +76,26 @@ mamba install flang libflang
 It is possible to list all of the versions of `flang` available on your platform with `conda`:
 
 ```
-conda search flang --channel conda-forge
+conda search flang --channel conda-forge/label/emscripten
 ```
 
 or with `mamba`:
 
 ```
-mamba search flang --channel conda-forge
+mamba search flang --channel conda-forge/label/emscripten
 ```
 
 Alternatively, `mamba repoquery` may provide more information:
 
 ```
 # Search all versions available on your platform:
-mamba repoquery search flang --channel conda-forge
+mamba repoquery search flang --channel conda-forge/label/emscripten
 
 # List packages depending on `flang`:
-mamba repoquery whoneeds flang --channel conda-forge
+mamba repoquery whoneeds flang --channel conda-forge/label/emscripten
 
 # List dependencies of `flang`:
-mamba repoquery depends flang --channel conda-forge
+mamba repoquery depends flang --channel conda-forge/label/emscripten
 ```
 
 
