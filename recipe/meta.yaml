@@ -22,8 +22,8 @@ source:
 
 build:
   number: 0
-  # intentionally only windows (main target) & linux (debuggability)
-  skip: true  # [osx]
+  # intentionally only linux for emscripten-support currently
+  skip: true  # [not linux]
 
 requirements:
   build:
