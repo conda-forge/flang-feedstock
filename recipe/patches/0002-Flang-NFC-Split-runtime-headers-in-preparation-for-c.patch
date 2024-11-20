@@ -1,0 +1,1059 @@
+From 022ab326c9366a953913f7db17efe6aa8e107708 Mon Sep 17 00:00:00 2001
+From: Michael Kruse <llvm-project@meinersbur.de>
+Date: Mon, 14 Oct 2024 13:55:16 +0200
+Subject: [PATCH 2/4] [Flang][NFC] Split runtime headers in preparation for
+ cross-compilation
+
+---
+ flang/include/flang/Lower/Allocatable.h       |  2 +-
+ .../flang/Optimizer/Builder/MutableBox.h      |  2 +-
+ .../flang/Optimizer/CodeGen/DescriptorModel.h |  2 +-
+ .../include/flang/Runtime/CUDA/allocatable.h  |  2 +-
+ flang/include/flang/Runtime/CUDA/allocator.h  |  2 +-
+ flang/include/flang/Runtime/CUDA/common.h     |  2 +-
+ flang/include/flang/Runtime/CUDA/descriptor.h |  2 +-
+ flang/include/flang/Runtime/CUDA/memory.h     |  2 +-
+ .../flang/Runtime/allocator-registry-consts.h | 20 ++++
+ .../flang/Runtime/allocator-registry.h        |  9 +-
+ .../flang/Runtime/array-constructor-consts.h  | 99 +++++++++++++++++++
+ .../include/flang/Runtime/array-constructor.h | 80 ++-------------
+ .../include/flang/Runtime/descriptor-consts.h | 73 ++++++++++++++
+ flang/include/flang/Runtime/descriptor.h      | 16 +--
+ flang/include/flang/Runtime/io-api-funcs.h    | 39 ++++++++
+ flang/include/flang/Runtime/io-api.h          |  3 -
+ flang/include/flang/Runtime/iostat-funcs.h    | 23 +++++
+ flang/include/flang/Runtime/iostat.h          |  2 -
+ flang/lib/Lower/ConvertVariable.cpp           |  2 +-
+ .../Builder/Runtime/ArrayConstructor.cpp      | 19 ++--
+ flang/lib/Optimizer/CodeGen/CodeGen.cpp       | 18 ++--
+ flang/lib/Semantics/compute-offsets.cpp       |  8 +-
+ flang/runtime/array-constructor.cpp           |  9 +-
+ flang/runtime/environment-default-list.h      |  0
+ flang/runtime/extensions.cpp                  |  2 +-
+ flang/runtime/internal-unit.cpp               |  2 +
+ flang/runtime/io-api-common.h                 |  2 +-
+ flang/runtime/io-api-minimal.cpp              |  2 +-
+ flang/runtime/io-api.cpp                      |  2 +-
+ flang/runtime/io-error.h                      |  2 +-
+ flang/runtime/io-stmt.h                       |  2 +-
+ flang/runtime/iostat.cpp                      |  2 +-
+ flang/runtime/namelist.cpp                    |  2 +-
+ .../HLFIR/array-ctor-as-runtime-temp.f90      |  7 +-
+ .../test/Lower/HLFIR/array-ctor-character.f90 |  2 +-
+ flang/test/Lower/HLFIR/array-ctor-derived.f90 |  4 +-
+ .../Lower/HLFIR/structure-constructor.f90     |  3 +-
+ .../Builder/Runtime/AllocatableTest.cpp       |  2 +-
+ flang/unittests/Runtime/ArrayConstructor.cpp  | 12 +--
+ 39 files changed, 323 insertions(+), 161 deletions(-)
+ create mode 100644 flang/include/flang/Runtime/allocator-registry-consts.h
+ create mode 100644 flang/include/flang/Runtime/array-constructor-consts.h
+ create mode 100644 flang/include/flang/Runtime/descriptor-consts.h
+ create mode 100644 flang/include/flang/Runtime/io-api-funcs.h
+ create mode 100644 flang/include/flang/Runtime/iostat-funcs.h
+ mode change 100755 => 100644 flang/runtime/environment-default-list.h
+
+diff --git a/flang/include/flang/Lower/Allocatable.h b/flang/include/flang/Lower/Allocatable.h
+index 1209b157ed1f..0e89af94af40 100644
+--- a/flang/include/flang/Lower/Allocatable.h
++++ b/flang/include/flang/Lower/Allocatable.h
+@@ -15,7 +15,7 @@
+ 
+ #include "flang/Lower/AbstractConverter.h"
+ #include "flang/Optimizer/Builder/MutableBox.h"
+-#include "flang/Runtime/allocator-registry.h"
++#include "flang/Runtime/allocator-registry-consts.h"
+ #include "llvm/ADT/StringRef.h"
+ 
+ namespace mlir {
+diff --git a/flang/include/flang/Optimizer/Builder/MutableBox.h b/flang/include/flang/Optimizer/Builder/MutableBox.h
+index fea7c7204837..39657ddaf6e0 100644
+--- a/flang/include/flang/Optimizer/Builder/MutableBox.h
++++ b/flang/include/flang/Optimizer/Builder/MutableBox.h
+@@ -14,7 +14,7 @@
+ #define FORTRAN_OPTIMIZER_BUILDER_MUTABLEBOX_H
+ 
+ #include "flang/Optimizer/Builder/BoxValue.h"
+-#include "flang/Runtime/allocator-registry.h"
++#include "flang/Runtime/allocator-registry-consts.h"
+ #include "llvm/ADT/StringRef.h"
+ 
+ namespace mlir {
+diff --git a/flang/include/flang/Optimizer/CodeGen/DescriptorModel.h b/flang/include/flang/Optimizer/CodeGen/DescriptorModel.h
+index ff0cf29e8073..9cccf8db8727 100644
+--- a/flang/include/flang/Optimizer/CodeGen/DescriptorModel.h
++++ b/flang/include/flang/Optimizer/CodeGen/DescriptorModel.h
+@@ -23,7 +23,7 @@
+ #define OPTIMIZER_DESCRIPTOR_MODEL_H
+ 
+ #include "flang/ISO_Fortran_binding_wrapper.h"
+-#include "flang/Runtime/descriptor.h"
++#include "flang/Runtime/descriptor-consts.h"
+ #include "mlir/Dialect/LLVMIR/LLVMTypes.h"
+ #include "mlir/IR/BuiltinTypes.h"
+ #include "llvm/Support/ErrorHandling.h"
+diff --git a/flang/include/flang/Runtime/CUDA/allocatable.h b/flang/include/flang/Runtime/CUDA/allocatable.h
+index e986ad910a3f..cc762e1e6c0c 100644
+--- a/flang/include/flang/Runtime/CUDA/allocatable.h
++++ b/flang/include/flang/Runtime/CUDA/allocatable.h
+@@ -9,7 +9,7 @@
+ #ifndef FORTRAN_RUNTIME_CUDA_ALLOCATABLE_H_
+ #define FORTRAN_RUNTIME_CUDA_ALLOCATABLE_H_
+ 
+-#include "flang/Runtime/descriptor.h"
++#include "flang/Runtime/descriptor-consts.h"
+ #include "flang/Runtime/entry-names.h"
+ 
+ namespace Fortran::runtime::cuda {
+diff --git a/flang/include/flang/Runtime/CUDA/allocator.h b/flang/include/flang/Runtime/CUDA/allocator.h
+index 06bda81c6f75..23c0e551b486 100644
+--- a/flang/include/flang/Runtime/CUDA/allocator.h
++++ b/flang/include/flang/Runtime/CUDA/allocator.h
+@@ -9,7 +9,7 @@
+ #ifndef FORTRAN_RUNTIME_CUDA_ALLOCATOR_H_
+ #define FORTRAN_RUNTIME_CUDA_ALLOCATOR_H_
+ 
+-#include "flang/Runtime/descriptor.h"
++#include "flang/Runtime/descriptor-consts.h"
+ #include "flang/Runtime/entry-names.h"
+ 
+ namespace Fortran::runtime::cuda {
+diff --git a/flang/include/flang/Runtime/CUDA/common.h b/flang/include/flang/Runtime/CUDA/common.h
+index e9f61932230e..474f8e6578b8 100644
+--- a/flang/include/flang/Runtime/CUDA/common.h
++++ b/flang/include/flang/Runtime/CUDA/common.h
+@@ -9,7 +9,7 @@
+ #ifndef FORTRAN_RUNTIME_CUDA_COMMON_H_
+ #define FORTRAN_RUNTIME_CUDA_COMMON_H_
+ 
+-#include "flang/Runtime/descriptor.h"
++#include "flang/Runtime/descriptor-consts.h"
+ #include "flang/Runtime/entry-names.h"
+ 
+ /// Type of memory for allocation/deallocation
+diff --git a/flang/include/flang/Runtime/CUDA/descriptor.h b/flang/include/flang/Runtime/CUDA/descriptor.h
+index 93791012fdcc..4c6c2c4694fd 100644
+--- a/flang/include/flang/Runtime/CUDA/descriptor.h
++++ b/flang/include/flang/Runtime/CUDA/descriptor.h
+@@ -9,7 +9,7 @@
+ #ifndef FORTRAN_RUNTIME_CUDA_DESCRIPTOR_H_
+ #define FORTRAN_RUNTIME_CUDA_DESCRIPTOR_H_
+ 
+-#include "flang/Runtime/descriptor.h"
++#include "flang/Runtime/descriptor-consts.h"
+ #include "flang/Runtime/entry-names.h"
+ #include <cstddef>
+ 
+diff --git a/flang/include/flang/Runtime/CUDA/memory.h b/flang/include/flang/Runtime/CUDA/memory.h
+index 713bdf536aaf..557b150358bd 100644
+--- a/flang/include/flang/Runtime/CUDA/memory.h
++++ b/flang/include/flang/Runtime/CUDA/memory.h
+@@ -9,7 +9,7 @@
+ #ifndef FORTRAN_RUNTIME_CUDA_MEMORY_H_
+ #define FORTRAN_RUNTIME_CUDA_MEMORY_H_
+ 
+-#include "flang/Runtime/descriptor.h"
++#include "flang/Runtime/descriptor-consts.h"
+ #include "flang/Runtime/entry-names.h"
+ #include <cstddef>
+ 
+diff --git a/flang/include/flang/Runtime/allocator-registry-consts.h b/flang/include/flang/Runtime/allocator-registry-consts.h
+new file mode 100644
+index 000000000000..70735c2fc7a7
+--- /dev/null
++++ b/flang/include/flang/Runtime/allocator-registry-consts.h
+@@ -0,0 +1,20 @@
++//===-- include/flang/Runtime/allocator-registry-consts.h -------*- C++ -*-===//
++//
++// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
++// See https://llvm.org/LICENSE.txt for license information.
++// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
++//
++//===----------------------------------------------------------------------===//
++
++#ifndef FORTRAN_RUNTIME_ALLOCATOR_REGISTRY_CONSTS_H_
++#define FORTRAN_RUNTIME_ALLOCATOR_REGISTRY_CONSTS_H_
++
++static constexpr unsigned kDefaultAllocator = 0;
++
++// Allocator used for CUF
++static constexpr unsigned kPinnedAllocatorPos = 1;
++static constexpr unsigned kDeviceAllocatorPos = 2;
++static constexpr unsigned kManagedAllocatorPos = 3;
++static constexpr unsigned kUnifiedAllocatorPos = 4;
++
++#endif /* FORTRAN_RUNTIME_ALLOCATOR_REGISTRY_CONSTS_H_ */
+diff --git a/flang/include/flang/Runtime/allocator-registry.h b/flang/include/flang/Runtime/allocator-registry.h
+index 3ccee56dc3fc..29302c5d825b 100644
+--- a/flang/include/flang/Runtime/allocator-registry.h
++++ b/flang/include/flang/Runtime/allocator-registry.h
+@@ -10,17 +10,10 @@
+ #define FORTRAN_RUNTIME_ALLOCATOR_REGISTRY_H_
+ 
+ #include "flang/Common/api-attrs.h"
++#include "flang/Runtime/allocator-registry-consts.h"
+ #include <cstdlib>
+ #include <vector>
+ 
+-static constexpr unsigned kDefaultAllocator = 0;
+-
+-// Allocator used for CUF
+-static constexpr unsigned kPinnedAllocatorPos = 1;
+-static constexpr unsigned kDeviceAllocatorPos = 2;
+-static constexpr unsigned kManagedAllocatorPos = 3;
+-static constexpr unsigned kUnifiedAllocatorPos = 4;
+-
+ #define MAX_ALLOCATOR 7 // 3 bits are reserved in the descriptor.
+ 
+ namespace Fortran::runtime {
+diff --git a/flang/include/flang/Runtime/array-constructor-consts.h b/flang/include/flang/Runtime/array-constructor-consts.h
+new file mode 100644
+index 000000000000..36699afd405e
+--- /dev/null
++++ b/flang/include/flang/Runtime/array-constructor-consts.h
+@@ -0,0 +1,99 @@
++//===-- include/flang/Runtime/array-constructor-consts.h --------*- C++ -*-===//
++//
++// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
++// See https://llvm.org/LICENSE.txt for license information.
++// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
++//
++//===----------------------------------------------------------------------===//
++
++// External APIs to create temporary storage for array constructors when their
++// final extents or length parameters cannot be pre-computed.
++
++#ifndef FORTRAN_RUNTIME_ARRAY_CONSTRUCTOR_CONSTS_H_
++#define FORTRAN_RUNTIME_ARRAY_CONSTRUCTOR_CONSTS_H_
++
++#include "flang/Runtime/descriptor-consts.h"
++#include "flang/Runtime/entry-names.h"
++#include <cstdint>
++
++namespace Fortran::runtime {
++struct ArrayConstructorVector;
++
++// Max sizeof(ArrayConstructorVector) and sizeof(ArrayConstructorVector) for any
++// target.
++// TODO: Use target-specific size/alignment instead of overapproximation.
++constexpr std::size_t MaxArrayConstructorVectorSizeInBytes = 2 * 40;
++constexpr std::size_t MaxArrayConstructorVectorAlignInBytes = 8;
++
++// This file defines an API to "push" an evaluated array constructor value
++// "from" into some storage "to" of an array constructor. It can be seen as a
++// form of std::vector::push_back() implementation for Fortran array
++// constructors. In the APIs and ArrayConstructorVector struct above:
++//
++// - "to" is a ranked-1 descriptor whose declared type is already set to the
++// array constructor derived type. It may be already allocated, even before the
++// first call to this API, or it may be unallocated. "to" extent is increased
++// every time a "from" is pushed past its current extent. At this end of the
++// API calls, its extent is the extent of the array constructor. If "to" is
++// unallocated and its extent is not null, it is assumed this is the final array
++// constructor extent value, and the first allocation already "reserves" storage
++// space accordingly to avoid reallocations.
++//  - "from" is a scalar or array descriptor for the evaluated array
++//  constructor value that must be copied into the storage of "to" at
++//  "nextValuePosition".
++//  - "useValueLengthParameters" must be set to true if the array constructor
++//  has length parameters and no type spec. If it is true and "to" is
++//  unallocated, "to" will take the length parameters of "from". If it is true
++//  and "to" is an allocated character array constructor, it will be checked
++//  that "from" length matches the one from "to". When it is false, the
++//  character length must already be set in "to" before the first call to this
++//  API and "from" character lengths are allowed to mismatch from "to".
++// - "nextValuePosition" is the zero based sequence position of "from" in the
++// array constructor. It is updated after this call by the number of "from"
++// elements. It should be set to zero by the caller of this API before the first
++// call.
++// - "actualAllocationSize" is the current allocation size of "to" storage. It
++// may be bigger than "to" extent for reallocation optimization purposes, but
++// should never be smaller, unless this is the first call and "to" is
++// unallocated. It is updated by the runtime after each successful allocation or
++// reallocation. It should be set to "to" extent if "to" is allocated before the
++// first call of this API, and can be left undefined otherwise.
++//
++// Note that this API can be used with "to" being a variable (that can be
++// discontiguous). This can be done when the variable is the left hand side of
++// an assignment from an array constructor as long as:
++//  - none of the ac-value overlaps with the variable,
++//  - this is an intrinsic assignment that is not a whole allocatable
++//  assignment, *and* for a type that has no components requiring user defined
++//  assignments,
++//  - the variable is properly finalized before using this API if its need to,
++//  - "useValueLengthParameters" should be set to false in this case, even if
++//  the array constructor has no type-spec, since the variable may have a
++//  different character length than the array constructor values.
++
++extern "C" {
++// API to initialize an ArrayConstructorVector before any values are pushed to
++// it. Inlined code is only expected to allocate the "ArrayConstructorVector"
++// class instance storage with sufficient size
++// (MaxArrayConstructorVectorSizeInBytes is expected to be large enough for all
++// supported targets). This avoids the need for the runtime to maintain a state,
++// or to use dynamic allocation for it.
++void RTDECL(InitArrayConstructorVector)(ArrayConstructorVector &vector,
++    Descriptor &to, bool useValueLengthParameters,
++    const char *sourceFile = nullptr, int sourceLine = 0);
++
++// Generic API to push any kind of entity into the array constructor (any
++// Fortran type and any rank).
++void RTDECL(PushArrayConstructorValue)(
++    ArrayConstructorVector &vector, const Descriptor &from);
++
++// API to push scalar array constructor value of:
++//   - a numerical or logical type,
++//   - or a derived type that has no length parameters, and no allocatable
++//   component (that would require deep copies).
++// It requires no descriptor for the value that is passed via its base address.
++void RTDECL(PushArrayConstructorSimpleScalar)(
++    ArrayConstructorVector &vector, void *from);
++} // extern "C"
++} // namespace Fortran::runtime
++#endif /* FORTRAN_RUNTIME_ARRAY_CONSTRUCTOR_CONSTS_H_ */
+diff --git a/flang/include/flang/Runtime/array-constructor.h b/flang/include/flang/Runtime/array-constructor.h
+index 46fc0418c799..c068af9ba120 100644
+--- a/flang/include/flang/Runtime/array-constructor.h
++++ b/flang/include/flang/Runtime/array-constructor.h
+@@ -12,6 +12,7 @@
+ #ifndef FORTRAN_RUNTIME_ARRAYCONSTRUCTOR_H_
+ #define FORTRAN_RUNTIME_ARRAYCONSTRUCTOR_H_
+ 
++#include "flang/Runtime/array-constructor-consts.h"
+ #include "flang/Runtime/descriptor.h"
+ #include "flang/Runtime/entry-names.h"
+ #include <cstdint>
+@@ -42,77 +43,14 @@ struct ArrayConstructorVector {
+ private:
+   unsigned char useValueLengthParameters_ : 1;
+ };
++static_assert(sizeof(Fortran::runtime::ArrayConstructorVector) <=
++        MaxArrayConstructorVectorSizeInBytes,
++    "ABI requires sizeof(ArrayConstructorVector) to be smaller than "
++    "MaxArrayConstructorVectorSizeInBytes");
++static_assert(alignof(Fortran::runtime::ArrayConstructorVector) <=
++        MaxArrayConstructorVectorAlignInBytes,
++    "ABI requires alignof(ArrayConstructorVector) to be smaller than "
++    "MaxArrayConstructorVectorAlignInBytes");
+ 
+-// This file defines an API to "push" an evaluated array constructor value
+-// "from" into some storage "to" of an array constructor. It can be seen as a
+-// form of std::vector::push_back() implementation for Fortran array
+-// constructors. In the APIs and ArrayConstructorVector struct above:
+-//
+-// - "to" is a ranked-1 descriptor whose declared type is already set to the
+-// array constructor derived type. It may be already allocated, even before the
+-// first call to this API, or it may be unallocated. "to" extent is increased
+-// every time a "from" is pushed past its current extent. At this end of the
+-// API calls, its extent is the extent of the array constructor. If "to" is
+-// unallocated and its extent is not null, it is assumed this is the final array
+-// constructor extent value, and the first allocation already "reserves" storage
+-// space accordingly to avoid reallocations.
+-//  - "from" is a scalar or array descriptor for the evaluated array
+-//  constructor value that must be copied into the storage of "to" at
+-//  "nextValuePosition".
+-//  - "useValueLengthParameters" must be set to true if the array constructor
+-//  has length parameters and no type spec. If it is true and "to" is
+-//  unallocated, "to" will take the length parameters of "from". If it is true
+-//  and "to" is an allocated character array constructor, it will be checked
+-//  that "from" length matches the one from "to". When it is false, the
+-//  character length must already be set in "to" before the first call to this
+-//  API and "from" character lengths are allowed to mismatch from "to".
+-// - "nextValuePosition" is the zero based sequence position of "from" in the
+-// array constructor. It is updated after this call by the number of "from"
+-// elements. It should be set to zero by the caller of this API before the first
+-// call.
+-// - "actualAllocationSize" is the current allocation size of "to" storage. It
+-// may be bigger than "to" extent for reallocation optimization purposes, but
+-// should never be smaller, unless this is the first call and "to" is
+-// unallocated. It is updated by the runtime after each successful allocation or
+-// reallocation. It should be set to "to" extent if "to" is allocated before the
+-// first call of this API, and can be left undefined otherwise.
+-//
+-// Note that this API can be used with "to" being a variable (that can be
+-// discontiguous). This can be done when the variable is the left hand side of
+-// an assignment from an array constructor as long as:
+-//  - none of the ac-value overlaps with the variable,
+-//  - this is an intrinsic assignment that is not a whole allocatable
+-//  assignment, *and* for a type that has no components requiring user defined
+-//  assignments,
+-//  - the variable is properly finalized before using this API if its need to,
+-//  - "useValueLengthParameters" should be set to false in this case, even if
+-//  the array constructor has no type-spec, since the variable may have a
+-//  different character length than the array constructor values.
+-
+-extern "C" {
+-// API to initialize an ArrayConstructorVector before any values are pushed to
+-// it. Inlined code is only expected to allocate the "ArrayConstructorVector"
+-// class instance storage with sufficient size (using
+-// "2*sizeof(ArrayConstructorVector)" on the host should be safe regardless of
+-// the target the runtime is compiled for). This avoids the need for the runtime
+-// to maintain a state, or to use dynamic allocation for it. "vectorClassSize"
+-// is used to validate that lowering allocated enough space for it.
+-void RTDECL(InitArrayConstructorVector)(ArrayConstructorVector &vector,
+-    Descriptor &to, bool useValueLengthParameters, int vectorClassSize,
+-    const char *sourceFile = nullptr, int sourceLine = 0);
+-
+-// Generic API to push any kind of entity into the array constructor (any
+-// Fortran type and any rank).
+-void RTDECL(PushArrayConstructorValue)(
+-    ArrayConstructorVector &vector, const Descriptor &from);
+-
+-// API to push scalar array constructor value of:
+-//   - a numerical or logical type,
+-//   - or a derived type that has no length parameters, and no allocatable
+-//   component (that would require deep copies).
+-// It requires no descriptor for the value that is passed via its base address.
+-void RTDECL(PushArrayConstructorSimpleScalar)(
+-    ArrayConstructorVector &vector, void *from);
+-} // extern "C"
+ } // namespace Fortran::runtime
+ #endif // FORTRAN_RUNTIME_ARRAYCONSTRUCTOR_H_
+diff --git a/flang/include/flang/Runtime/descriptor-consts.h b/flang/include/flang/Runtime/descriptor-consts.h
+new file mode 100644
+index 000000000000..c08e5018d0af
+--- /dev/null
++++ b/flang/include/flang/Runtime/descriptor-consts.h
+@@ -0,0 +1,73 @@
++//===-- include/flang/Runtime/descriptor-consts.h ---------------*- C++ -*-===//
++//
++// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
++// See https://llvm.org/LICENSE.txt for license information.
++// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
++//
++//===----------------------------------------------------------------------===//
++
++#ifndef FORTRAN_RUNTIME_DESCRIPTOR_CONSTS_H_
++#define FORTRAN_RUNTIME_DESCRIPTOR_CONSTS_H_
++
++#include "flang/Common/api-attrs.h"
++#include "flang/ISO_Fortran_binding_wrapper.h"
++#include <cstddef>
++#include <cstdint>
++
++// Value of the addendum presence flag.
++#define _CFI_ADDENDUM_FLAG 1
++// Number of bits needed to be shifted when manipulating the allocator index.
++#define _CFI_ALLOCATOR_IDX_SHIFT 1
++// Allocator index mask.
++#define _CFI_ALLOCATOR_IDX_MASK 0b00001110
++
++namespace Fortran::runtime::typeInfo {
++using TypeParameterValue = std::int64_t;
++class DerivedType;
++} // namespace Fortran::runtime::typeInfo
++
++namespace Fortran::runtime {
++class Descriptor;
++using SubscriptValue = ISO::CFI_index_t;
++
++/// Returns size in bytes of the descriptor (not the data)
++/// This must be at least as large as the largest descriptor of any target
++/// triple.
++static constexpr RT_API_ATTRS std::size_t MaxDescriptorSizeInBytes(
++    int rank, bool addendum = false, int lengthTypeParameters = 0) {
++  // Layout:
++  //
++  // fortran::runtime::Descriptor {
++  //   ISO::CFI_cdesc_t {
++  //     void *base_addr;           (pointer -> up to 8 bytes)
++  //     size_t elem_len;           (up to 8 bytes)
++  //     int version;               (up to 4 bytes)
++  //     CFI_rank_t rank;           (unsigned char -> 1 byte)
++  //     CFI_type_t type;           (signed char -> 1 byte)
++  //     CFI_attribute_t attribute; (unsigned char -> 1 byte)
++  //     unsigned char extra;       (1 byte)
++  //   }
++  // }
++  // fortran::runtime::Dimension[rank] {
++  //   ISO::CFI_dim_t {
++  //     CFI_index_t lower_bound; (ptrdiff_t -> up to 8 bytes)
++  //     CFI_index_t extent;      (ptrdiff_t -> up to 8 bytes)
++  //     CFI_index_t sm;          (ptrdiff_t -> up to 8 bytes)
++  //   }
++  // }
++  // fortran::runtime::DescriptorAddendum {
++  //   const typeInfo::DerivedType *derivedType_;        (pointer -> up to 8
++  //   bytes) typeInfo::TypeParameterValue len_[lenParameters]; (int64_t -> 8
++  //   bytes)
++  // }
++  std::size_t bytes{24u + rank * 24u};
++  if (addendum || lengthTypeParameters > 0) {
++    if (lengthTypeParameters < 1)
++      lengthTypeParameters = 1;
++    bytes += 8u + static_cast<std::size_t>(lengthTypeParameters) * 8u;
++  }
++  return bytes;
++}
++
++} // namespace Fortran::runtime
++#endif /* FORTRAN_RUNTIME_DESCRIPTOR_CONSTS_H_ */
+diff --git a/flang/include/flang/Runtime/descriptor.h b/flang/include/flang/Runtime/descriptor.h
+index 030d0c1031fb..dd36fba157ca 100644
+--- a/flang/include/flang/Runtime/descriptor.h
++++ b/flang/include/flang/Runtime/descriptor.h
+@@ -19,6 +19,7 @@
+ // but should never reference this internal header.
+ 
+ #include "flang/ISO_Fortran_binding_wrapper.h"
++#include "flang/Runtime/descriptor-consts.h"
+ #include "flang/Runtime/memory.h"
+ #include "flang/Runtime/type-code.h"
+ #include <algorithm>
+@@ -28,14 +29,8 @@
+ #include <cstdio>
+ #include <cstring>
+ 
+-namespace Fortran::runtime::typeInfo {
+-using TypeParameterValue = std::int64_t;
+-class DerivedType;
+-} // namespace Fortran::runtime::typeInfo
+-
+ namespace Fortran::runtime {
+ 
+-using SubscriptValue = ISO::CFI_index_t;
+ class Terminator;
+ 
+ RT_VAR_GROUP_BEGIN
+@@ -420,13 +415,6 @@ public:
+ 
+   void Dump(FILE * = stdout) const;
+ 
+-// Value of the addendum presence flag.
+-#define _CFI_ADDENDUM_FLAG 1
+-// Number of bits needed to be shifted when manipulating the allocator index.
+-#define _CFI_ALLOCATOR_IDX_SHIFT 1
+-// Allocator index mask.
+-#define _CFI_ALLOCATOR_IDX_MASK 0b00001110
+-
+   RT_API_ATTRS inline bool HasAddendum() const {
+     return raw_.extra & _CFI_ADDENDUM_FLAG;
+   }
+@@ -464,6 +452,8 @@ public:
+   static constexpr bool hasAddendum{ADDENDUM || MAX_LEN_PARMS > 0};
+   static constexpr std::size_t byteSize{
+       Descriptor::SizeInBytes(maxRank, hasAddendum, maxLengthTypeParameters)};
++  static_assert(byteSize <=
++      MaxDescriptorSizeInBytes(maxRank, hasAddendum, maxLengthTypeParameters));
+   RT_OFFLOAD_VAR_GROUP_END
+ 
+   RT_API_ATTRS Descriptor &descriptor() {
+diff --git a/flang/include/flang/Runtime/io-api-funcs.h b/flang/include/flang/Runtime/io-api-funcs.h
+new file mode 100644
+index 000000000000..e81c3cb8156c
+--- /dev/null
++++ b/flang/include/flang/Runtime/io-api-funcs.h
+@@ -0,0 +1,39 @@
++//===-- include/flang/Runtime/io-api-funcs.h --------------------*- C++ -*-===//
++//
++// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
++// See https://llvm.org/LICENSE.txt for license information.
++// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
++//
++//===----------------------------------------------------------------------===//
++
++// Defines API between compiled code and I/O runtime library.
++
++#ifndef FORTRAN_RUNTIME_IO_API_FUNCS_H_
++#define FORTRAN_RUNTIME_IO_API_FUNCS_H_
++
++#include "flang/Common/uint128.h"
++#include "flang/Runtime/entry-names.h"
++#include "flang/Runtime/io-api.h"
++#include "flang/Runtime/iostat.h"
++#include "flang/Runtime/magic-numbers.h"
++#include <cinttypes>
++#include <cstddef>
++
++namespace Fortran::runtime {
++class Descriptor;
++} // namespace Fortran::runtime
++
++namespace Fortran::runtime::io {
++
++struct NonTbpDefinedIoTable;
++class NamelistGroup;
++class IoStatementState;
++using Cookie = IoStatementState *;
++using ExternalUnit = int;
++using AsynchronousId = int;
++
++RT_API_ATTRS const char *InquiryKeywordHashDecode(
++    char *buffer, std::size_t, InquiryKeywordHash);
++
++} // namespace Fortran::runtime::io
++#endif /* FORTRAN_RUNTIME_IO_API_FUNCS_H_ */
+diff --git a/flang/include/flang/Runtime/io-api.h b/flang/include/flang/Runtime/io-api.h
+index 328afc715a3f..e588b46dc4b3 100644
+--- a/flang/include/flang/Runtime/io-api.h
++++ b/flang/include/flang/Runtime/io-api.h
+@@ -51,9 +51,6 @@ constexpr InquiryKeywordHash HashInquiryKeyword(const char *p) {
+   return hash;
+ }
+ 
+-RT_API_ATTRS const char *InquiryKeywordHashDecode(
+-    char *buffer, std::size_t, InquiryKeywordHash);
+-
+ extern "C" {
+ 
+ #define IONAME(name) RTNAME(io##name)
+diff --git a/flang/include/flang/Runtime/iostat-funcs.h b/flang/include/flang/Runtime/iostat-funcs.h
+new file mode 100644
+index 000000000000..3ab4527ea829
+--- /dev/null
++++ b/flang/include/flang/Runtime/iostat-funcs.h
+@@ -0,0 +1,23 @@
++//===-- include/flang/Runtime/iostat-funcs.h --------------------*- C++ -*-===//
++//
++// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
++// See https://llvm.org/LICENSE.txt for license information.
++// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
++//
++//===----------------------------------------------------------------------===//
++
++// Defines the values returned by the runtime for IOSTAT= specifiers
++// on I/O statements.
++
++#ifndef FORTRAN_RUNTIME_IOSTAT_FUNCS_H_
++#define FORTRAN_RUNTIME_IOSTAT_FUNCS_H_
++
++#include "flang/Common/api-attrs.h"
++#include "flang/Runtime/iostat.h"
++
++namespace Fortran::runtime::io {
++
++RT_API_ATTRS const char *IostatErrorString(int);
++
++} // namespace Fortran::runtime::io
++#endif /* FORTRAN_RUNTIME_IOSTAT_FUNCS_H_ */
+diff --git a/flang/include/flang/Runtime/iostat.h b/flang/include/flang/Runtime/iostat.h
+index 6ce7c82b424e..0565718f6c10 100644
+--- a/flang/include/flang/Runtime/iostat.h
++++ b/flang/include/flang/Runtime/iostat.h
+@@ -89,7 +89,5 @@ enum Iostat {
+   IostatNonExternalDefinedUnformattedIo,
+ };
+ 
+-RT_API_ATTRS const char *IostatErrorString(int);
+-
+ } // namespace Fortran::runtime::io
+ #endif // FORTRAN_RUNTIME_IOSTAT_H_
+diff --git a/flang/lib/Lower/ConvertVariable.cpp b/flang/lib/Lower/ConvertVariable.cpp
+index cc51d5a9bb8d..d6ee5c049f24 100644
+--- a/flang/lib/Lower/ConvertVariable.cpp
++++ b/flang/lib/Lower/ConvertVariable.cpp
+@@ -39,7 +39,7 @@
+ #include "flang/Optimizer/Support/FatalError.h"
+ #include "flang/Optimizer/Support/InternalNames.h"
+ #include "flang/Optimizer/Support/Utils.h"
+-#include "flang/Runtime/allocator-registry.h"
++#include "flang/Runtime/allocator-registry-consts.h"
+ #include "flang/Semantics/runtime-type-info.h"
+ #include "flang/Semantics/tools.h"
+ #include "llvm/Support/CommandLine.h"
+diff --git a/flang/lib/Optimizer/Builder/Runtime/ArrayConstructor.cpp b/flang/lib/Optimizer/Builder/Runtime/ArrayConstructor.cpp
+index c786bef5cb1c..0d56cd2edc99 100644
+--- a/flang/lib/Optimizer/Builder/Runtime/ArrayConstructor.cpp
++++ b/flang/lib/Optimizer/Builder/Runtime/ArrayConstructor.cpp
+@@ -9,7 +9,7 @@
+ #include "flang/Optimizer/Builder/Runtime/ArrayConstructor.h"
+ #include "flang/Optimizer/Builder/FIRBuilder.h"
+ #include "flang/Optimizer/Builder/Runtime/RTBuilder.h"
+-#include "flang/Runtime/array-constructor.h"
++#include "flang/Runtime/array-constructor-consts.h"
+ 
+ using namespace Fortran::runtime;
+ 
+@@ -25,12 +25,13 @@ mlir::Value fir::runtime::genInitArrayConstructorVector(
+     mlir::Location loc, fir::FirOpBuilder &builder, mlir::Value toBox,
+     mlir::Value useValueLengthParameters) {
+   // Allocate storage for the runtime cookie for the array constructor vector.
+-  // Use the "host" size and alignment, but double them to be safe regardless of
+-  // the target. The "cookieSize" argument is used to validate this wild
+-  // assumption until runtime interfaces are improved.
++  // Use pessimistic values for size and alignment that are valid for all
++  // supported targets. Whether the actual ArrayConstructorVector object fits
++  // into the available MaxArrayConstructorVectorSizeInBytes is verified when
++  // building clang-rt.
+   std::size_t arrayVectorStructBitSize =
+-      2 * sizeof(Fortran::runtime::ArrayConstructorVector) * 8;
+-  std::size_t alignLike = alignof(Fortran::runtime::ArrayConstructorVector) * 8;
++      MaxArrayConstructorVectorSizeInBytes * 8;
++  std::size_t alignLike = MaxArrayConstructorVectorAlignInBytes * 8;
+   fir::SequenceType::Extent numElem =
+       (arrayVectorStructBitSize + alignLike - 1) / alignLike;
+   mlir::Type intType = builder.getIntegerType(alignLike);
+@@ -43,14 +44,12 @@ mlir::Value fir::runtime::genInitArrayConstructorVector(
+           loc, builder);
+   mlir::FunctionType funcType = func.getFunctionType();
+   cookie = builder.createConvert(loc, funcType.getInput(0), cookie);
+-  mlir::Value cookieSize = builder.createIntegerConstant(
+-      loc, funcType.getInput(3), numElem * alignLike / 8);
+   mlir::Value sourceFile = fir::factory::locationToFilename(builder, loc);
+   mlir::Value sourceLine =
+-      fir::factory::locationToLineNo(builder, loc, funcType.getInput(5));
++      fir::factory::locationToLineNo(builder, loc, funcType.getInput(4));
+   auto args = fir::runtime::createArguments(builder, loc, funcType, cookie,
+                                             toBox, useValueLengthParameters,
+-                                            cookieSize, sourceFile, sourceLine);
++                                            sourceFile, sourceLine);
+   builder.create<fir::CallOp>(loc, func, args);
+   return cookie;
+ }
+diff --git a/flang/lib/Optimizer/CodeGen/CodeGen.cpp b/flang/lib/Optimizer/CodeGen/CodeGen.cpp
+index 3452a662f7a1..4d03b38ca837 100644
+--- a/flang/lib/Optimizer/CodeGen/CodeGen.cpp
++++ b/flang/lib/Optimizer/CodeGen/CodeGen.cpp
+@@ -23,8 +23,8 @@
+ #include "flang/Optimizer/Support/InternalNames.h"
+ #include "flang/Optimizer/Support/TypeCode.h"
+ #include "flang/Optimizer/Support/Utils.h"
+-#include "flang/Runtime/allocator-registry.h"
+-#include "flang/Runtime/descriptor.h"
++#include "flang/Runtime/allocator-registry-consts.h"
++#include "flang/Runtime/descriptor-consts.h"
+ #include "flang/Semantics/runtime-type-info.h"
+ #include "mlir/Conversion/ArithCommon/AttrToLLVMConverter.h"
+ #include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
+@@ -1315,16 +1315,12 @@ struct EmboxCommonConversion : public fir::FIROpConversion<OP> {
+           insertField(rewriter, loc, descriptor, {kExtraPosInBox}, extraField);
+     } else {
+       // Compute the value of the extra field based on allocator_idx and
+-      // addendum present using a Descriptor object.
+-      Fortran::runtime::StaticDescriptor staticDescriptor;
+-      Fortran::runtime::Descriptor &desc{staticDescriptor.descriptor()};
+-      desc.raw().extra = 0;
+-      desc.SetAllocIdx(allocatorIdx);
++      // addendum present.
++      unsigned extra = allocatorIdx << _CFI_ALLOCATOR_IDX_SHIFT;
+       if (hasAddendum)
+-        desc.SetHasAddendum();
+-      descriptor =
+-          insertField(rewriter, loc, descriptor, {kExtraPosInBox},
+-                      this->genI32Constant(loc, rewriter, desc.raw().extra));
++        extra |= _CFI_ADDENDUM_FLAG;
++      descriptor = insertField(rewriter, loc, descriptor, {kExtraPosInBox},
++                               this->genI32Constant(loc, rewriter, extra));
+     }
+ 
+     if (hasAddendum) {
+diff --git a/flang/lib/Semantics/compute-offsets.cpp b/flang/lib/Semantics/compute-offsets.cpp
+index 028633813a91..94640fa30baa 100644
+--- a/flang/lib/Semantics/compute-offsets.cpp
++++ b/flang/lib/Semantics/compute-offsets.cpp
+@@ -11,7 +11,7 @@
+ #include "flang/Evaluate/fold.h"
+ #include "flang/Evaluate/shape.h"
+ #include "flang/Evaluate/type.h"
+-#include "flang/Runtime/descriptor.h"
++#include "flang/Runtime/descriptor-consts.h"
+ #include "flang/Semantics/scope.h"
+ #include "flang/Semantics/semantics.h"
+ #include "flang/Semantics/symbol.h"
+@@ -339,8 +339,12 @@ auto ComputeOffsetsHelper::GetSizeAndAlignment(
+     const auto *derived{evaluate::GetDerivedTypeSpec(dyType)};
+     int lenParams{derived ? CountLenParameters(*derived) : 0};
+     bool needAddendum{derived || (dyType && dyType->IsUnlimitedPolymorphic())};
+-    std::size_t size{runtime::Descriptor::SizeInBytes(
++
++    // FIXME: Get descriptor size from targetCharacteristics instead
++    // overapproximation
++    std::size_t size{runtime::MaxDescriptorSizeInBytes(
+         symbol.Rank(), needAddendum, lenParams)};
++
+     return {size, targetCharacteristics.descriptorAlignment()};
+   }
+   if (IsProcedurePointer(symbol)) {
+diff --git a/flang/runtime/array-constructor.cpp b/flang/runtime/array-constructor.cpp
+index 72e08feff7fd..c6953167f5fb 100644
+--- a/flang/runtime/array-constructor.cpp
++++ b/flang/runtime/array-constructor.cpp
+@@ -92,13 +92,10 @@ extern "C" {
+ RT_EXT_API_GROUP_BEGIN
+ 
+ void RTDEF(InitArrayConstructorVector)(ArrayConstructorVector &vector,
+-    Descriptor &to, bool useValueLengthParameters, int vectorClassSize,
+-    const char *sourceFile, int sourceLine) {
++    Descriptor &to, bool useValueLengthParameters, const char *sourceFile,
++    int sourceLine) {
+   Terminator terminator{vector.sourceFile, vector.sourceLine};
+-  RUNTIME_CHECK(terminator,
+-      to.rank() == 1 &&
+-          sizeof(ArrayConstructorVector) <=
+-              static_cast<std::size_t>(vectorClassSize));
++  RUNTIME_CHECK(terminator, to.rank() == 1);
+   SubscriptValue actualAllocationSize{
+       to.IsAllocated() ? static_cast<SubscriptValue>(to.Elements()) : 0};
+   (void)new (&vector) ArrayConstructorVector{to, /*nextValuePosition=*/0,
+diff --git a/flang/runtime/environment-default-list.h b/flang/runtime/environment-default-list.h
+old mode 100755
+new mode 100644
+diff --git a/flang/runtime/extensions.cpp b/flang/runtime/extensions.cpp
+index 50d3c72fe650..6b4acccce2c1 100644
+--- a/flang/runtime/extensions.cpp
++++ b/flang/runtime/extensions.cpp
+@@ -15,7 +15,7 @@
+ #include "flang/Runtime/command.h"
+ #include "flang/Runtime/descriptor.h"
+ #include "flang/Runtime/entry-names.h"
+-#include "flang/Runtime/io-api.h"
++#include "flang/Runtime/io-api-funcs.h"
+ #include <chrono>
+ #include <cstring>
+ #include <ctime>
+diff --git a/flang/runtime/internal-unit.cpp b/flang/runtime/internal-unit.cpp
+index f28700ee0158..f8f3877efb20 100644
+--- a/flang/runtime/internal-unit.cpp
++++ b/flang/runtime/internal-unit.cpp
+@@ -36,6 +36,8 @@ RT_API_ATTRS InternalDescriptorUnit<DIR>::InternalDescriptorUnit(
+   Descriptor &d{descriptor()};
+   RUNTIME_CHECK(
+       terminator, that.SizeInBytes() <= d.SizeInBytes(maxRank, true, 0));
++  RUNTIME_CHECK(terminator,
++      that.SizeInBytes() <= MaxDescriptorSizeInBytes(maxRank, true, 0));
+   new (&d) Descriptor{that};
+   d.Check();
+   internalIoCharKind = thatType->second;
+diff --git a/flang/runtime/io-api-common.h b/flang/runtime/io-api-common.h
+index c7b86cab73a5..b4ac9a61c09e 100644
+--- a/flang/runtime/io-api-common.h
++++ b/flang/runtime/io-api-common.h
+@@ -14,7 +14,7 @@
+ #include "unit.h"
+ #include "flang/Common/api-attrs.h"
+ #include "flang/Common/optional.h"
+-#include "flang/Runtime/io-api.h"
++#include "flang/Runtime/io-api-funcs.h"
+ 
+ namespace Fortran::runtime::io {
+ 
+diff --git a/flang/runtime/io-api-minimal.cpp b/flang/runtime/io-api-minimal.cpp
+index ad76fe3de032..82376cf96416 100644
+--- a/flang/runtime/io-api-minimal.cpp
++++ b/flang/runtime/io-api-minimal.cpp
+@@ -16,7 +16,7 @@
+ #include "terminator.h"
+ #include "tools.h"
+ #include "unit.h"
+-#include "flang/Runtime/io-api.h"
++#include "flang/Runtime/io-api-funcs.h"
+ 
+ namespace Fortran::runtime::io {
+ RT_EXT_API_GROUP_BEGIN
+diff --git a/flang/runtime/io-api.cpp b/flang/runtime/io-api.cpp
+index 39ac8c9eb6de..84ca3dded87a 100644
+--- a/flang/runtime/io-api.cpp
++++ b/flang/runtime/io-api.cpp
+@@ -13,7 +13,6 @@
+ // OutputReal{32,64}, OutputComplex{32,64}, OutputAscii, & EndIoStatement()
+ // are in runtime/io-api-minimal.cpp.
+ 
+-#include "flang/Runtime/io-api.h"
+ #include "descriptor-io.h"
+ #include "edit-input.h"
+ #include "edit-output.h"
+@@ -26,6 +25,7 @@
+ #include "unit.h"
+ #include "flang/Common/optional.h"
+ #include "flang/Runtime/descriptor.h"
++#include "flang/Runtime/io-api-funcs.h"
+ #include "flang/Runtime/memory.h"
+ #include <cstdlib>
+ #include <memory>
+diff --git a/flang/runtime/io-error.h b/flang/runtime/io-error.h
+index 426573e2faf0..22e43db71028 100644
+--- a/flang/runtime/io-error.h
++++ b/flang/runtime/io-error.h
+@@ -16,7 +16,7 @@
+ #define FORTRAN_RUNTIME_IO_ERROR_H_
+ 
+ #include "terminator.h"
+-#include "flang/Runtime/iostat.h"
++#include "flang/Runtime/iostat-funcs.h"
+ #include "flang/Runtime/memory.h"
+ #include <cinttypes>
+ 
+diff --git a/flang/runtime/io-stmt.h b/flang/runtime/io-stmt.h
+index 1f1419b249e5..9ce7295dac3c 100644
+--- a/flang/runtime/io-stmt.h
++++ b/flang/runtime/io-stmt.h
+@@ -20,7 +20,7 @@
+ #include "flang/Common/reference-wrapper.h"
+ #include "flang/Common/visit.h"
+ #include "flang/Runtime/descriptor.h"
+-#include "flang/Runtime/io-api.h"
++#include "flang/Runtime/io-api-funcs.h"
+ #include <flang/Common/variant.h>
+ #include <functional>
+ #include <type_traits>
+diff --git a/flang/runtime/iostat.cpp b/flang/runtime/iostat.cpp
+index 39e224cb0128..0d71eb09e0a5 100644
+--- a/flang/runtime/iostat.cpp
++++ b/flang/runtime/iostat.cpp
+@@ -6,7 +6,7 @@
+ //
+ //===----------------------------------------------------------------------===//
+ 
+-#include "flang/Runtime/iostat.h"
++#include "flang/Runtime/iostat-funcs.h"
+ 
+ namespace Fortran::runtime::io {
+ RT_OFFLOAD_API_GROUP_BEGIN
+diff --git a/flang/runtime/namelist.cpp b/flang/runtime/namelist.cpp
+index af092de70f78..cfed7f2c6bf9 100644
+--- a/flang/runtime/namelist.cpp
++++ b/flang/runtime/namelist.cpp
+@@ -10,7 +10,7 @@
+ #include "descriptor-io.h"
+ #include "emit-encoded.h"
+ #include "io-stmt.h"
+-#include "flang/Runtime/io-api.h"
++#include "flang/Runtime/io-api-funcs.h"
+ #include <algorithm>
+ #include <cstring>
+ #include <limits>
+diff --git a/flang/test/Lower/HLFIR/array-ctor-as-runtime-temp.f90 b/flang/test/Lower/HLFIR/array-ctor-as-runtime-temp.f90
+index e1e65fc48bab..727eff7613e4 100644
+--- a/flang/test/Lower/HLFIR/array-ctor-as-runtime-temp.f90
++++ b/flang/test/Lower/HLFIR/array-ctor-as-runtime-temp.f90
+@@ -17,12 +17,11 @@ end subroutine
+ ! CHECK:           fir.store %[[VAL_6]] to %[[VAL_2]] : !fir.ref<!fir.box<!fir.heap<!fir.array<?xi32>>>>
+ ! CHECK:           %[[VAL_7:.*]] = arith.constant false
+ ! CHECK:           %[[VAL_8:.*]] = fir.convert %[[VAL_1]] : (!fir.ref<!fir.array<10xi64>>) -> !fir.llvm_ptr<i8>
+-! CHECK:           %[[VAL_9:.*]] = arith.constant 80 : i32
+ ! CHECK:           %[[VAL_10:.*]] = fir.address_of(@_QQclX{{.*}}) : !fir.ref<!fir.char<1,{{[0-9]*}}>>
+ ! CHECK:           %[[VAL_11:.*]] = arith.constant 7 : i32
+ ! CHECK:           %[[VAL_12:.*]] = fir.convert %[[VAL_2]] : (!fir.ref<!fir.box<!fir.heap<!fir.array<?xi32>>>>) -> !fir.ref<!fir.box<none>>
+ ! CHECK:           %[[VAL_13:.*]] = fir.convert %[[VAL_10]] : (!fir.ref<!fir.char<1,{{[0-9]*}}>>) -> !fir.ref<i8>
+-! CHECK:           %[[VAL_14:.*]] = fir.call @_FortranAInitArrayConstructorVector(%[[VAL_8]], %[[VAL_12]], %[[VAL_7]], %[[VAL_9]], %[[VAL_13]], %[[VAL_11]]) fastmath<contract> : (!fir.llvm_ptr<i8>, !fir.ref<!fir.box<none>>, i1, i32, !fir.ref<i8>, i32) -> none
++! CHECK:           %[[VAL_14:.*]] = fir.call @_FortranAInitArrayConstructorVector(%[[VAL_8]], %[[VAL_12]], %[[VAL_7]], %[[VAL_13]], %[[VAL_11]]) fastmath<contract> : (!fir.llvm_ptr<i8>, !fir.ref<!fir.box<none>>, i1, !fir.ref<i8>, i32) -> none
+ ! CHECK:           %[[VAL_15:.*]] = arith.constant 1 : i64
+ ! CHECK:           %[[VAL_16:.*]] = fir.convert %[[VAL_15]] : (i64) -> index
+ ! CHECK:           %[[VAL_17:.*]] = fir.call @_QMarrayctorPibar() fastmath<contract> : () -> i32
+@@ -86,7 +85,7 @@ end subroutine
+ ! CHECK:  %[[VAL_26:.*]] = arith.constant false
+ ! CHECK:  %[[VAL_27:.*]] = fir.convert %[[VAL_1]] : (!fir.ref<!fir.array<10xi64>>) -> !fir.llvm_ptr<i8>
+ ! CHECK:  %[[VAL_31:.*]] = fir.convert %[[VAL_2]] : (!fir.ref<!fir.box<!fir.heap<!fir.array<?xi32>>>>) -> !fir.ref<!fir.box<none>>
+-! CHECK:  %[[VAL_33:.*]] = fir.call @_FortranAInitArrayConstructorVector(%[[VAL_27]], %[[VAL_31]], %[[VAL_26]], %{{.*}}, %{{.*}}, %{{.*}}) {{.*}}: (!fir.llvm_ptr<i8>, !fir.ref<!fir.box<none>>, i1, i32, !fir.ref<i8>, i32) -> none
++! CHECK:  %[[VAL_33:.*]] = fir.call @_FortranAInitArrayConstructorVector(%[[VAL_27]], %[[VAL_31]], %[[VAL_26]], %{{.*}}, %{{.*}}) {{.*}}: (!fir.llvm_ptr<i8>, !fir.ref<!fir.box<none>>, i1, !fir.ref<i8>, i32) -> none
+ ! CHECK:  %[[VAL_34:.*]] = fir.convert %[[VAL_3]]#1 : (!fir.box<!fir.array<?x?xi32>>) -> !fir.box<none>
+ ! CHECK:  %[[VAL_35:.*]] = fir.call @_FortranAPushArrayConstructorValue(%[[VAL_27]], %[[VAL_34]]) {{.*}}: (!fir.llvm_ptr<i8>, !fir.box<none>) -> none
+ ! CHECK:  %[[VAL_36:.*]] = fir.convert %[[VAL_3]]#1 : (!fir.box<!fir.array<?x?xi32>>) -> !fir.box<none>
+@@ -107,7 +106,7 @@ subroutine test_arrays_unpredictable_size()
+ ! CHECK:  %[[VAL_9:.*]] = arith.constant false
+ ! CHECK:  %[[VAL_10:.*]] = fir.convert %[[VAL_3]] : (!fir.ref<!fir.array<10xi64>>) -> !fir.llvm_ptr<i8>
+ ! CHECK:  %[[VAL_14:.*]] = fir.convert %[[VAL_4]] : (!fir.ref<!fir.box<!fir.heap<!fir.array<?xi32>>>>) -> !fir.ref<!fir.box<none>>
+-! CHECK:  %[[VAL_16:.*]] = fir.call @_FortranAInitArrayConstructorVector(%[[VAL_10]], %[[VAL_14]], %[[VAL_9]], %{{.*}}, %{{.*}}, %{{.*}}) {{.*}}: (!fir.llvm_ptr<i8>, !fir.ref<!fir.box<none>>, i1, i32, !fir.ref<i8>, i32) -> none
++! CHECK:  %[[VAL_16:.*]] = fir.call @_FortranAInitArrayConstructorVector(%[[VAL_10]], %[[VAL_14]], %[[VAL_9]], %{{.*}}, %{{.*}}) {{.*}}: (!fir.llvm_ptr<i8>, !fir.ref<!fir.box<none>>, i1, !fir.ref<i8>, i32) -> none
+ ! CHECK:  fir.call @_QMarrayctorPrank1() {{.*}}: () -> !fir.box<!fir.heap<!fir.array<?xi32>>>
+ ! CHECK:  %[[VAL_21:.*]] = fir.call @_FortranAPushArrayConstructorValue(%[[VAL_10]], %{{.*}}) {{.*}}: (!fir.llvm_ptr<i8>, !fir.box<none>) -> none
+ ! CHECK:  fir.call @_QMarrayctorPrank3() {{.*}}: () -> !fir.box<!fir.heap<!fir.array<?x?x?xi32>>>
+diff --git a/flang/test/Lower/HLFIR/array-ctor-character.f90 b/flang/test/Lower/HLFIR/array-ctor-character.f90
+index 881085b370ff..7cbad5218f58 100644
+--- a/flang/test/Lower/HLFIR/array-ctor-character.f90
++++ b/flang/test/Lower/HLFIR/array-ctor-character.f90
+@@ -52,7 +52,7 @@ contains
+ ! CHECK:  %[[VAL_15:.*]] = arith.constant true
+ ! CHECK:  %[[VAL_16:.*]] = fir.convert %[[VAL_2]] : (!fir.ref<!fir.array<10xi64>>) -> !fir.llvm_ptr<i8>
+ ! CHECK:  %[[VAL_20:.*]] = fir.convert %[[VAL_3]] : (!fir.ref<!fir.box<!fir.heap<!fir.array<2x!fir.char<1,?>>>>>) -> !fir.ref<!fir.box<none>>
+-! CHECK:  %[[VAL_22:.*]] = fir.call @_FortranAInitArrayConstructorVector(%[[VAL_16]], %[[VAL_20]], %[[VAL_15]], %{{.*}}, %{{.*}}, %{{.*}}) {{.*}}: (!fir.llvm_ptr<i8>, !fir.ref<!fir.box<none>>, i1, i32, !fir.ref<i8>, i32) -> none
++! CHECK:  %[[VAL_22:.*]] = fir.call @_FortranAInitArrayConstructorVector(%[[VAL_16]], %[[VAL_20]], %[[VAL_15]], %{{.*}}, %{{.*}}) {{.*}}: (!fir.llvm_ptr<i8>, !fir.ref<!fir.box<none>>, i1, !fir.ref<i8>, i32) -> none
+ ! CHECK:  fir.call @_QMchararrayctorPchar_pointer(
+ ! CHECK:  fir.call @_FortranAPushArrayConstructorValue(%[[VAL_16]], %{{.*}}) {{.*}}: (!fir.llvm_ptr<i8>, !fir.box<none>) -> none
+ ! CHECK:  fir.call @_QMchararrayctorPchar_pointer(
+diff --git a/flang/test/Lower/HLFIR/array-ctor-derived.f90 b/flang/test/Lower/HLFIR/array-ctor-derived.f90
+index 111225462a4b..22f7fbd72cb5 100644
+--- a/flang/test/Lower/HLFIR/array-ctor-derived.f90
++++ b/flang/test/Lower/HLFIR/array-ctor-derived.f90
+@@ -28,7 +28,7 @@ contains
+ ! CHECK:  %[[VAL_11:.*]] = arith.constant false
+ ! CHECK:  %[[VAL_12:.*]] = fir.convert %[[VAL_2]] : (!fir.ref<!fir.array<10xi64>>) -> !fir.llvm_ptr<i8>
+ ! CHECK:  %[[VAL_16:.*]] = fir.convert %[[VAL_3]] : (!fir.ref<!fir.box<!fir.heap<!fir.array<2x!fir.type<_QMtypesTsimple{i:i32,j:i32}>>>>>) -> !fir.ref<!fir.box<none>>
+-! CHECK:  %[[VAL_18:.*]] = fir.call @_FortranAInitArrayConstructorVector(%[[VAL_12]], %[[VAL_16]], %[[VAL_11]], %{{.*}}, %{{.*}}, %{{.*}}) {{.*}}: (!fir.llvm_ptr<i8>, !fir.ref<!fir.box<none>>, i1, i32, !fir.ref<i8>, i32) -> none
++! CHECK:  %[[VAL_18:.*]] = fir.call @_FortranAInitArrayConstructorVector(%[[VAL_12]], %[[VAL_16]], %[[VAL_11]], %{{.*}}, %{{.*}}) {{.*}}: (!fir.llvm_ptr<i8>, !fir.ref<!fir.box<none>>, i1, !fir.ref<i8>, i32) -> none
+ ! CHECK:  %[[VAL_19:.*]] = fir.convert %[[VAL_4]]#1 : (!fir.ref<!fir.type<_QMtypesTsimple{i:i32,j:i32}>>) -> !fir.llvm_ptr<i8>
+ ! CHECK:  %[[VAL_20:.*]] = fir.call @_FortranAPushArrayConstructorSimpleScalar(%[[VAL_12]], %[[VAL_19]]) {{.*}}: (!fir.llvm_ptr<i8>, !fir.llvm_ptr<i8>) -> none
+ ! CHECK:  %[[VAL_21:.*]] = fir.convert %[[VAL_5]]#1 : (!fir.ref<!fir.type<_QMtypesTsimple{i:i32,j:i32}>>) -> !fir.llvm_ptr<i8>
+@@ -56,7 +56,7 @@ contains
+ ! CHECK:  %[[VAL_11:.*]] = arith.constant false
+ ! CHECK:  %[[VAL_12:.*]] = fir.convert %[[VAL_2]] : (!fir.ref<!fir.array<10xi64>>) -> !fir.llvm_ptr<i8>
+ ! CHECK:  %[[VAL_16:.*]] = fir.convert %[[VAL_3]] : (!fir.ref<!fir.box<!fir.heap<!fir.array<2x!fir.type<_QMtypesTsimple{i:i32,j:i32}>>>>>) -> !fir.ref<!fir.box<none>>
+-! CHECK:  %[[VAL_18:.*]] = fir.call @_FortranAInitArrayConstructorVector(%[[VAL_12]], %[[VAL_16]], %[[VAL_11]], %{{.*}}, %{{.*}}, %{{.*}}) {{.*}}: (!fir.llvm_ptr<i8>, !fir.ref<!fir.box<none>>, i1, i32, !fir.ref<i8>, i32) -> none
++! CHECK:  %[[VAL_18:.*]] = fir.call @_FortranAInitArrayConstructorVector(%[[VAL_12]], %[[VAL_16]], %[[VAL_11]], %{{.*}}, %{{.*}}) {{.*}}: (!fir.llvm_ptr<i8>, !fir.ref<!fir.box<none>>, i1, !fir.ref<i8>, i32) -> none
+ ! CHECK:  %[[VAL_19A:.*]] = fir.box_addr %[[VAL_4]]#1 : (!fir.class<!fir.type<_QMtypesTsimple{i:i32,j:i32}>>) -> !fir.ref<!fir.type<_QMtypesTsimple{i:i32,j:i32}>>
+ ! CHECK:  %[[VAL_19:.*]] = fir.convert %[[VAL_19A]] : (!fir.ref<!fir.type<_QMtypesTsimple{i:i32,j:i32}>>) -> !fir.llvm_ptr<i8>
+ ! CHECK:  %[[VAL_20:.*]] = fir.call @_FortranAPushArrayConstructorSimpleScalar(%[[VAL_12]], %[[VAL_19]]) {{.*}}: (!fir.llvm_ptr<i8>, !fir.llvm_ptr<i8>) -> none
+diff --git a/flang/test/Lower/HLFIR/structure-constructor.f90 b/flang/test/Lower/HLFIR/structure-constructor.f90
+index 41d08c14f5fa..ed9ee5d0ac36 100644
+--- a/flang/test/Lower/HLFIR/structure-constructor.f90
++++ b/flang/test/Lower/HLFIR/structure-constructor.f90
+@@ -273,12 +273,11 @@ end subroutine test6
+ ! CHECK:           fir.store %[[VAL_49]] to %[[VAL_4]] : !fir.ref<!fir.box<!fir.heap<!fir.array<1x!fir.type<_QMtypesTt1{c:!fir.char<1,4>}>>>>>
+ ! CHECK:           %[[VAL_50:.*]] = arith.constant false
+ ! CHECK:           %[[VAL_51:.*]] = fir.convert %[[VAL_3]] : (!fir.ref<!fir.array<10xi64>>) -> !fir.llvm_ptr<i8>
+-! CHECK:           %[[VAL_52:.*]] = arith.constant 80 : i32
+ ! CHECK:           %[[VAL_53:.*]] = fir.address_of(@_QQclX{{.*}}) : !fir.ref<!fir.char<1,{{[0-9]*}}>>
+ ! CHECK:           %[[VAL_54:.*]] = arith.constant {{[0-9]*}} : i32
+ ! CHECK:           %[[VAL_55:.*]] = fir.convert %[[VAL_4]] : (!fir.ref<!fir.box<!fir.heap<!fir.array<1x!fir.type<_QMtypesTt1{c:!fir.char<1,4>}>>>>>) -> !fir.ref<!fir.box<none>>
+ ! CHECK:           %[[VAL_56:.*]] = fir.convert %[[VAL_53]] : (!fir.ref<!fir.char<1,{{[0-9]*}}>>) -> !fir.ref<i8>
+-! CHECK:           %[[VAL_57:.*]] = fir.call @_FortranAInitArrayConstructorVector(%[[VAL_51]], %[[VAL_55]], %[[VAL_50]], %[[VAL_52]], %[[VAL_56]], %[[VAL_54]]) fastmath<contract> : (!fir.llvm_ptr<i8>, !fir.ref<!fir.box<none>>, i1, i32, !fir.ref<i8>, i32) -> none
++! CHECK:           %[[VAL_57:.*]] = fir.call @_FortranAInitArrayConstructorVector(%[[VAL_51]], %[[VAL_55]], %[[VAL_50]], %[[VAL_56]], %[[VAL_54]]) fastmath<contract> : (!fir.llvm_ptr<i8>, !fir.ref<!fir.box<none>>, i1, !fir.ref<i8>, i32) -> none
+ ! CHECK:           %[[VAL_58:.*]]:2 = hlfir.declare %[[VAL_2]] {uniq_name = "ctor.temp"} : (!fir.ref<!fir.type<_QMtypesTt1{c:!fir.char<1,4>}>>) -> (!fir.ref<!fir.type<_QMtypesTt1{c:!fir.char<1,4>}>>, !fir.ref<!fir.type<_QMtypesTt1{c:!fir.char<1,4>}>>)
+ ! CHECK:           %[[VAL_59:.*]] = fir.embox %[[VAL_58]]#0 : (!fir.ref<!fir.type<_QMtypesTt1{c:!fir.char<1,4>}>>) -> !fir.box<!fir.type<_QMtypesTt1{c:!fir.char<1,4>}>>
+ ! CHECK:           %[[VAL_60:.*]] = fir.address_of(@_QQclX{{.*}}) : !fir.ref<!fir.char<1,{{[0-9]*}}>>
+diff --git a/flang/unittests/Optimizer/Builder/Runtime/AllocatableTest.cpp b/flang/unittests/Optimizer/Builder/Runtime/AllocatableTest.cpp
+index 1db43cacc90f..f618e72d7b7f 100644
+--- a/flang/unittests/Optimizer/Builder/Runtime/AllocatableTest.cpp
++++ b/flang/unittests/Optimizer/Builder/Runtime/AllocatableTest.cpp
+@@ -9,7 +9,7 @@
+ #include "flang/Optimizer/Builder/Runtime/Allocatable.h"
+ #include "RuntimeCallTestBase.h"
+ #include "gtest/gtest.h"
+-#include "flang/Runtime/descriptor.h"
++#include "flang/Runtime/descriptor-consts.h"
+ 
+ using namespace Fortran::runtime;
+ 
+diff --git a/flang/unittests/Runtime/ArrayConstructor.cpp b/flang/unittests/Runtime/ArrayConstructor.cpp
+index 9d78da796236..62e3b780a27e 100644
+--- a/flang/unittests/Runtime/ArrayConstructor.cpp
++++ b/flang/unittests/Runtime/ArrayConstructor.cpp
+@@ -43,8 +43,7 @@ TEST(ArrayConstructor, Basic) {
+   result.GetDimension(0).SetBounds(1, 0);
+ 
+   RTNAME(InitArrayConstructorVector)
+-  (*acVector, result, /*useValueLengthParameters=*/false,
+-      /*vectorClassSize=*/sizeof(ArrayConstructorVector));
++  (*acVector, result, /*useValueLengthParameters=*/false);
+   for (std::int32_t i{0}; i <= 99; ++i) {
+     RTNAME(PushArrayConstructorSimpleScalar)(*acVector, &i);
+     RTNAME(PushArrayConstructorValue)(*acVector, *x);
+@@ -71,8 +70,7 @@ TEST(ArrayConstructor, Basic) {
+   // and is allocated when the first value is pushed.
+   result.GetDimension(0).SetBounds(1, 1234);
+   RTNAME(InitArrayConstructorVector)
+-  (*acVector, result, /*useValueLengthParameters=*/false,
+-      /*vectorClassSize=*/sizeof(ArrayConstructorVector));
++  (*acVector, result, /*useValueLengthParameters=*/false);
+   EXPECT_EQ(0, acVector->actualAllocationSize);
+   std::int32_t i{42};
+   RTNAME(PushArrayConstructorSimpleScalar)(*acVector, &i);
+@@ -109,8 +107,7 @@ TEST(ArrayConstructor, Character) {
+   static constexpr std::size_t expectedElements{10 * (1 + 4 + 2 * 3)};
+   result.GetDimension(0).SetBounds(1, 0);
+   RTNAME(InitArrayConstructorVector)
+-  (*acVector, result, /*useValueLengthParameters=*/true,
+-      /*vectorClassSize=*/sizeof(ArrayConstructorVector));
++  (*acVector, result, /*useValueLengthParameters=*/true);
+   for (std::int32_t i{1}; i <= 10; ++i) {
+     RTNAME(PushArrayConstructorValue)(*acVector, *c);
+     RTNAME(PushArrayConstructorValue)(*acVector, *x);
+@@ -151,8 +148,7 @@ TEST(ArrayConstructor, CharacterRuntimeCheck) {
+ 
+   result.GetDimension(0).SetBounds(1, 0);
+   RTNAME(InitArrayConstructorVector)
+-  (*acVector, result, /*useValueLengthParameters=*/true,
+-      /*vectorClassSize=*/sizeof(ArrayConstructorVector));
++  (*acVector, result, /*useValueLengthParameters=*/true);
+   RTNAME(PushArrayConstructorValue)(*acVector, *c2);
+   ASSERT_DEATH(RTNAME(PushArrayConstructorValue)(*acVector, *c3),
+       "Array constructor: mismatched character lengths");
