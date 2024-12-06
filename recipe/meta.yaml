@@ -1,4 +1,4 @@
-{% set version = "20.0.0.dev0" %}
+{% set version = "20.0.0.dev1" %}
 {% set major_version = version.split(".")[0] %}
 
 package:
@@ -7,8 +7,8 @@ package:
 
 source:
   # url: https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-{{ version.replace(".rc", "-rc") }}.tar.gz
-  url: https://github.com/llvm/llvm-project/archive/87bfa58a5a4b85416d2486797d0f21fc67da5cf3.tar.gz
-  sha256: 6453827c61593a987f51a5eaa265f4ccfc60901821c9bbb1c6fd1ac17681f0e3
+  url: https://github.com/llvm/llvm-project/archive/0cda970ecc8a885acf7298a61370a1368b0ea39b.tar.gz
+  sha256: a9749646c9889a850b4bdac253d5db148e043e6a631c6a4556a2ade5a42a4cd0
   patches:
     # backport https://github.com/llvm/llvm-project/pull/110217 (stacked PR)
     - patches/0001-Flang-NFC-Split-common-headers-to-reduce-dependencie.patch
