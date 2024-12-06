@@ -11,7 +11,6 @@ source:
   sha256: a9749646c9889a850b4bdac253d5db148e043e6a631c6a4556a2ade5a42a4cd0
   patches:
     # backport https://github.com/llvm/llvm-project/pull/110217 (stacked PR)
-    - patches/0001-Flang-NFC-Split-common-headers-to-reduce-dependencie.patch
     - patches/0002-Flang-NFC-Split-runtime-headers-in-preparation-for-c.patch
     - patches/0003-Flang-NFC-Move-runtime-library-files-to-flang-rt.patch
     - patches/0004-Flang-LLVM_ENABLE_RUNTIMES-flang-rt.patch

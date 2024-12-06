@@ -1,0 +1,4010 @@
+From f80c9ed8afaf372002ad7cd84f1088f6a611a39d Mon Sep 17 00:00:00 2001
+From: Michael Kruse <llvm-project@meinersbur.de>
+Date: Fri, 27 Sep 2024 09:18:49 +0200
+Subject: [PATCH 3/3] [Flang] LLVM_ENABLE_RUNTIMES=flang-rt
+
+Extract Flang's runtime library to use the LLVM_ENABLE_RUNTIME
+mechanism.
+---
+ flang-rt/.clang-tidy                          |   2 +
+ flang-rt/CMakeLists.txt                       | 226 +++++++++++
+ flang-rt/CODE_OWNERS.TXT                      |  14 +
+ flang-rt/LICENSE.TXT                          | 234 +++++++++++
+ flang-rt/README.md                            | 198 ++++++++++
+ flang-rt/cmake/modules/AddFlangRT.cmake       | 159 ++++++++
+ .../cmake/modules/AddFlangRTOffload.cmake     |  84 ++--
+ flang-rt/lib/CMakeLists.txt                   |  18 +
+ flang-rt/lib/CufRuntime/CMakeLists.txt        |  15 +-
+ .../lib/FortranFloat128Math/CMakeLists.txt    |  37 +-
+ flang-rt/lib/Testing/CMakeLists.txt           |  19 +
+ flang-rt/lib/flang_rt/CMakeLists.txt          | 363 ++++++------------
+ flang-rt/lib/flang_rt/allocator-registry.cpp  |   4 +-
+ flang-rt/lib/flang_rt/environment.cpp         |   4 +-
+ flang-rt/lib/flang_rt/io-api-minimal.cpp      |   2 +-
+ flang-rt/lib/flang_rt/time-intrinsic.cpp      |   2 +-
+ flang-rt/lib/flang_rt/unit.cpp                |   4 +-
+ flang-rt/lib/flang_rt/utf.cpp                 |   4 +-
+ flang-rt/test/CMakeLists.txt                  |  59 +++
+ flang-rt/test/Driver/ctofortran.f90           |  27 +-
+ flang-rt/test/Driver/exec.f90                 |   6 +-
+ flang-rt/test/NonGtestUnit/lit.cfg.py         |  22 ++
+ flang-rt/test/NonGtestUnit/lit.site.cfg.py.in |  14 +
+ flang-rt/test/Runtime/no-cpp-dep.c            |   9 +-
+ flang-rt/test/Unit/lit.cfg.py                 |  21 +
+ flang-rt/test/Unit/lit.site.cfg.py.in         |  15 +
+ flang-rt/test/lit.cfg.py                      | 106 +++++
+ flang-rt/test/lit.site.cfg.py.in              |  18 +
+ flang-rt/unittests/CMakeLists.txt             | 101 +++++
+ flang-rt/unittests/Evaluate/CMakeLists.txt    |  20 +-
+ flang-rt/unittests/Runtime/CMakeLists.txt     |  15 +-
+ .../unittests/Runtime/CUDA/CMakeLists.txt     |   9 +-
+ flang/CMakeLists.txt                          |  36 +-
+ flang/cmake/modules/FlangCommon.cmake         |  43 +++
+ flang/docs/FlangDriver.md                     |   9 +-
+ flang/docs/GettingStarted.md                  |  51 ++-
+ flang/docs/OpenACC-descriptor-management.md   |   2 +-
+ flang/docs/ReleaseNotes.md                    |   8 +
+ .../ExternalHelloWorld/CMakeLists.txt         |   2 +-
+ flang/include/flang/Common/README.md          |  27 ++
+ flang/include/flang/Common/fast-int-set.h     |   6 +-
+ flang/include/flang/Runtime/README.md         |  27 ++
+ flang/include/flang/Testing/README.md         |  27 ++
+ flang/lib/CMakeLists.txt                      |   2 +-
+ flang/lib/Common/CMakeLists.txt               |  62 +--
+ flang/lib/Common/README.md                    |  27 ++
+ flang/lib/Decimal/CMakeLists.txt              |  86 -----
+ flang/lib/Evaluate/CMakeLists.txt             |   2 +-
+ flang/lib/Frontend/CMakeLists.txt             |   2 +-
+ flang/lib/Lower/CMakeLists.txt                |   2 +-
+ flang/lib/Optimizer/Builder/CMakeLists.txt    |   2 +-
+ flang/lib/Optimizer/Builder/IntrinsicCall.cpp |   2 +-
+ flang/lib/Optimizer/Dialect/FIRType.cpp       |   2 +-
+ flang/lib/Optimizer/Transforms/CMakeLists.txt |   2 +-
+ flang/lib/Parser/CMakeLists.txt               |   2 +-
+ flang/lib/Semantics/CMakeLists.txt            |   2 +-
+ flang/lib/Support/CMakeLists.txt              |  61 +++
+ flang/lib/Testing/README.md                   |  27 ++
+ flang/module/iso_fortran_env_impl.f90         |   2 +-
+ flang/test/CMakeLists.txt                     |   2 -
+ .../test/Driver/gcc-toolchain-install-dir.f90 |   2 +-
+ flang/test/Driver/linker-flags.f90            |  10 +-
+ .../test/Driver/msvc-dependent-lib-flags.f90  |  16 +-
+ flang/test/lit.cfg.py                         |  23 --
+ flang/test/lit.site.cfg.py.in                 |   3 -
+ flang/tools/f18/CMakeLists.txt                |  30 +-
+ flang/unittests/CMakeLists.txt                |  39 --
+ flang/unittests/Common/CMakeLists.txt         |   3 -
+ flang/unittests/Common/FastIntSetTest.cpp     | 105 -----
+ flang/unittests/Decimal/CMakeLists.txt        |  10 -
+ flang/unittests/Decimal/quick-sanity-test.cpp | 145 -------
+ flang/unittests/Decimal/thorough-test.cpp     |  89 -----
+ flang/unittests/Evaluate/CMakeLists.txt       |   7 +-
+ runtimes/CMakeLists.txt                       |   2 +-
+ 74 files changed, 1769 insertions(+), 1071 deletions(-)
+ create mode 100644 flang-rt/.clang-tidy
+ create mode 100644 flang-rt/CMakeLists.txt
+ create mode 100644 flang-rt/CODE_OWNERS.TXT
+ create mode 100644 flang-rt/LICENSE.TXT
+ create mode 100644 flang-rt/README.md
+ create mode 100644 flang-rt/cmake/modules/AddFlangRT.cmake
+ rename flang/cmake/modules/AddFlangOffloadRuntime.cmake => flang-rt/cmake/modules/AddFlangRTOffload.cmake (54%)
+ create mode 100644 flang-rt/lib/CMakeLists.txt
+ create mode 100644 flang-rt/lib/Testing/CMakeLists.txt
+ create mode 100644 flang-rt/test/CMakeLists.txt
+ create mode 100644 flang-rt/test/NonGtestUnit/lit.cfg.py
+ create mode 100644 flang-rt/test/NonGtestUnit/lit.site.cfg.py.in
+ create mode 100644 flang-rt/test/Unit/lit.cfg.py
+ create mode 100644 flang-rt/test/Unit/lit.site.cfg.py.in
+ create mode 100644 flang-rt/test/lit.cfg.py
+ create mode 100644 flang-rt/test/lit.site.cfg.py.in
+ create mode 100644 flang-rt/unittests/CMakeLists.txt
+ create mode 100644 flang/cmake/modules/FlangCommon.cmake
+ create mode 100644 flang/include/flang/Common/README.md
+ create mode 100644 flang/include/flang/Runtime/README.md
+ create mode 100644 flang/include/flang/Testing/README.md
+ create mode 100644 flang/lib/Common/README.md
+ delete mode 100644 flang/lib/Decimal/CMakeLists.txt
+ create mode 100644 flang/lib/Support/CMakeLists.txt
+ create mode 100644 flang/lib/Testing/README.md
+ delete mode 100644 flang/unittests/Common/CMakeLists.txt
+ delete mode 100644 flang/unittests/Common/FastIntSetTest.cpp
+ delete mode 100644 flang/unittests/Decimal/CMakeLists.txt
+ delete mode 100644 flang/unittests/Decimal/quick-sanity-test.cpp
+ delete mode 100644 flang/unittests/Decimal/thorough-test.cpp
+
+diff --git a/flang-rt/.clang-tidy b/flang-rt/.clang-tidy
+new file mode 100644
+index 000000000000..ee3a0ab2201b
+--- /dev/null
++++ b/flang-rt/.clang-tidy
+@@ -0,0 +1,2 @@
++Checks: '-llvm-include-order,readability-braces-around-statements,-readability-identifier-naming,-clang-diagnostic-*'
++InheritParentConfig: true
+diff --git a/flang-rt/CMakeLists.txt b/flang-rt/CMakeLists.txt
+new file mode 100644
+index 000000000000..d39c39e0caac
+--- /dev/null
++++ b/flang-rt/CMakeLists.txt
+@@ -0,0 +1,226 @@
++#===-- CMakeLists.txt ------------------------------------------------------===#
++#
++# Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
++# See https://llvm.org/LICENSE.txt for license information.
++# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
++#
++#===------------------------------------------------------------------------===#
++#
++# Build instructions for the flang-rt library. This is file is intended to be
++# included using the LLVM_ENABLE_RUNTIMES mechanism.
++#
++#===------------------------------------------------------------------------===#
++
++set(LLVM_SUBPROJECT_TITLE "Fortran Runtime")
++set(FLANG_RT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
++set(FLANG_RT_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
++set(FLANG_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../flang")
++
++
++# CMake 3.24 is the first version of CMake that directly recognizes Flang.
++# LLVM's requirement is only CMake 3.20, teach CMake 3.20-3.23 how to use Flang.
++if (CMAKE_VERSION VERSION_LESS "3.24")
++  cmake_path(GET CMAKE_Fortran_COMPILER STEM _Fortran_COMPILER_STEM)
++  if (_Fortran_COMPILER_STEM STREQUAL "flang-new" OR _Fortran_COMPILER_STEM STREQUAL "flang")
++    include(CMakeForceCompiler)
++    CMAKE_FORCE_Fortran_COMPILER("${CMAKE_Fortran_COMPILER}" "LLVMFlang")
++
++    set(CMAKE_Fortran_COMPILER_ID "LLVMFlang")
++    set(CMAKE_Fortran_COMPILER_VERSION "${LLVM_VERSION_MAJOR}.${LLVM_VERSION_MINOR}")
++
++    set(CMAKE_Fortran_SUBMODULE_SEP "-")
++    set(CMAKE_Fortran_SUBMODULE_EXT ".mod")
++
++    set(CMAKE_Fortran_PREPROCESS_SOURCE
++      "<CMAKE_Fortran_COMPILER> -cpp <DEFINES> <INCLUDES> <FLAGS> -E <SOURCE> > <PREPROCESSED_SOURCE>")
++
++    set(CMAKE_Fortran_FORMAT_FIXED_FLAG "-ffixed-form")
++    set(CMAKE_Fortran_FORMAT_FREE_FLAG "-ffree-form")
++
++    set(CMAKE_Fortran_MODDIR_FLAG "-module-dir")
++
++    set(CMAKE_Fortran_COMPILE_OPTIONS_PREPROCESS_ON "-cpp")
++    set(CMAKE_Fortran_COMPILE_OPTIONS_PREPROCESS_OFF "-nocpp")
++    set(CMAKE_Fortran_POSTPROCESS_FLAG "-ffixed-line-length-72")
++
++    set(CMAKE_Fortran_COMPILE_OPTIONS_TARGET "--target=")
++
++    set(CMAKE_Fortran_LINKER_WRAPPER_FLAG "-Wl,")
++    set(CMAKE_Fortran_LINKER_WRAPPER_FLAG_SEP ",")
++  endif ()
++endif ()
++enable_language(Fortran)
++
++
++list(APPEND CMAKE_MODULE_PATH
++    "${FLANG_RT_SOURCE_DIR}/cmake/modules"
++    "${FLANG_SOURCE_DIR}/cmake/modules"
++  )
++include(AddFlangRT)
++include(FlangCommon)
++
++
++############################
++# Build Mode Introspection #
++############################
++
++# Setting these variables from an LLVM build is sufficient that flang-rt can
++# construct the output paths, so it can behave as if it was in-tree here.
++set(LLVM_TREE_AVAILABLE OFF)
++if (LLVM_LIBRARY_OUTPUT_INTDIR AND LLVM_RUNTIME_OUTPUT_INTDIR AND PACKAGE_VERSION)
++  # This is a bootstap build
++  set(LLVM_TREE_AVAILABLE ON)
++endif()
++
++# Path to LLVM development tools (FileCheck, llvm-lit, not, ...)
++set(LLVM_TOOLS_DIR "${LLVM_BINARY_DIR}/bin")
++
++if (LLVM_TREE_AVAILABLE)
++  # In a bootstrap build emit the libraries into a default search path in the
++  # build directory of the just-built compiler. This allows using the
++  # just-built compiler without specifying paths to runtime libraries.
++  #
++  # Despite Clang in the name, get_clang_resource_dir does not depend on Clang
++  # being added to the build. Flang uses the same resource dir as clang.
++  include(GetClangResourceDir)
++  get_clang_resource_dir(FLANG_RT_BUILD_LIB_DIR PREFIX "${LLVM_LIBRARY_OUTPUT_INTDIR}/.." SUBDIR "lib${LLVM_LIBDIR_SUFFIX}")
++  get_clang_resource_dir(FLANG_RT_INSTALL_LIB_DIR SUBDIR "lib${LLVM_LIBDIR_SUFFIX}") # No prefix, CMake's install command finds the install prefix itself
++else ()
++  # In a runtimes build never write into LLVM's build dir. It might be reused
++  # for mutliple Flang-RT builds (e.g. Debug/Release). Instead create our own
++  # library directory.
++  #
++  # TODO: Support multi-config generators
++  set(FLANG_RT_BUILD_LIB_DIR "${CMAKE_BINARY_DIR}/lib${LLVM_LIBDIR_SUFFIX}")
++  set(FLANG_RT_INSTALL_LIB_DIR "lib${LLVM_LIBDIR_SUFFIX}")
++endif ()
++
++if (DEFINED WIN32)
++  set(FLANG_RT_BUILD_LIB_DIR "${FLANG_RT_BUILD_LIB_DIR}/windows")
++  set(FLANG_RT_INSTALL_LIB_DIR "${FLANG_RT_INSTALL_LIB_DIR}/windows")
++elseif (LLVM_ENABLE_PER_TARGET_RUNTIME_DIR)
++  set(FLANG_RT_BUILD_LIB_DIR "${FLANG_RT_BUILD_LIB_DIR}/${LLVM_TARGET_TRIPLE}")
++  set(FLANG_RT_INSTALL_LIB_DIR "${FLANG_RT_INSTALL_LIB_DIR}/${LLVM_TARGET_TRIPLE}")
++endif ()
++
++
++#################
++# Build Options #
++#################
++
++# Important: flang-rt user options must be prefixed with "FLANG_RT_". Variables
++# with this prefix will be forwarded in bootstrap builds.
++
++option(FLANG_RT_INCLUDE_TESTS "Generate build targets for the flang-rt unit and regression-tests." "${LLVM_INCLUDE_TESTS}")
++
++
++set(FLANG_RT_EXPERIMENTAL_OFFLOAD_SUPPORT "" CACHE STRING "Compile Flang-RT with GPU support (CUDA or OpenMP)")
++set_property(CACHE FLANG_RT_EXPERIMENTAL_OFFLOAD_SUPPORT PROPERTY STRINGS
++    ""
++    CUDA
++    OpenMP
++  )
++if (NOT FLANG_RT_EXPERIMENTAL_OFFLOAD_SUPPORT)
++  # Support for GPUs disabled
++elseif (FLANG_RT_EXPERIMENTAL_OFFLOAD_SUPPORT STREQUAL "CUDA")
++  # Support for CUDA
++  set(FLANG_RT_LIBCUDACXX_PATH "" CACHE PATH "Path to libcu++ package installation")
++  option(FLANG_RT_CUDA_RUNTIME_PTX_WITHOUT_GLOBAL_VARS "Do not compile global variables' definitions when producing PTX library" OFF)
++elseif (FLANG_RT_EXPERIMENTAL_OFFLOAD_SUPPORT STREQUAL "OpenMP")
++  # Support for OpenMP offloading
++  set(FLANG_RT_DEVICE_ARCHITECTURES "all" CACHE STRING
++      "List of OpenMP device architectures to be used to compile the Fortran runtime (e.g. 'gfx1103;sm_90')"
++    )
++else ()
++  message(FATAL_ERROR "Invalid value '${FLANG_RT_EXPERIMENTAL_OFFLOAD_SUPPORT}' for FLANG_RT_EXPERIMENTAL_OFFLOAD_SUPPORT; must be empty, 'CUDA', or 'OpenMP'")
++endif ()
++
++
++option(FLANG_RT_ENABLE_CUF "Compile CUDA Fortran runtime sources" OFF)
++if (FLANG_RT_ENABLE_CUF)
++  find_package(CUDAToolkit REQUIRED)
++endif()
++
++
++########################
++# System Introspection #
++########################
++
++include(CheckCXXSymbolExists)
++include(CheckCXXSourceCompiles)
++check_cxx_symbol_exists(strerror_r string.h HAVE_STRERROR_R)
++# Can't use symbol exists here as the function is overloaded in C++
++check_cxx_source_compiles(
++  "#include <string.h>
++   int main() {
++     char buf[4096];
++     return strerror_s(buf, 4096, 0);
++   }
++  "
++  HAVE_DECL_STRERROR_S)
++
++
++# Search for clang_rt.builtins library.
++if (WIN32)
++  execute_process(
++      COMMAND "${CMAKE_CXX_COMPILER}" "-print-libgcc-file-name" "-rtlib=compiler-rt"
++      RESULT_VARIABLE CXX_COMPILER_PRINT_LIBGCC_PATH_FAILURE
++      OUTPUT_VARIABLE CXX_COMPILER_PRINT_LIBGCC_PATH_RESULT
++      ERROR_QUIET
++    )
++  if (NOT CXX_COMPILER_PRINT_LIBGCC_PATH_FAILURE AND CXX_COMPILER_PRINT_LIBGCC_PATH_RESULT)
++    string(STRIP "${CXX_COMPILER_PRINT_LIBGCC_PATH_RESULT}" FLANG_RT_LIBCALL)
++  else ()
++    set(FLANG_RT_LIBCALL "")
++  endif ()
++endif ()
++
++
++# Check whether the compiler can undefine a macro using the "-U" flag.
++# Aternatively, we could use
++#   CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "GNU"
++# but some older versions of CMake don't define it for GCC itself.
++check_cxx_compiler_flag("-UTESTFLAG" FLANG_RT_SUPPORTS_UNDEFINE_FLAG)
++
++
++#####################
++# Build Preparation #
++#####################
++
++if (FLANG_RT_EXPERIMENTAL_OFFLOAD_SUPPORT AND FLANG_RT_INCLUDE_TESTS)
++  # If Fortran runtime is built as CUDA library, the linking
++  # of targets that link flang-rt must be done
++  # with CUDA_RESOLVE_DEVICE_SYMBOLS.
++  # CUDA language must be enabled for CUDA_RESOLVE_DEVICE_SYMBOLS
++  # to take effect.
++  enable_language(CUDA)
++endif()
++
++
++# C++17 is required for flang-rt; user or other runtimes may override this.
++# GTest included later also requires C++17.
++set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
++set(CMAKE_CXX_STANDARD_REQUIRED YES)
++
++
++configure_file(cmake/config.h.cmake.in config.h)
++
++
++# The bootstrap build will create a phony target with the same as the top-level
++# directory ("flang-rt") and delegate it to the runtimes build dir.
++# AddFlangRT will add all non-EXCLUDE_FROM_ALL targets to it.
++add_custom_target(flang-rt)
++
++
++###################
++# Build Artifacts #
++###################
++
++add_subdirectory(lib)
++
++if (FLANG_RT_INCLUDE_TESTS)
++  add_subdirectory(unittests)
++  add_subdirectory(test)
++else ()
++  add_custom_target(check-flang-rt)
++endif()
+diff --git a/flang-rt/CODE_OWNERS.TXT b/flang-rt/CODE_OWNERS.TXT
+new file mode 100644
+index 000000000000..649243aa1e8f
+--- /dev/null
++++ b/flang-rt/CODE_OWNERS.TXT
+@@ -0,0 +1,14 @@
++This file is a list of the people responsible for ensuring that patches for a
++particular part of Flang are reviewed, either by themself or by someone else.
++They are also the gatekeepers for their part of Flang, with the final word on
++what goes in or not.
++
++The list is sorted by surname and formatted to allow easy grepping and
++beautification by scripts. The fields are: name (N), email (E), web-address
++(W), PGP key ID and fingerprint (P), description (D), snail-mail address
++(S) and (I) IRC handle. Each entry should contain at least the (N), (E) and
++(D) fields.
++
++N: Steve Scalpone
++E: sscalpone@nvidia.com
++D: Anything not covered by others
+diff --git a/flang-rt/LICENSE.TXT b/flang-rt/LICENSE.TXT
+new file mode 100644
+index 000000000000..53bb2e7fbc76
+--- /dev/null
++++ b/flang-rt/LICENSE.TXT
+@@ -0,0 +1,234 @@
++==============================================================================
++The LLVM Project is under the Apache License v2.0 with LLVM Exceptions:
++==============================================================================
++
++                                 Apache License
++                           Version 2.0, January 2004
++                        http://www.apache.org/licenses/
++
++    TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
++
++    1. Definitions.
++
++      "License" shall mean the terms and conditions for use, reproduction,
++      and distribution as defined by Sections 1 through 9 of this document.
++
++      "Licensor" shall mean the copyright owner or entity authorized by
++      the copyright owner that is granting the License.
++
++      "Legal Entity" shall mean the union of the acting entity and all
++      other entities that control, are controlled by, or are under common
++      control with that entity. For the purposes of this definition,
++      "control" means (i) the power, direct or indirect, to cause the
++      direction or management of such entity, whether by contract or
++      otherwise, or (ii) ownership of fifty percent (50%) or more of the
++      outstanding shares, or (iii) beneficial ownership of such entity.
++
++      "You" (or "Your") shall mean an individual or Legal Entity
++      exercising permissions granted by this License.
++
++      "Source" form shall mean the preferred form for making modifications,
++      including but not limited to software source code, documentation
++      source, and configuration files.
++
++      "Object" form shall mean any form resulting from mechanical
++      transformation or translation of a Source form, including but
++      not limited to compiled object code, generated documentation,
++      and conversions to other media types.
++
++      "Work" shall mean the work of authorship, whether in Source or
++      Object form, made available under the License, as indicated by a
++      copyright notice that is included in or attached to the work
++      (an example is provided in the Appendix below).
++
++      "Derivative Works" shall mean any work, whether in Source or Object
++      form, that is based on (or derived from) the Work and for which the
++      editorial revisions, annotations, elaborations, or other modifications
++      represent, as a whole, an original work of authorship. For the purposes
++      of this License, Derivative Works shall not include works that remain
++      separable from, or merely link (or bind by name) to the interfaces of,
++      the Work and Derivative Works thereof.
++
++      "Contribution" shall mean any work of authorship, including
++      the original version of the Work and any modifications or additions
++      to that Work or Derivative Works thereof, that is intentionally
++      submitted to Licensor for inclusion in the Work by the copyright owner
++      or by an individual or Legal Entity authorized to submit on behalf of
++      the copyright owner. For the purposes of this definition, "submitted"
++      means any form of electronic, verbal, or written communication sent
++      to the Licensor or its representatives, including but not limited to
++      communication on electronic mailing lists, source code control systems,
++      and issue tracking systems that are managed by, or on behalf of, the
++      Licensor for the purpose of discussing and improving the Work, but
++      excluding communication that is conspicuously marked or otherwise
++      designated in writing by the copyright owner as "Not a Contribution."
++
++      "Contributor" shall mean Licensor and any individual or Legal Entity
++      on behalf of whom a Contribution has been received by Licensor and
++      subsequently incorporated within the Work.
++
++    2. Grant of Copyright License. Subject to the terms and conditions of
++      this License, each Contributor hereby grants to You a perpetual,
++      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
++      copyright license to reproduce, prepare Derivative Works of,
++      publicly display, publicly perform, sublicense, and distribute the
++      Work and such Derivative Works in Source or Object form.
++
++    3. Grant of Patent License. Subject to the terms and conditions of
++      this License, each Contributor hereby grants to You a perpetual,
++      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
++      (except as stated in this section) patent license to make, have made,
++      use, offer to sell, sell, import, and otherwise transfer the Work,
++      where such license applies only to those patent claims licensable
++      by such Contributor that are necessarily infringed by their
++      Contribution(s) alone or by combination of their Contribution(s)
++      with the Work to which such Contribution(s) was submitted. If You
++      institute patent litigation against any entity (including a
++      cross-claim or counterclaim in a lawsuit) alleging that the Work
++      or a Contribution incorporated within the Work constitutes direct
++      or contributory patent infringement, then any patent licenses
++      granted to You under this License for that Work shall terminate
++      as of the date such litigation is filed.
++
++    4. Redistribution. You may reproduce and distribute copies of the
++      Work or Derivative Works thereof in any medium, with or without
++      modifications, and in Source or Object form, provided that You
++      meet the following conditions:
++
++      (a) You must give any other recipients of the Work or
++          Derivative Works a copy of this License; and
++
++      (b) You must cause any modified files to carry prominent notices
++          stating that You changed the files; and
++
++      (c) You must retain, in the Source form of any Derivative Works
++          that You distribute, all copyright, patent, trademark, and
++          attribution notices from the Source form of the Work,
++          excluding those notices that do not pertain to any part of
++          the Derivative Works; and
++
++      (d) If the Work includes a "NOTICE" text file as part of its
++          distribution, then any Derivative Works that You distribute must
++          include a readable copy of the attribution notices contained
++          within such NOTICE file, excluding those notices that do not
++          pertain to any part of the Derivative Works, in at least one
++          of the following places: within a NOTICE text file distributed
++          as part of the Derivative Works; within the Source form or
++          documentation, if provided along with the Derivative Works; or,
++          within a display generated by the Derivative Works, if and
++          wherever such third-party notices normally appear. The contents
++          of the NOTICE file are for informational purposes only and
++          do not modify the License. You may add Your own attribution
++          notices within Derivative Works that You distribute, alongside
++          or as an addendum to the NOTICE text from the Work, provided
++          that such additional attribution notices cannot be construed
++          as modifying the License.
++
++      You may add Your own copyright statement to Your modifications and
++      may provide additional or different license terms and conditions
++      for use, reproduction, or distribution of Your modifications, or
++      for any such Derivative Works as a whole, provided Your use,
++      reproduction, and distribution of the Work otherwise complies with
++      the conditions stated in this License.
++
++    5. Submission of Contributions. Unless You explicitly state otherwise,
++      any Contribution intentionally submitted for inclusion in the Work
++      by You to the Licensor shall be under the terms and conditions of
++      this License, without any additional terms or conditions.
++      Notwithstanding the above, nothing herein shall supersede or modify
++      the terms of any separate license agreement you may have executed
++      with Licensor regarding such Contributions.
++
++    6. Trademarks. This License does not grant permission to use the trade
++      names, trademarks, service marks, or product names of the Licensor,
++      except as required for reasonable and customary use in describing the
++      origin of the Work and reproducing the content of the NOTICE file.
++
++    7. Disclaimer of Warranty. Unless required by applicable law or
++      agreed to in writing, Licensor provides the Work (and each
++      Contributor provides its Contributions) on an "AS IS" BASIS,
++      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
++      implied, including, without limitation, any warranties or conditions
++      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
++      PARTICULAR PURPOSE. You are solely responsible for determining the
++      appropriateness of using or redistributing the Work and assume any
++      risks associated with Your exercise of permissions under this License.
++
++    8. Limitation of Liability. In no event and under no legal theory,
++      whether in tort (including negligence), contract, or otherwise,
++      unless required by applicable law (such as deliberate and grossly
++      negligent acts) or agreed to in writing, shall any Contributor be
++      liable to You for damages, including any direct, indirect, special,
++      incidental, or consequential damages of any character arising as a
++      result of this License or out of the use or inability to use the
++      Work (including but not limited to damages for loss of goodwill,
++      work stoppage, computer failure or malfunction, or any and all
++      other commercial damages or losses), even if such Contributor
++      has been advised of the possibility of such damages.
++
++    9. Accepting Warranty or Additional Liability. While redistributing
++      the Work or Derivative Works thereof, You may choose to offer,
++      and charge a fee for, acceptance of support, warranty, indemnity,
++      or other liability obligations and/or rights consistent with this
++      License. However, in accepting such obligations, You may act only
++      on Your own behalf and on Your sole responsibility, not on behalf
++      of any other Contributor, and only if You agree to indemnify,
++      defend, and hold each Contributor harmless for any liability
++      incurred by, or claims asserted against, such Contributor by reason
++      of your accepting any such warranty or additional liability.
++
++    END OF TERMS AND CONDITIONS
++
++    APPENDIX: How to apply the Apache License to your work.
++
++      To apply the Apache License to your work, attach the following
++      boilerplate notice, with the fields enclosed by brackets "[]"
++      replaced with your own identifying information. (Don't include
++      the brackets!)  The text should be enclosed in the appropriate
++      comment syntax for the file format. We also recommend that a
++      file or class name and description of purpose be included on the
++      same "printed page" as the copyright notice for easier
++      identification within third-party archives.
++
++    Copyright [yyyy] [name of copyright owner]
++
++    Licensed under the Apache License, Version 2.0 (the "License");
++    you may not use this file except in compliance with the License.
++    You may obtain a copy of the License at
++
++       http://www.apache.org/licenses/LICENSE-2.0
++
++    Unless required by applicable law or agreed to in writing, software
++    distributed under the License is distributed on an "AS IS" BASIS,
++    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++    See the License for the specific language governing permissions and
++    limitations under the License.
++
++
++---- LLVM Exceptions to the Apache 2.0 License ----
++
++As an exception, if, as a result of your compiling your source code, portions
++of this Software are embedded into an Object form of such source code, you
++may redistribute such embedded portions in such Object form without complying
++with the conditions of Sections 4(a), 4(b) and 4(d) of the License.
++
++In addition, if you combine or link compiled forms of this Software with
++software that is licensed under the GPLv2 ("Combined Software") and if a
++court of competent jurisdiction determines that the patent provision (Section
++3), the indemnity provision (Section 9) or other Section of the License
++conflicts with the conditions of the GPLv2, you may retroactively and
++prospectively choose to deem waived or otherwise exclude such Section(s) of
++the License, but only in their entirety and only with respect to the Combined
++Software.
++
++==============================================================================
++Software from third parties included in the LLVM Project:
++==============================================================================
++The LLVM Project contains third party software which is under different license
++terms. All such code will be identified clearly using at least one of two
++mechanisms:
++1) It will be in a separate directory tree with its own `LICENSE.txt` or
++   `LICENSE` file at the top containing the specific license and restrictions
++   which apply to that software, or
++2) It will contain specific license and restriction terms at the top of every
++   file.
+diff --git a/flang-rt/README.md b/flang-rt/README.md
+new file mode 100644
+index 000000000000..31e92f63afc0
+--- /dev/null
++++ b/flang-rt/README.md
+@@ -0,0 +1,198 @@
++<!--===- README.md
++
++   Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
++   See https://llvm.org/LICENSE.txt for license information.
++   SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
++
++-->
++
++# Fortran Runtime (Flang-RT)
++
++Flang-RT is the runtime library for code emitted by the Flang compiler
++(https://flang.llvm.org).
++
++
++## Getting Started
++
++There are two build modes for the Flang-RT. The bootstrap build, also
++called the in-tree build, and the runtime-only build, also called the
++out-of-tree build.
++Not to be confused with the terms
++[in-source and out-of-source](https://cmake.org/cmake/help/latest/manual/cmake.1.html#introduction-to-cmake-buildsystems)
++builds as defined by CMake. In an in-source build, the source directory and the
++build directory are identical, whereas with an out-of-source build the
++build artifacts are stored somewhere else, possibly in a subdirectory of the
++source directory. LLVM does not support in-source builds.
++
++
++### Requirements
++
++Requirements:
++  * [Same as LLVM](https://llvm.org/docs/GettingStarted.html#requirements).
++
++
++### Bootstrap/In-Tree Build
++
++The bootstrap build will first build Clang and Flang, then use these compilers
++to compile Flang-RT. CMake will create a secondary build tree
++configured to use these just-built compilers. The secondary build will reuse
++the same build options (Flags, Debug/Release, ...) as the primary build.
++It will also ensure that once built, Flang-RT is found by Flang from either
++the build- or install-prefix. To enable, add `flang-rt` to
++`LLVM_ENABLE_RUNTIMES`:
++
++```bash
++cmake -S <path-to-llvm-project-source>/llvm \
++  -GNinja                                   \
++  -DLLVM_ENABLE_PROJECTS="clang;flang"      \
++  -DLLVM_ENABLE_RUNTIMES=flang-rt           \
++  ...
++```
++
++It is recommended to enable building OpenMP alongside Flang and Flang-RT
++as well. This will build `omp_lib.mod` required to use OpenMP from Fortran.
++Building Compiler-RT may also be required, particularly on platforms that do
++not provide all C-ABI functionality (such as Windows).
++
++```bash
++cmake -S <path-to-llvm-project-source>/llvm     \
++  -GNinja                                       \
++  -DCMAKE_BUILD_TYPE=Release                    \
++  -DLLVM_ENABLE_PROJECTS="clang;flang;openmp"   \
++  -DLLVM_ENABLE_RUNTIMES="compiler-rt;flang-rt" \
++  ...
++```
++
++By default, the enabled runtimes will only be built for the host platform
++(`-DLLVM_RUNTIME_TARGETS=default`). To add additional targets to support
++cross-compilation via `flang --target=<target-triple>`, add more triples to
++`LLVM_RUNTIME_TARGETS`, such as
++`-DLLVM_RUNTIME_TARGETS="default;aarch64-linux-gnu"`.
++
++After configuration, build, test, and install the runtime(s) via
++
++```shell
++$ ninja flang-rt
++$ ninja check-flang-rt
++$ ninja install
++```
++
++
++### Runtime-only/Out-of-Tree Build
++
++Instead of building Clang and Flang from scratch, the Runtime-only build uses
++CMake's environment introspection to find a C, C++, and Fortran compiler. The
++compiler to be used can be controlled using CMake's standard mechanisms such as
++`CMAKE_CXX_COMPILER`, `CMAKE_CXX_COMPILER`, and `CMAKE_Fortran_COMPILER`.
++`CMAKE_Fortran_COMPILER` must be `flang` built from the same Git commit as
++Flang-RT to ensure they are using the same ABI. The C and C++ compiler
++can be any compiler supporting the same ABI.
++
++In addition to the compiler, the build be able to find LLVM development tools
++such as `lit` and `FileCheck` that are not found in an LLVM's install
++directory. Use `CMAKE_BINARY_DIR` to point to directory where LLVM has
++been built. A simple build configuration might look like the following:
++
++```bash
++cmake -S <path-to-llvm-project-source>/runtimes              \
++  -GNinja                                                    \
++  -DLLVM_BINARY_DIR=<path-to-llvm-builddir>                  \
++  -DCMAKE_Fortran_COMPILER=<path-to-llvm-builddir>/bin/flang \
++  -DCMAKE_Fortran_COMPILER_WORKS=yes                         \
++  -DLLVM_ENABLE_RUNTIMES=flang-rt                            \
++  ...
++```
++
++The `CMAKE_Fortran_COMPILER_WORKS` parameter must be set because otherwise CMake
++will test whether the Fortran compiler can compile and link programs which will
++obviously fail without a runtime library available yet.
++
++Building Flang-RT for cross-compilation triple, the target triple can
++be selected using `LLVM_DEFAULT_TARGET_TRIPLE` AND `LLVM_RUNTIMES_TARGET`.
++Of course, Flang-RT can be built multiple times with different build
++configurations, but have to be located manually when using with the Flang
++driver using the `-L` option.
++
++A more complete build configuration could be the following:
++
++```bash
++cmake -S <path-to-llvm-project-source>/runtimes                               \
++  -GNinja                                                                     \
++  -DCMAKE_BUILD_TYPE=Release                                                  \
++  -DCMAKE_INSTALL_PREFIX="${HOME}/local"                                      \
++  -DLLVM_ENABLE_RUNTIMES="compiler-rt;flang-rt"                               \
++  -DCMAKE_C_COMPILER=gcc                                                      \
++  -DCMAKE_CXX_COMPILER=g++                                                    \
++  -DLLVM_BINARY_DIR=<path-to-llvm-builddir>                                   \
++  -DLLVM_DIR=<path-to-llvm-builddir>/lib/cmake/llvm                           \
++  -DClang_DIR=<path-to-llvm-builddir>/lib/cmake/clang                         \
++  -DCMAKE_Fortran_COMPILER=<path-to-llvm-builddir-or-installprefix>/bin/flang \
++  -DLLVM_DEFAULT_TARGET_TRIPLE=x86_64-linux-gnu                               \
++  -DLLVM_RUNTIMES_TARGET=x86_64-linux-gnu                                     \
++  ...
++```
++
++## Configuration Option Reference
++
++Flang-RT has the followign configuration options. This is in
++addition to the build options the LLVM_ENABLE_RUNTIMES mechanism and
++CMake itself provide.
++
++ * `FLANG_RT_INCLUDE_TESTS` (boolean; default: `ON`)
++
++   When `OFF`, does not add any tests and unittests. The `check-flang-rt`
++   build target will do nothing.
++
++ * `FLANG_RUNTIME_F128_MATH_LIB` (default: `""`)
++
++   Determines the implementation of `REAL(16)` math functions. If set to
++   `libquadmath`, uses `quadmath.h` and `-lquadmath` typically distributed with
++   gcc. If empty, disables `REAL(16)` support. For any other value, introspects
++   the compiler for `__float128` or 128-bit `long double` support.
++   [More details](docs/Real16MathSupport.md).
++
++ * `FLANG_RT_EXPERIMENTAL_OFFLOAD_SUPPORT` (values: `"CUDA"`,`"OpenMP"`, `""` default: `""`)
++
++   When set to `CUDA`, builds Flang-RT with experimental support for GPU
++   accelerators using CUDA. `CMAKE_CUDA_COMPILER` must be set if not
++   automatically detected by CMake. `nvcc` as well as `clang` are supported.
++
++   When set to `OpenMP`, builds Flang-RT with experimental support for
++   GPU accelerators using OpenMP offloading. Only Clang is supported for
++   `CMAKE_C_COMPILER` and `CMAKE_CXX_COMPILER`.
++
++ * `FLANG_RT_ENABLE_CUF` (bool, default: `OFF`)
++
++   Compiles the `libCufRuntime_cuda_<CUDA-version>.a/.so` library. This is
++   independent of `FLANG_RT_EXPERIMENTAL_OFFLOAD_SUPPORT=CUDA` and only
++   requires a
++   [CUDA Toolkit installation](https://cmake.org/cmake/help/latest/module/FindCUDAToolkit.html)
++   (no `CMAKE_CUDA_COMPILER`).
++
++
++### Exprimental CUDA Support
++
++With `-DFLANG_RT_EXPERIMENTAL_OFFLOAD_SUPPORT=CUDA`, the following
++additional configuration options become available.
++
++ * `FLANG_RT_LIBCUDACXX_PATH` (path, default: `""`)
++
++   Path to libcu++ package installation.
++
++ * `FLANG_RT_CUDA_RUNTIME_PTX_WITHOUT_GLOBAL_VARS` (boolean, default: `OFF`)
++
++   Do not compile global variables' definitions when producing PTX library.
++   Default is `OFF`, meaning global variable definitions are compiled by
++   default.
++
++
++### Exprimental OpenMP Offload Support
++
++With `-DFLANG_RT_EXPERIMENTAL_OFFLOAD_SUPPORT=OpenMP`, the following
++additional configuration options become available.
++
++ * `FLANG_RT_DEVICE_ARCHITECTURES` (default: `"all"`)
++
++   A list of device architectures that Flang-RT is going to support.
++   If `"all"` uses a pre-defined list of architectures. Same purpose as
++   `LIBOMPTARGET_DEVICE_ARCHITECTURES` from liboffload.
+diff --git a/flang-rt/cmake/modules/AddFlangRT.cmake b/flang-rt/cmake/modules/AddFlangRT.cmake
+new file mode 100644
+index 000000000000..3cec4327c20f
+--- /dev/null
++++ b/flang-rt/cmake/modules/AddFlangRT.cmake
+@@ -0,0 +1,159 @@
++#===-- cmake/modules/AddFlangRT.cmake --------------------------------------===#
++#
++# Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
++# See https://llvm.org/LICENSE.txt for license information.
++# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
++#
++#===------------------------------------------------------------------------===#
++
++# Builds a library with common options for flang-rt.
++#
++# Usage:
++#
++# add_flangrt_library(name sources ...
++#   SHARED
++#     Build a dynamic (.so/.dll) library
++#   STATIC
++#     Build a static (.a/.lib) library
++#   OBJECT
++#     Create only object files without static/dynamic library
++#   INSTALL_WITH_TOOLCHAIN
++#     Install library into Clang's resource directory so it can be found by the
++#     Flang driver during compilation, including tests
++#   EXCLUDE_FROM_ALL
++#     Do not build library by default; typically used for libraries needed for
++#     testing only, no install
++#   LINK_TO_LLVM
++#     Library requires include path and linking to LLVM's Support component
++#   ADDITIONAL_HEADERS
++#     May specify header files for IDE generators.
++# )
++function (add_flangrt_library name)
++  set(options STATIC SHARED OBJECT INSTALL_WITH_TOOLCHAIN EXCLUDE_FROM_ALL LINK_TO_LLVM)
++  set(multiValueArgs ADDITIONAL_HEADERS)
++  cmake_parse_arguments(ARG
++    "${options}"
++    ""
++    "${multiValueArgs}"
++    ${ARGN})
++
++  # Also add header files to IDEs to list as part of the library
++  set_source_files_properties(${ARG_ADDITIONAL_HEADERS} PROPERTIES HEADER_FILE_ONLY ON)
++
++  # Forward libtype to add_library
++  set(extra_args "")
++  if (ARG_SHARED)
++    list(APPEND extra_args SHARED)
++  endif ()
++  if (ARG_STATIC)
++    list(APPEND extra_args STATIC)
++  endif ()
++  if (ARG_OBJECT)
++    list(APPEND extra_args OBJECT)
++  endif ()
++  if (ARG_EXCLUDE_FROM_ALL)
++    list(APPEND extra_args EXCLUDE_FROM_ALL)
++  endif ()
++
++  add_library(${name} ${extra_args} ${ARG_ADDITIONAL_HEADERS} ${ARG_UNPARSED_ARGUMENTS})
++
++  if (ARG_INSTALL_WITH_TOOLCHAIN)
++    set_target_properties(${name} PROPERTIES FOLDER "Flang-RT/Toolchain Libraries")
++  elseif (ARG_OBJECT)
++    set_target_properties(${name} PROPERTIES FOLDER "Flang-RT/Object Libraries")
++  else ()
++    set_target_properties(${name} PROPERTIES FOLDER "Flang-RT/Libraries")
++  endif ()
++
++  # Minimum required C++ version for Flang-RT, even if CMAKE_CXX_STANDARD is defined to something else.
++  target_compile_features(${name} PRIVATE cxx_std_17)
++
++  # Use compiler-specific options to disable exceptions and RTTI.
++  if (LLVM_COMPILER_IS_GCC_COMPATIBLE)
++    target_compile_options(${name} PRIVATE
++        $<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions -fno-rtti -fno-unwind-tables -fno-asynchronous-unwind-tables>
++      )
++  elseif (MSVC)
++    target_compile_options(${name} PRIVATE
++        $<$<COMPILE_LANGUAGE:CXX>:/EHs-c- /GR->
++      )
++  elseif (CMAKE_CXX_COMPILER_ID MATCHES "XL")
++    target_compile_options(${name} PRIVATE
++        $<$<COMPILE_LANGUAGE:CXX>:-qnoeh -qnortti>
++      )
++  endif ()
++
++  # Also for CUDA source when compiling with FLANG_RT_EXPERIMENTAL_OFFLOAD_SUPPORT=CUDA
++  if (CMAKE_CUDA_COMPILER_ID MATCHES "NVIDIA")
++    # Assuming gcc as host compiler.
++    target_compile_options(${name} PRIVATE
++        $<$<COMPILE_LANGUAGE:CUDA>:--no-exceptions -Xcompiler -fno-rtti -Xcompiler -fno-unwind-tables -Xcompiler -fno-asynchronous-unwind-tables>
++      )
++  else ()
++    # Assuming a clang-compatible CUDA compiler.
++    target_compile_options(${name} PRIVATE
++        $<$<COMPILE_LANGUAGE:CUDA>:-fno-exceptions -fno-rtti -fno-unwind-tables -fno-asynchronous-unwind-tables>
++      )
++  endif ()
++
++  # Flang-rt's public headers
++  target_include_directories(${name} PRIVATE "${FLANG_RT_SOURCE_DIR}/include")
++
++  # For ISO_Fortran_binding.h to be found by the runtime itself (Accessed as #include "flang/ISO_Fortran_binding.h")
++  # User applications can use #include <ISO_Fortran_binding.h>
++  target_include_directories(${name} PRIVATE "${FLANG_SOURCE_DIR}/include")
++
++  # For flang-rt's configured config.h to be found
++  target_include_directories(${name} PRIVATE "${FLANG_RT_BINARY_DIR}")
++
++  # Disable libstdc++/libc++ assertions, even in an LLVM_ENABLE_ASSERTIONS
++  # build, to avoid an unwanted dependency on libstdc++/libc++.so.
++  if (FLANG_RT_SUPPORTS_UNDEFINE_FLAG)
++    target_compile_options(${name} PUBLIC -U_GLIBCXX_ASSERTIONS)
++    target_compile_options(${name} PUBLIC -U_LIBCPP_ENABLE_ASSERTIONS)
++  endif ()
++
++  # Flang/Clang (including clang-cl) -compiled programs targeting the MSVC ABI
++  # should only depend on msv(u)crt. LLVM still emits libgcc/compiler-rt
++  # functions in some cases like 128-bit integer math (__udivti3, __modti3,
++  # __fixsfti, __floattidf, ...) that msvc does not support. We are injecting a
++  # dependency to Compiler-RT's builtin library where these are implemented.
++  if (MSVC AND (CMAKE_CXX_COMPILER_ID MATCHES ".*Clang") AND FLANG_RT_LIBCALL)
++    target_compile_options(${name} PRIVATE "$<$<COMPILE_LANGUAGE:CXX,C>:-Xclang>$<$<COMPILE_LANGUAGE:Fortran>:-Xflang>" "--dependent-lib=${FLANG_RT_LIBCALL}")
++  endif ()
++
++  # Non-GTest unittests depend on LLVMSupport
++  if (ARG_LINK_TO_LLVM)
++    if (LLVM_LINK_LLVM_DYLIB)
++      set(llvm_libs LLVM)
++    else()
++      llvm_map_components_to_libnames(llvm_libs Support)
++    endif()
++    target_link_libraries(${name} PUBLIC ${llvm_libs})
++    target_include_directories(${name} PUBLIC ${LLVM_INCLUDE_DIRS})
++  endif ()
++
++  # If this is part of the toolchain, put it into the compiler's resource
++  # directory. Otherwise it is part of testing and is not installed at all.
++  # TODO: Consider multi-configuration builds (MSVC_IDE, "Ninja Multi-Config")
++  if (ARG_INSTALL_WITH_TOOLCHAIN)
++    set_target_properties(${name}
++      PROPERTIES
++        LIBRARY_OUTPUT_DIRECTORY "${FLANG_RT_BUILD_LIB_DIR}"
++        ARCHIVE_OUTPUT_DIRECTORY "${FLANG_RT_BUILD_LIB_DIR}"
++        RUNTIME_OUTPUT_DIRECTORY "${FLANG_RT_BUILD_LIB_DIR}"
++      )
++
++    install(TARGETS ${name}
++        LIBRARY DESTINATION "${FLANG_RT_INSTALL_LIB_DIR}"
++        ARCHIVE DESTINATION "${FLANG_RT_INSTALL_LIB_DIR}"
++        RUNTIME DESTINATION "${FLANG_RT_INSTALL_LIB_DIR}"
++      )
++  endif ()
++
++  # flang-rt should build all the flang-rt targets that are built in an
++  # 'all' build.
++  if (NOT ARG_EXCLUDE_FROM_ALL)
++    add_dependencies(flang-rt ${name})
++  endif ()
++endfunction (add_flangrt_library)
+diff --git a/flang/cmake/modules/AddFlangOffloadRuntime.cmake b/flang-rt/cmake/modules/AddFlangRTOffload.cmake
+similarity index 54%
+rename from flang/cmake/modules/AddFlangOffloadRuntime.cmake
+rename to flang-rt/cmake/modules/AddFlangRTOffload.cmake
+index 8e4f47d18535..84eabba05b49 100644
+--- a/flang/cmake/modules/AddFlangOffloadRuntime.cmake
++++ b/flang-rt/cmake/modules/AddFlangRTOffload.cmake
+@@ -1,21 +1,13 @@
+-option(FLANG_EXPERIMENTAL_CUDA_RUNTIME
+-  "Compile Fortran runtime as CUDA sources (experimental)" OFF
+-  )
+-
+-option(FLANG_CUDA_RUNTIME_PTX_WITHOUT_GLOBAL_VARS
+-  "Do not compile global variables' definitions when producing PTX library" OFF
+-  )
+-
+-set(FLANG_LIBCUDACXX_PATH "" CACHE PATH "Path to libcu++ package installation")
+-
+-set(FLANG_EXPERIMENTAL_OMP_OFFLOAD_BUILD "off" CACHE STRING
+-  "Compile Fortran runtime as OpenMP target offload sources (experimental). Valid options are 'off', 'host_device', 'nohost'")
+-
+-set(FLANG_OMP_DEVICE_ARCHITECTURES "all" CACHE STRING
+-  "List of OpenMP device architectures to be used to compile the Fortran runtime (e.g. 'gfx1103;sm_90')")
++#===-- cmake/modules/AddFortranRTOffload.txt -------------------------------===#
++#
++# Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
++# See https://llvm.org/LICENSE.txt for license information.
++# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
++#
++#===------------------------------------------------------------------------===#
+ 
+ macro(enable_cuda_compilation name files)
+-  if (FLANG_EXPERIMENTAL_CUDA_RUNTIME)
++  if (FLANG_RT_EXPERIMENTAL_OFFLOAD_SUPPORT STREQUAL "CUDA")
+     if (BUILD_SHARED_LIBS)
+       message(FATAL_ERROR
+         "BUILD_SHARED_LIBS is not supported for CUDA build of Fortran runtime"
+@@ -50,43 +42,34 @@ macro(enable_cuda_compilation name files)
+       "${CUDA_COMPILE_OPTIONS}"
+       )
+ 
+-    if (EXISTS "${FLANG_LIBCUDACXX_PATH}/include")
+-      # When using libcudacxx headers files, we have to use them
+-      # for all files of F18 runtime.
+-      include_directories(AFTER ${FLANG_LIBCUDACXX_PATH}/include)
+-      add_compile_definitions(RT_USE_LIBCUDACXX=1)
+-    endif()
+-
+-    # Add an OBJECT library consisting of CUDA PTX.
+-    llvm_add_library(${name}PTX OBJECT PARTIAL_SOURCES_INTENDED ${files})
++    # Create a .a library consisting of CUDA PTX.
++    # This is different from a regular static library. The CUDA_PTX_COMPILATION
++    # property can only be applied to object libraries and create *.ptx files
++    # instead of *.o files. The .a will consist of those *.ptx files only.
++    add_flangrt_library(obj.${name}PTX OBJECT ${files})
+     set_property(TARGET obj.${name}PTX PROPERTY CUDA_PTX_COMPILATION ON)
+-    if (FLANG_CUDA_RUNTIME_PTX_WITHOUT_GLOBAL_VARS)
++    add_flangrt_library(${name}PTX STATIC "$<TARGET_OBJECTS:obj.${name}PTX>")
++
++    # Apply configuration options
++    if (FLANG_RT_CUDA_RUNTIME_PTX_WITHOUT_GLOBAL_VARS)
+       target_compile_definitions(obj.${name}PTX
+-        PRIVATE FLANG_RUNTIME_NO_GLOBAL_VAR_DEFS
++        PRIVATE FLANG_RT_NO_GLOBAL_VAR_DEFS
+         )
+     endif()
++
++    # When using libcudacxx headers files, we have to use them
++    # for all files of Flang-RT.
++    if (EXISTS "${FLANG_RT_LIBCUDACXX_PATH}/include")
++      target_include_directories(obj.${name}PTX AFTER PRIVATE "${FLANG_RT_LIBCUDACXX_PATH}/include")
++      target_compile_definitions(obj.${name}PTX PRIVATE RT_USE_LIBCUDACXX=1)
++    endif ()
+   endif()
+ endmacro()
+ 
+-macro(enable_omp_offload_compilation files)
+-  if (NOT FLANG_EXPERIMENTAL_OMP_OFFLOAD_BUILD STREQUAL "off")
+-    # 'host_device' build only works with Clang compiler currently.
+-    # The build is done with the CMAKE_C/CXX_COMPILER, i.e. it does not use
+-    # the in-tree built Clang. We may have a mode that would use the in-tree
+-    # built Clang.
+-    #
+-    # 'nohost' is supposed to produce an LLVM Bitcode library,
+-    # and it has to be done with a C/C++ compiler producing LLVM Bitcode
+-    # compatible with the LLVM toolchain version distributed with the Flang
+-    # compiler.
+-    # In general, the in-tree built Clang should be used for 'nohost' build.
+-    # Note that 'nohost' build does not produce the host version of Flang
+-    # runtime library, so there will be two separate distributable objects.
+-    # 'nohost' build is a TODO.
++macro(enable_omp_offload_compilation name files)
++  if (FLANG_RT_EXPERIMENTAL_OFFLOAD_SUPPORT STREQUAL "OpenMP")
++    # OpenMP offload build only works with Clang compiler currently.
+ 
+-    if (NOT FLANG_EXPERIMENTAL_OMP_OFFLOAD_BUILD STREQUAL "host_device")
+-      message(FATAL_ERROR "Unsupported OpenMP offload build of Flang runtime")
+-    endif()
+     if (BUILD_SHARED_LIBS)
+       message(FATAL_ERROR
+         "BUILD_SHARED_LIBS is not supported for OpenMP offload build of Fortran runtime"
+@@ -111,13 +94,13 @@ macro(enable_omp_offload_compilation files)
+         "${all_amdgpu_architectures};${all_nvptx_architectures}"
+         )
+       # TODO: support auto detection on the build system.
+-      if (FLANG_OMP_DEVICE_ARCHITECTURES STREQUAL "all")
+-        set(FLANG_OMP_DEVICE_ARCHITECTURES ${all_gpu_architectures})
++      if (FLANG_RT_DEVICE_ARCHITECTURES STREQUAL "all")
++        set(FLANG_RT_DEVICE_ARCHITECTURES ${all_gpu_architectures})
+       endif()
+-      list(REMOVE_DUPLICATES FLANG_OMP_DEVICE_ARCHITECTURES)
++      list(REMOVE_DUPLICATES FLANG_RT_DEVICE_ARCHITECTURES)
+ 
+       string(REPLACE ";" "," compile_for_architectures
+-        "${FLANG_OMP_DEVICE_ARCHITECTURES}"
++        "${FLANG_RT_DEVICE_ARCHITECTURES}"
+         )
+ 
+       set(OMP_COMPILE_OPTIONS
+@@ -131,6 +114,7 @@ macro(enable_omp_offload_compilation files)
+       set_source_files_properties(${files} PROPERTIES COMPILE_OPTIONS
+         "${OMP_COMPILE_OPTIONS}"
+         )
++      target_link_options(${name} PUBLIC ${OMP_COMPILE_OPTIONS})
+ 
+       # Enable "declare target" in the source code.
+       set_source_files_properties(${files}
+@@ -138,7 +122,7 @@ macro(enable_omp_offload_compilation files)
+         )
+     else()
+       message(FATAL_ERROR
+-        "Flang runtime build is not supported for these compilers:\n"
++        "Flang-rt build with OpenMP offload is not supported for these compilers:\n"
+         "CMAKE_CXX_COMPILER_ID: ${CMAKE_CXX_COMPILER_ID}\n"
+         "CMAKE_C_COMPILER_ID: ${CMAKE_C_COMPILER_ID}")
+     endif()
+diff --git a/flang-rt/lib/CMakeLists.txt b/flang-rt/lib/CMakeLists.txt
+new file mode 100644
+index 000000000000..5d48043a7459
+--- /dev/null
++++ b/flang-rt/lib/CMakeLists.txt
+@@ -0,0 +1,18 @@
++#===-- lib/CMakeLists.txt --------------------------------------------------===#
++#
++# Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
++# See https://llvm.org/LICENSE.txt for license information.
++# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
++#
++#===------------------------------------------------------------------------===#
++
++add_subdirectory(FortranFloat128Math)
++add_subdirectory(flang_rt)
++
++if (FLANG_RT_ENABLE_CUF)
++  add_subdirectory(CufRuntime)
++endif()
++
++if (FLANG_RT_INCLUDE_TESTS)
++  add_subdirectory(Testing)
++endif ()
+diff --git a/flang-rt/lib/CufRuntime/CMakeLists.txt b/flang-rt/lib/CufRuntime/CMakeLists.txt
+index 6cc70a7d14a5..17256062d678 100644
+--- a/flang-rt/lib/CufRuntime/CMakeLists.txt
++++ b/flang-rt/lib/CufRuntime/CMakeLists.txt
+@@ -6,22 +6,20 @@
+ #
+ #===------------------------------------------------------------------------===#
+ 
+-include_directories(${CUDAToolkit_INCLUDE_DIRS})
+-
+ # libCufRuntime depends on a certain version of CUDA. To be able to have
+ # multiple build of this library with different CUDA version, the version is
+ # added to the library name.
+ set(CUFRT_LIBNAME CufRuntime_cuda_${CUDAToolkit_VERSION_MAJOR})
+ 
+-add_flang_library(${CUFRT_LIBNAME}
+-  allocator.cpp
++add_flangrt_library(${CUFRT_LIBNAME}
+   allocatable.cpp
++  allocator.cpp
+   descriptor.cpp
+   kernel.cpp
+-  memmove-function.cpp
+   memory.cpp
+   registration.cpp
+ )
++target_include_directories(${CUFRT_LIBNAME} PRIVATE ${CUDAToolkit_INCLUDE_DIRS})
+ 
+ if (BUILD_SHARED_LIBS)
+   set(CUDA_RT_TARGET CUDA::cudart)
+@@ -31,6 +29,11 @@ endif()
+ 
+ target_link_libraries(${CUFRT_LIBNAME}
+   PRIVATE
+-  FortranRuntime
++  flang_rt
+   ${CUDA_RT_TARGET}
+ )
++
++# Phony build target that does not include the CUDA version.
++add_custom_target(CufRuntime)
++add_dependencies(CufRuntime ${CUFRT_LIBNAME})
++
+diff --git a/flang-rt/lib/FortranFloat128Math/CMakeLists.txt b/flang-rt/lib/FortranFloat128Math/CMakeLists.txt
+index 5a72ce079f3e..881f5f9d8212 100644
+--- a/flang-rt/lib/FortranFloat128Math/CMakeLists.txt
++++ b/flang-rt/lib/FortranFloat128Math/CMakeLists.txt
+@@ -15,6 +15,7 @@
+ # used for building this FortranFloat128Math library.
+ 
+ include(CheckLibraryExists)
++include(CheckIncludeFile)
+ 
+ set(sources
+   acos.cpp
+@@ -93,22 +94,18 @@ if (FLANG_RUNTIME_F128_MATH_LIB)
+       )
+   endif()
+ 
+-  add_flang_library(FortranFloat128Math STATIC INSTALL_WITH_TOOLCHAIN
+-    ${sources})
+-
+-  if (DEFINED MSVC)
+-    set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
+-    add_flang_library(FortranFloat128Math.static STATIC INSTALL_WITH_TOOLCHAIN
+-      ${sources}
+-      )
+-    set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDebug)
+-    add_flang_library(FortranFloat128Math.static_dbg STATIC INSTALL_WITH_TOOLCHAIN
+-      ${sources}
+-      )
+-    add_dependencies(FortranFloat128Math FortranFloat128Math.static
+-      FortranFloat128Math.static_dbg
+-      )
+-  endif()
++  if (WIN32)
++    # Do not create a FortranFloat128Math library under Windows, the Flang
++    # driver never links it. Instead, add the sources to the flang_rt itself.
++    target_sources(FortranFloat128MathILib INTERFACE ${sources})
++    target_compile_definitions(FortranFloat128MathILib INTERFACE HAS_QUADMATHLIB)
++  else ()
++    add_flangrt_library(FortranFloat128Math STATIC INSTALL_WITH_TOOLCHAIN
++      ${sources})
++   endif ()
++   target_include_directories(FortranFloat128Math PRIVATE
++     "${FLANG_RT_SOURCE_DIR}/lib/flang_rt"
++     )
+ elseif (HAVE_LDBL_MANT_DIG_113)
+   # We can use 'long double' versions from libc.
+   check_library_exists(m sinl "" FOUND_LIBM)
+@@ -116,9 +113,12 @@ elseif (HAVE_LDBL_MANT_DIG_113)
+     target_compile_definitions(FortranFloat128MathILib INTERFACE
+       HAS_LIBM
+       )
++    target_include_directories(FortranFloat128MathILib INTERFACE
++      "${FLANG_RT_SOURCE_DIR}/lib/flang_rt"
++      )
+     target_sources(FortranFloat128MathILib INTERFACE ${sources})
+   else()
+-    message(FATAL_ERROR "FortranRuntime cannot build without libm")
++    message(FATAL_ERROR "Flang-RT cannot build without libm")
+   endif()
+ else()
+   # We can use '__float128' version from libc, if it has them.
+@@ -127,6 +127,9 @@ else()
+     target_compile_definitions(FortranFloat128MathILib INTERFACE
+       HAS_LIBMF128
+       )
++    target_include_directories(FortranFloat128MathILib INTERFACE
++      "${FLANG_RT_SOURCE_DIR}/lib/flang_rt"
++      )
+     # Enable this, when math-entries.h and complex-math.h is ready.
+     # target_sources(FortranFloat128MathILib INTERFACE ${sources})
+   endif()
+diff --git a/flang-rt/lib/Testing/CMakeLists.txt b/flang-rt/lib/Testing/CMakeLists.txt
+new file mode 100644
+index 000000000000..bdfca0ee9d3f
+--- /dev/null
++++ b/flang-rt/lib/Testing/CMakeLists.txt
+@@ -0,0 +1,19 @@
++#===-- lib/Testing/CMakeLists.txt ------------------------------------------===#
++#
++# Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
++# See https://llvm.org/LICENSE.txt for license information.
++# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
++#
++#===------------------------------------------------------------------------===#
++
++set(public_headers "")
++file(GLOB_RECURSE public_headers
++  "${FLANG_SOURCE_DIR}/lib/Testing/*.h"
++)
++
++add_flangrt_library(NonGTestTesting EXCLUDE_FROM_ALL LINK_TO_LLVM
++  ${FLANG_SOURCE_DIR}/lib/Testing/testing.cpp
++  ${FLANG_SOURCE_DIR}/lib/Testing/fp-testing.cpp
++ ADDITIONAL_HEADERS
++   ${public_headers}
++)
+diff --git a/flang-rt/lib/flang_rt/CMakeLists.txt b/flang-rt/lib/flang_rt/CMakeLists.txt
+index b9c6f2cecb95..4b7315c2b4bd 100644
+--- a/flang-rt/lib/flang_rt/CMakeLists.txt
++++ b/flang-rt/lib/flang_rt/CMakeLists.txt
+@@ -6,108 +6,10 @@
+ #
+ #===------------------------------------------------------------------------===#
+ 
+-if (CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+-  cmake_minimum_required(VERSION 3.20.0)
++include(AddFlangRTOffload)
+ 
+-  project(FlangRuntime C CXX)
+-
+-  set(CMAKE_CXX_STANDARD 17)
+-  set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
+-  set(CMAKE_CXX_EXTENSIONS OFF)
+-
+-  set(FLANG_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../flang")
+-
+-  set(LLVM_COMMON_CMAKE_UTILS "${FLANG_SOURCE_DIR}/../cmake")
+-  set(LLVM_CMAKE_UTILS "${FLANG_SOURCE_DIR}/../llvm/cmake")
+-  set(CLANG_CMAKE_UTILS "${FLANG_SOURCE_DIR}/../clang/cmake")
+-
+-  # Add path for custom modules
+-  list(INSERT CMAKE_MODULE_PATH 0
+-    "${FLANG_SOURCE_DIR}/cmake"
+-    "${FLANG_SOURCE_DIR}/cmake/modules"
+-    "${LLVM_COMMON_CMAKE_UTILS}"
+-    "${LLVM_COMMON_CMAKE_UTILS}/Modules"
+-    "${LLVM_CMAKE_UTILS}"
+-    "${LLVM_CMAKE_UTILS}/modules"
+-    "${CLANG_CMAKE_UTILS}/modules"
+-    )
+-
+-  include(AddClang)
+-  include(AddLLVM)
+-  include(AddFlang)
+-  include(HandleLLVMOptions)
+-
+-  include(TestBigEndian)
+-  test_big_endian(IS_BIGENDIAN)
+-  if (IS_BIGENDIAN)
+-    add_compile_definitions(FLANG_BIG_ENDIAN=1)
+-  else ()
+-    add_compile_definitions(FLANG_LITTLE_ENDIAN=1)
+-  endif ()
+-  include_directories(BEFORE
+-    ${FLANG_SOURCE_DIR}/include)
+-
+-  # The out of tree builds of the compiler and the Fortran runtime
+-  # must use the same setting of FLANG_RUNTIME_F128_MATH_LIB
+-  # to be composable. Failure to synchronize this setting may result
+-  # in linking errors or fatal failures in F128 runtime functions.
+-  set(FLANG_RUNTIME_F128_MATH_LIB "" CACHE STRING
+-    "Specifies the target library used for implementing IEEE-754 128-bit float \
+-    math in F18 runtime, e.g. it might be libquadmath for targets where \
+-    REAL(16) is mapped to __float128, or libm for targets where REAL(16) \
+-    is mapped to long double, etc."
+-    )
+-endif()
+-
+-include_directories(BEFORE ../../include)
+-
+-include(CheckCXXSymbolExists)
+-include(CheckCXXSourceCompiles)
+-check_cxx_symbol_exists(strerror_r string.h HAVE_STRERROR_R)
+-# Can't use symbol exists here as the function is overloaded in C++
+-check_cxx_source_compiles(
+-  "#include <string.h>
+-   int main() {
+-     char buf[4096];
+-     return strerror_s(buf, 4096, 0);
+-   }
+-  "
+-  HAVE_DECL_STRERROR_S)
+-
+-# Check if 128-bit float computations can be done via long double.
+-check_cxx_source_compiles(
+-  "#include <cfloat>
+-   #if LDBL_MANT_DIG != 113
+-   #error LDBL_MANT_DIG != 113
+-   #endif
+-   int main() { return 0; }
+-  "
+-  HAVE_LDBL_MANT_DIG_113)
+-
+-check_cxx_compiler_flag(-fno-lto FLANG_RUNTIME_HAS_FNO_LTO_FLAG)
+-if (FLANG_RUNTIME_HAS_FNO_LTO_FLAG)
+-  set(NO_LTO_FLAGS "-fno-lto")
+-else()
+-  set(NO_LTO_FLAGS "")
+-endif()
+-
+-configure_file(../../cmake/config.h.cmake.in config.h)
+-# include_directories is used here instead of target_include_directories
+-# because add_flang_library creates multiple objects (STATIC/SHARED, OBJECT)
+-# with different names
+-include_directories(AFTER ${CMAKE_CURRENT_BINARY_DIR})
+-
+-append(${NO_LTO_FLAGS} CMAKE_C_FLAGS)
+-append(${NO_LTO_FLAGS} CMAKE_CXX_FLAGS)
+-
+-# Disable libstdc++/libc++ assertions, even in an LLVM_ENABLE_ASSERTIONS build,
+-# to avoid an unwanted dependency on libstdc++/libc++.so.
+-add_definitions(-U_GLIBCXX_ASSERTIONS)
+-add_definitions(-U_LIBCPP_ENABLE_ASSERTIONS)
+-
+-add_subdirectory(../FortranFloat128Math Float128Math)
+-
+-set(sources
++# List of files that are buildable for all devices.
++set(supported_sources
+   ISO_Fortran_binding.cpp
+   allocator-registry.cpp
+   allocatable.cpp
+@@ -115,9 +17,6 @@ set(sources
+   assign.cpp
+   buffer.cpp
+   character.cpp
+-  command.cpp
+-  complex-powi.cpp
+-  complex-reduction.c
+   connection.cpp
+   copy.cpp
+   derived-api.cpp
+@@ -128,9 +27,6 @@ set(sources
+   edit-input.cpp
+   edit-output.cpp
+   environment.cpp
+-  exceptions.cpp
+-  execute.cpp
+-  extensions.cpp
+   external-unit.cpp
+   extrema.cpp
+   file.cpp
+@@ -143,7 +39,6 @@ set(sources
+   io-error.cpp
+   io-stmt.cpp
+   iostat.cpp
+-  main.cpp
+   matmul-transpose.cpp
+   matmul.cpp
+   memory.cpp
+@@ -155,169 +50,139 @@ set(sources
+   product.cpp
+   pseudo-unit.cpp
+   ragged.cpp
+-  random.cpp
+-  reduce.cpp
+-  reduction.cpp
+   stat.cpp
+-  stop.cpp
+   sum.cpp
+   support.cpp
+-  temporary-stack.cpp
+   terminator.cpp
+-  time-intrinsic.cpp
+   tools.cpp
+   transformational.cpp
+   type-code.cpp
+   type-info.cpp
+-  unit-map.cpp
+   unit.cpp
++  unit-map.cpp
+   utf.cpp
+-  ${FORTRAN_MODULE_OBJECTS}
+ )
+ 
+-include(AddFlangOffloadRuntime)
++# List of source not used for GPU offloading.
++set(host_sources
++  ${FLANG_SOURCE_DIR}/lib/Common/binary-to-decimal.cpp
++  ${FLANG_SOURCE_DIR}/lib/Common/decimal-to-binary.cpp
++  command.cpp
++  complex-powi.cpp
++  complex-reduction.c
++  exceptions.cpp
++  execute.cpp
++  extensions.cpp
++  ${FLANG_SOURCE_DIR}/module/iso_fortran_env_impl.f90
++  main.cpp
++  random.cpp
++  reduce.cpp
++  reduction.cpp
++  stop.cpp
++  temporary-stack.cpp
++  time-intrinsic.cpp
++)
+ 
+-# List of files that are buildable for all devices.
+-set(supported_files
+-  ISO_Fortran_binding.cpp
+-  allocatable.cpp
+-  allocator-registry.cpp
+-  array-constructor.cpp
+-  assign.cpp
+-  buffer.cpp
+-  character.cpp
+-  connection.cpp
+-  copy.cpp
+-  derived-api.cpp
+-  derived.cpp
+-  descriptor.cpp
+-  descriptor-io.cpp
+-  dot-product.cpp
+-  edit-input.cpp
+-  edit-output.cpp
+-  environment.cpp
+-  extrema.cpp
+-  external-unit.cpp
+-  file.cpp
+-  findloc.cpp
+-  format.cpp
+-  inquiry.cpp
+-  internal-unit.cpp
+-  io-api.cpp
+-  io-api-minimal.cpp
+-  io-error.cpp
+-  io-stmt.cpp
+-  iostat.cpp
+-  matmul-transpose.cpp
+-  matmul.cpp
+-  memory.cpp
+-  misc-intrinsic.cpp
+-  namelist.cpp
+-  non-tbp-dio.cpp
+-  numeric.cpp
+-  pointer.cpp
+-  product.cpp
+-  pseudo-unit.cpp
+-  ragged.cpp
+-  stat.cpp
+-  sum.cpp
+-  support.cpp
+-  terminator.cpp
+-  tools.cpp
+-  transformational.cpp
+-  type-code.cpp
+-  type-info.cpp
+-  unit.cpp
+-  utf.cpp
++file(GLOB_RECURSE public_headers
++  "${FLANG_RT_SOURCE_DIR}/include/flang_rt/*.h"
++  "${FLANG_SOURCE_DIR}/include/flang/Common/*.h"
++  )
++
++file(GLOB_RECURSE private_headers
++  "${FLANG_RT_SOURCE_DIR}/lib/flang_rt/*.h"
++  "${FLANG_SOURCE_DIR}/lib/Common/*.h"
+   )
+ 
+-enable_cuda_compilation(FortranRuntime "${supported_files}")
+-enable_omp_offload_compilation("${supported_files}")
+ 
+-if (NOT TARGET FortranFloat128Math)
+-  # If FortranFloat128Math is not defined, then we are not building
+-  # standalone FortranFloat128Math library. Instead, include
+-  # the relevant sources into FortranRuntime itself.
+-  # The information is provided via FortranFloat128MathILib
+-  # interface library.
+-  get_target_property(f128_sources
+-    FortranFloat128MathILib INTERFACE_SOURCES
++# Import changes from sibling FortranFloat128Math
++get_target_property(f128_sources
++  FortranFloat128MathILib INTERFACE_SOURCES
++  )
++if (f128_sources)
++  # The interface may define special macros for Float128Math files,
++  # so we need to propagate them.
++  get_target_property(f128_defs
++    FortranFloat128MathILib INTERFACE_COMPILE_DEFINITIONS
+     )
+-  if (f128_sources)
+-    # The interface may define special macros for Float128Math files,
+-    # so we need to propagate them.
+-    get_target_property(f128_defs
+-      FortranFloat128MathILib INTERFACE_COMPILE_DEFINITIONS
+-      )
+-    set_property(SOURCE ${f128_sources}
+-      APPEND PROPERTY COMPILE_DEFINITIONS
+-      ${f128_defs}
+-      )
+-    get_target_property(f128_include_dirs
+-      FortranFloat128MathILib INTERFACE_INCLUDE_DIRECTORIES
+-      )
+-    set_property(SOURCE ${f128_sources}
+-      APPEND PROPERTY INCLUDE_DIRECTORIES
+-      ${f128_include_dirs}
+-      )
+-    list(APPEND sources ${f128_sources})
+-  endif()
+-endif()
++  set_property(SOURCE ${f128_sources}
++    APPEND PROPERTY COMPILE_DEFINITIONS
++    ${f128_defs}
++    )
++  get_target_property(f128_include_dirs
++    FortranFloat128MathILib INTERFACE_INCLUDE_DIRECTORIES
++    )
++  set_property(SOURCE ${f128_sources}
++    APPEND PROPERTY INCLUDE_DIRECTORIES
++    ${f128_include_dirs}
++    )
++else ()
++  set(f128_sources "")
++endif ()
+ 
+-if (NOT DEFINED MSVC)
+-  add_flang_library(FortranRuntime
+-    ${sources}
+-    LINK_LIBS
+-    FortranDecimal
+ 
++set(sources ${supported_sources} ${host_sources} ${f128_sources})
++
++if (NOT WIN32)
++  add_flangrt_library(flang_rt STATIC
++    ${sources}
+     INSTALL_WITH_TOOLCHAIN
++    ADDITIONAL_HEADERS ${public_headers} ${private_headers}
+   )
++
++  enable_cuda_compilation(flang_rt "${supported_sources}")
++  enable_omp_offload_compilation(flang_rt "${supported_sources}")
++
++  # For unittests that depend on flang_rt. Should link to the static version
++  # of the library.
++  add_library(flang_rt.static ALIAS flang_rt)
++  add_library(flang_rt.unittest ALIAS flang_rt)
+ else()
+-  add_flang_library(FortranRuntime
+-    ${sources}
+-    LINK_LIBS
+-    FortranDecimal
+-  )
+-  set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
+-  add_flang_library(FortranRuntime.static ${sources}
+-    LINK_LIBS
+-    FortranDecimal.static
+-    INSTALL_WITH_TOOLCHAIN)
+-  set_target_properties(FortranRuntime.static PROPERTIES FOLDER "Flang/Runtime Libraries")
+-  set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
+-  add_flang_library(FortranRuntime.dynamic ${sources}
+-    LINK_LIBS
+-    FortranDecimal.dynamic
+-    INSTALL_WITH_TOOLCHAIN)
+-  set_target_properties(FortranRuntime.dynamic PROPERTIES FOLDER "Flang/Runtime Libraries")
+-  set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDebug)
+-  add_flang_library(FortranRuntime.static_dbg ${sources}
+-    LINK_LIBS
+-    FortranDecimal.static_dbg
+-    INSTALL_WITH_TOOLCHAIN)
+-  set_target_properties(FortranRuntime.static_dbg PROPERTIES FOLDER "Flang/Runtime Libraries")
+-  set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDebugDLL)
+-  add_flang_library(FortranRuntime.dynamic_dbg ${sources}
+-    LINK_LIBS
+-    FortranDecimal.dynamic_dbg
+-    INSTALL_WITH_TOOLCHAIN)
+-  set_target_properties(FortranRuntime.dynamic_dbg PROPERTIES FOLDER "Flang/Runtime Libraries")
+-  add_dependencies(FortranRuntime FortranRuntime.static FortranRuntime.dynamic
+-    FortranRuntime.static_dbg FortranRuntime.dynamic_dbg)
+-endif()
+-set_target_properties(FortranRuntime PROPERTIES FOLDER "Flang/Runtime Libraries")
++  # Target for building all versions of the runtime
++  add_custom_target(flang_rt)
++  set_target_properties(flang_rt PROPERTIES FOLDER "Flang-RT/Meta")
++
++  function (add_win_flangrt_library libtype suffix msvc_lib)
++    set(name "flang_rt.${suffix}")
++    add_flangrt_library(${name} ${libtype}
++        ${sources}
++        ${ARGN}
++        INSTALL_WITH_TOOLCHAIN
++        ADDITIONAL_HEADERS ${public_headers} ${private_headers}
++      )
+ 
+-# If FortranRuntime is part of a Flang build (and not a separate build) then
+-# add dependency to make sure that Fortran runtime library is being built after
+-# we have the Flang compiler available.  This also includes the MODULE files
+-# that compile when the 'flang' target is built.
+-#
+-# TODO: This is a workaround and should be updated when runtime build procedure
+-# is changed to a regular runtime build.  See discussion in PR #95388.
+-if (TARGET flang AND TARGET module_files)
+-  add_dependencies(FortranRuntime flang module_files)
+-endif()
++    # Setting an unique Fortran_MODULE_DIRECTORY is required for each variant to
++    # write a different .mod file.
++    set_target_properties(${name}
++        PROPERTIES
++          MSVC_RUNTIME_LIBRARY ${msvc_lib}
++          Fortran_MODULE_DIRECTORY "module.${suffix}"
++      )
+ 
+-if (FLANG_CUF_RUNTIME)
+-  add_subdirectory(../CufRuntime CUDA)
++    enable_cuda_compilation(${name} "${supported_sources}")
++    enable_omp_offload_compilation(${name} "${supported_sources}")
++    add_dependencies(flang_rt ${name})
++  endfunction ()
++
++  add_win_flangrt_library(STATIC static     MultiThreaded)
++  add_win_flangrt_library(STATIC static_dbg MultiThreadedDebug)
++
++  # unittests link against LLVMSupport which is compiled with /MD
++  add_win_flangrt_library(STATIC unittest   MultiThreadedDLL EXCLUDE_FROM_ALL)
++
++  # FIXME: Generating runtime DLLs is currently not possible. There are two
++  # roadblocks:
++  #
++  #  * Flang emits /DEFAULTLIB:flang_rt.dynamic.lib into
++  #    iso_fortran_env_impl.f90.obj. Because that file is itself part of
++  #    flang_rt.dynamic, this results in a recursive dependency when invoking
++  #    the linker.
++  #
++  #  * The externally-visible functions must either be annotated with
++  #    __declspec(dllexport), or listed in an exports file. A possible workaround
++  #    is CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS which would also export the internal
++  #    C++ symbols and still requires global data symbols to be annotated
++  #    manually.
++  #
++  #add_win_flangrt_library(SHARED dynamic     MultiThreadedDLL)
++  #add_win_flangrt_library(SHARED dynamic_dbg MultiThreadedDebugDLL)
+ endif()
+diff --git a/flang-rt/lib/flang_rt/allocator-registry.cpp b/flang-rt/lib/flang_rt/allocator-registry.cpp
+index b53f70bf6044..c6e799d7cba0 100644
+--- a/flang-rt/lib/flang_rt/allocator-registry.cpp
++++ b/flang-rt/lib/flang_rt/allocator-registry.cpp
+@@ -11,11 +11,11 @@
+ 
+ namespace Fortran::runtime {
+ 
+-#ifndef FLANG_RUNTIME_NO_GLOBAL_VAR_DEFS
++#ifndef FLANG_RT_NO_GLOBAL_VAR_DEFS
+ RT_OFFLOAD_VAR_GROUP_BEGIN
+ RT_VAR_ATTRS AllocatorRegistry allocatorRegistry;
+ RT_OFFLOAD_VAR_GROUP_END
+-#endif // FLANG_RUNTIME_NO_GLOBAL_VAR_DEFS
++#endif // FLANG_RT_NO_GLOBAL_VAR_DEFS
+ 
+ RT_OFFLOAD_API_GROUP_BEGIN
+ RT_API_ATTRS void AllocatorRegistry::Register(int pos, Allocator_t allocator) {
+diff --git a/flang-rt/lib/flang_rt/environment.cpp b/flang-rt/lib/flang_rt/environment.cpp
+index 9ff65f1e60dd..3360b5d92f2a 100644
+--- a/flang-rt/lib/flang_rt/environment.cpp
++++ b/flang-rt/lib/flang_rt/environment.cpp
+@@ -23,11 +23,11 @@ extern char **environ;
+ 
+ namespace Fortran::runtime {
+ 
+-#ifndef FLANG_RUNTIME_NO_GLOBAL_VAR_DEFS
++#ifndef FLANG_RT_NO_GLOBAL_VAR_DEFS
+ RT_OFFLOAD_VAR_GROUP_BEGIN
+ RT_VAR_ATTRS ExecutionEnvironment executionEnvironment;
+ RT_OFFLOAD_VAR_GROUP_END
+-#endif // FLANG_RUNTIME_NO_GLOBAL_VAR_DEFS
++#endif // FLANG_RT_NO_GLOBAL_VAR_DEFS
+ 
+ static void SetEnvironmentDefaults(const EnvironmentDefaultList *envDefaults) {
+   if (!envDefaults) {
+diff --git a/flang-rt/lib/flang_rt/io-api-minimal.cpp b/flang-rt/lib/flang_rt/io-api-minimal.cpp
+index 59093d8d45d0..3da01b870746 100644
+--- a/flang-rt/lib/flang_rt/io-api-minimal.cpp
++++ b/flang-rt/lib/flang_rt/io-api-minimal.cpp
+@@ -150,7 +150,7 @@ bool IODEF(OutputLogical)(Cookie cookie, bool truth) {
+ // Provide own definition for `std::__libcpp_verbose_abort` to avoid dependency
+ // on the version provided by libc++.
+ 
+-void std::__libcpp_verbose_abort(char const *format, ...) {
++void std::__libcpp_verbose_abort(char const *format, ...) noexcept {
+   va_list list;
+   va_start(list, format);
+   std::vfprintf(stderr, format, list);
+diff --git a/flang-rt/lib/flang_rt/time-intrinsic.cpp b/flang-rt/lib/flang_rt/time-intrinsic.cpp
+index 43559ccc3809..2922c692212c 100644
+--- a/flang-rt/lib/flang_rt/time-intrinsic.cpp
++++ b/flang-rt/lib/flang_rt/time-intrinsic.cpp
+@@ -62,7 +62,7 @@ template <typename Unused = void> double GetCpuTime(fallback_implementation) {
+ 
+ #if defined __MINGW32__
+ // clock_gettime is implemented in the pthread library for MinGW.
+-// Using it here would mean that all programs that link libFortranRuntime are
++// Using it here would mean that all programs that link libflang_rt are
+ // required to also link to pthread. Instead, don't use the function.
+ #undef CLOCKID_CPU_TIME
+ #undef CLOCKID_ELAPSED_TIME
+diff --git a/flang-rt/lib/flang_rt/unit.cpp b/flang-rt/lib/flang_rt/unit.cpp
+index d65ae8962541..06faf60d6d62 100644
+--- a/flang-rt/lib/flang_rt/unit.cpp
++++ b/flang-rt/lib/flang_rt/unit.cpp
+@@ -19,13 +19,13 @@
+ 
+ namespace Fortran::runtime::io {
+ 
+-#ifndef FLANG_RUNTIME_NO_GLOBAL_VAR_DEFS
++#ifndef FLANG_RT_NO_GLOBAL_VAR_DEFS
+ RT_OFFLOAD_VAR_GROUP_BEGIN
+ RT_VAR_ATTRS ExternalFileUnit *defaultInput{nullptr}; // unit 5
+ RT_VAR_ATTRS ExternalFileUnit *defaultOutput{nullptr}; // unit 6
+ RT_VAR_ATTRS ExternalFileUnit *errorOutput{nullptr}; // unit 0 extension
+ RT_OFFLOAD_VAR_GROUP_END
+-#endif // FLANG_RUNTIME_NO_GLOBAL_VAR_DEFS
++#endif // FLANG_RT_NO_GLOBAL_VAR_DEFS
+ 
+ RT_OFFLOAD_API_GROUP_BEGIN
+ 
+diff --git a/flang-rt/lib/flang_rt/utf.cpp b/flang-rt/lib/flang_rt/utf.cpp
+index 46400668745c..e4e4926ea312 100644
+--- a/flang-rt/lib/flang_rt/utf.cpp
++++ b/flang-rt/lib/flang_rt/utf.cpp
+@@ -10,7 +10,7 @@
+ 
+ namespace Fortran::runtime {
+ 
+-#ifndef FLANG_RUNTIME_NO_GLOBAL_VAR_DEFS
++#ifndef FLANG_RT_NO_GLOBAL_VAR_DEFS
+ // clang-format off
+ RT_OFFLOAD_VAR_GROUP_BEGIN
+ const RT_CONST_VAR_ATTRS std::uint8_t UTF8FirstByteTable[256]{
+@@ -41,7 +41,7 @@ const RT_CONST_VAR_ATTRS std::uint8_t UTF8FirstByteTable[256]{
+ };
+ RT_OFFLOAD_VAR_GROUP_END
+ // clang-format on
+-#endif // FLANG_RUNTIME_NO_GLOBAL_VAR_DEFS
++#endif // FLANG_RT_NO_GLOBAL_VAR_DEFS
+ 
+ RT_OFFLOAD_API_GROUP_BEGIN
+ 
+diff --git a/flang-rt/test/CMakeLists.txt b/flang-rt/test/CMakeLists.txt
+new file mode 100644
+index 000000000000..5ca07b66e4f9
+--- /dev/null
++++ b/flang-rt/test/CMakeLists.txt
+@@ -0,0 +1,59 @@
++#===-- test/CMakeLists.txt -------------------------------------------------===#
++#
++# Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
++# See https://llvm.org/LICENSE.txt for license information.
++# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
++#
++#===------------------------------------------------------------------------===#
++
++# Test runner infrastructure for Flang. This configures the Flang test trees
++# for use by Lit, and delegates to LLVM's lit test handlers.
++
++llvm_canonicalize_cmake_booleans(
++  FLANG_STANDALONE_BUILD
++  LLVM_BUILD_EXAMPLES
++  LLVM_BYE_LINK_INTO_TOOLS
++  LLVM_ENABLE_PLUGINS
++)
++
++configure_lit_site_cfg(
++  ${CMAKE_CURRENT_SOURCE_DIR}/lit.site.cfg.py.in
++  ${CMAKE_CURRENT_BINARY_DIR}/lit.site.cfg.py
++  MAIN_CONFIG
++  ${CMAKE_CURRENT_SOURCE_DIR}/lit.cfg.py
++)
++
++if (TARGET FlangRTUnitTests)
++  configure_lit_site_cfg(
++    ${CMAKE_CURRENT_SOURCE_DIR}/Unit/lit.site.cfg.py.in
++    ${CMAKE_CURRENT_BINARY_DIR}/Unit/lit.site.cfg.py
++    MAIN_CONFIG
++    ${CMAKE_CURRENT_SOURCE_DIR}/Unit/lit.cfg.py
++  )
++
++  configure_lit_site_cfg(
++    ${CMAKE_CURRENT_SOURCE_DIR}/NonGtestUnit/lit.site.cfg.py.in
++    ${CMAKE_CURRENT_BINARY_DIR}/NonGtestUnit/lit.site.cfg.py
++    MAIN_CONFIG
++    ${CMAKE_CURRENT_SOURCE_DIR}/NonGtestUnit/lit.cfg.py
++  )
++endif ()
++
++
++add_custom_target(flang-rt-test-depends)
++set_target_properties(flang-rt-test-depends PROPERTIES FOLDER "Flang-RT/Meta")
++add_dependencies(flang-rt-test-depends
++    FlangRTUnitTests
++    flang_rt.unittest
++    flang_rt.static
++  )
++
++add_lit_testsuite(check-flang-rt "Running the Flang-RT regression tests"
++    ${CMAKE_CURRENT_BINARY_DIR}
++    DEPENDS flang-rt-test-depends
++  )
++set_target_properties(check-flang-rt PROPERTIES FOLDER "Flang-RT/Meta")
++
++add_lit_testsuites(flang-rt ${CMAKE_CURRENT_SOURCE_DIR}
++    DEPENDS flang-rt-test-depends
++  )
+diff --git a/flang-rt/test/Driver/ctofortran.f90 b/flang-rt/test/Driver/ctofortran.f90
+index 78eac32133b1..9cf7571ffd2c 100644
+--- a/flang-rt/test/Driver/ctofortran.f90
++++ b/flang-rt/test/Driver/ctofortran.f90
+@@ -1,7 +1,9 @@
+ ! UNSUPPORTED: system-windows
++
+ ! RUN: split-file %s %t
+-! RUN: chmod +x %t/runtest.sh
+-! RUN: %t/runtest.sh %t %t/ffile.f90 %t/cfile.c %flang | FileCheck %s
++! RUN: %clang -c %t/cfile.c -o %t/cfile.o
++! RUN: %flang -L"%libdir" %deplibs %t/ffile.f90 %t/cfile.o -o %t/ctofortran
++! RUN: env LD_LIBRARY_PATH="$LD_LIBRARY_PATH:%libdir" %t/ctofortran | FileCheck %s
+ 
+ !--- ffile.f90
+ program fmain
+@@ -65,24 +67,3 @@ void csub() {
+   foo(desc);
+   return;
+ }
+-!--- runtest.sh
+-#!/bin/bash
+-TMPDIR=$1
+-FFILE=$2
+-CFILE=$3
+-FLANG=$4
+-shift 4
+-FLAGS="$*"
+-BINDIR=`dirname $FLANG`
+-LIBDIR=$BINDIR/../lib
+-CCOMP=$BINDIR/clang
+-if [ -x $CCOMP ]
+-then
+-  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LIBDIR
+-  $CCOMP $FLAGS -c $CFILE -o $TMPDIR/cfile.o
+-  $FLANG $FLAGS $FFILE $TMPDIR/cfile.o -o $TMPDIR/ctofortran
+-  $TMPDIR/ctofortran # should print "PASS"
+-else
+-  # No clang compiler, just pass by default
+-  echo "PASS"
+-fi
+diff --git a/flang-rt/test/Driver/exec.f90 b/flang-rt/test/Driver/exec.f90
+index fd174005ddf6..b154270e01c4 100644
+--- a/flang-rt/test/Driver/exec.f90
++++ b/flang-rt/test/Driver/exec.f90
+@@ -1,9 +1,7 @@
+-! UNSUPPORTED: system-windows
+ ! Verify that flang can correctly build executables.
+ 
+-! RUN: %flang %s -o %t
+-! RUN: env LD_LIBRARY_PATH="$LD_LIBRARY_PATH:%llvmshlibdir" %t | FileCheck %s
+-! RUN: rm -f %t
++! RUN: %flang -L"%libdir" %s %deplibs -o %t
++! RUN: env LD_LIBRARY_PATH="$LD_LIBRARY_PATH:%libdir" %t | FileCheck %s
+ 
+ ! CHECK: Hello, World!
+ program hello
+diff --git a/flang-rt/test/NonGtestUnit/lit.cfg.py b/flang-rt/test/NonGtestUnit/lit.cfg.py
+new file mode 100644
+index 000000000000..4bee709b78f4
+--- /dev/null
++++ b/flang-rt/test/NonGtestUnit/lit.cfg.py
+@@ -0,0 +1,22 @@
++# -*- Python -*-
++
++import os
++
++import lit.formats
++
++# name: The name of this test suite.
++config.name = "flang-rt-OldUnit"
++
++# suffixes: A list of file extensions to treat as test files.
++# On Windows, ".exe" also matches the GTests and will execited redundantly.
++config.suffixes = [".test", ".exe"]
++
++# test_source_root: The root path where unit test binaries are located.
++config.test_source_root = os.path.join(config.flangrt_binary_dir, "unittests")
++
++# test_exec_root: The root path where tests should be run.
++# lit writes a '.lit_test_times.txt' file into this directory.
++config.test_exec_root = config.flang_rt_binary_test_dir
++
++# testFormat: The test format to use to interpret tests.
++config.test_format = lit.formats.ExecutableTest()
+diff --git a/flang-rt/test/NonGtestUnit/lit.site.cfg.py.in b/flang-rt/test/NonGtestUnit/lit.site.cfg.py.in
+new file mode 100644
+index 000000000000..8244b5b62d3a
+--- /dev/null
++++ b/flang-rt/test/NonGtestUnit/lit.site.cfg.py.in
+@@ -0,0 +1,14 @@
++@LIT_SITE_CFG_IN_HEADER@
++
++import os
++
++config.llvm_tools_dir = "@LLVM_TOOLS_DIR@"
++config.flang_rt_source_dir = "@FLANG_RT_SOURCE_DIR@"
++config.flangrt_binary_dir = "@FLANG_RT_BINARY_DIR@"
++config.flang_rt_binary_test_dir = os.path.dirname(__file__)
++
++import lit.llvm
++lit.llvm.initialize(lit_config, config)
++
++# Let the main config do the real work.
++lit_config.load_config(config, os.path.join(config.flang_rt_source_dir, 'test', 'NonGtestUnit', 'lit.cfg.py'))
+diff --git a/flang-rt/test/Runtime/no-cpp-dep.c b/flang-rt/test/Runtime/no-cpp-dep.c
+index 606a5d189f71..9880afc27497 100644
+--- a/flang-rt/test/Runtime/no-cpp-dep.c
++++ b/flang-rt/test/Runtime/no-cpp-dep.c
+@@ -1,17 +1,18 @@
+ /*
+ This test makes sure that flang's runtime does not depend on the C++ runtime
+-library. It tries to link this simple file against libFortranRuntime.a with
++library. It tries to link this simple file against libflang_rt.a with
+ a C compiler.
+ 
+-REQUIRES: c-compiler
++UNSUPPORTED: system-windows
+ 
+ RUN: %if system-aix %{ export OBJECT_MODE=64 %}
+-RUN: %cc -std=c99 %s -I%include %libruntime %libdecimal -lm  \
++RUN: %cc -std=c99 %s -I%include %libruntime -lm %deplibs \
+ RUN: %if system-aix %{-lpthread %}
+-RUN: rm a.out
+ */
+ 
+ #include "flang/Runtime/entry-names.h"
++#include <stdbool.h>
++#include <stddef.h>
+ #include <stdint.h>
+ 
+ /*
+diff --git a/flang-rt/test/Unit/lit.cfg.py b/flang-rt/test/Unit/lit.cfg.py
+new file mode 100644
+index 000000000000..516bc653f413
+--- /dev/null
++++ b/flang-rt/test/Unit/lit.cfg.py
+@@ -0,0 +1,21 @@
++# -*- Python -*-
++
++import os
++
++import lit.formats
++
++# name: The name of this test suite.
++config.name = "flang-rt-Unit"
++
++# suffixes: A list of file extensions to treat as test files.
++config.suffixes = []
++
++# test_source_root: The root path where unit test binaries are located.
++config.test_source_root = os.path.join(config.flangrt_binary_dir, "unittests")
++
++# test_exec_root: The root path where tests should be run.
++# lit writes a '.lit_test_times.txt' file into this directory.
++config.test_exec_root = config.flang_rt_binary_test_dir
++
++# testFormat: The test format to use to interpret tests.
++config.test_format = lit.formats.GoogleTest(config.llvm_build_mode, "Tests")
+diff --git a/flang-rt/test/Unit/lit.site.cfg.py.in b/flang-rt/test/Unit/lit.site.cfg.py.in
+new file mode 100644
+index 000000000000..ed6dea07bcdd
+--- /dev/null
++++ b/flang-rt/test/Unit/lit.site.cfg.py.in
+@@ -0,0 +1,15 @@
++@LIT_SITE_CFG_IN_HEADER@
++
++import os
++
++config.llvm_tools_dir = "@LLVM_TOOLS_DIR@"
++config.llvm_build_mode = "@LLVM_BUILD_MODE@"
++config.flang_rt_source_dir = "@FLANG_RT_SOURCE_DIR@"
++config.flangrt_binary_dir = "@FLANG_RT_BINARY_DIR@"
++config.flang_rt_binary_test_dir = os.path.dirname(__file__)
++
++import lit.llvm
++lit.llvm.initialize(lit_config, config)
++
++# Let the main config do the real work.
++lit_config.load_config(config, os.path.join(config.flang_rt_source_dir, 'test', 'Unit', 'lit.cfg.py'))
+diff --git a/flang-rt/test/lit.cfg.py b/flang-rt/test/lit.cfg.py
+new file mode 100644
+index 000000000000..8c21877a9188
+--- /dev/null
++++ b/flang-rt/test/lit.cfg.py
+@@ -0,0 +1,106 @@
++# -*- Python -*-
++
++import shlex
++import lit.util
++
++from lit.llvm import llvm_config
++from lit.llvm.subst import ToolSubst, FindTool
++
++def shjoin(args, sep=' '):
++    return sep.join([shlex.quote(arg) for arg in args])
++
++# Configuration file for the 'lit' test runner.
++
++# name: The name of this test suite.
++config.name = "flang-rt"
++
++# testFormat: The test format to use to interpret tests.
++#
++# For now we require '&&' between commands, until they get globally killed and
++# the test runner updated.
++config.test_format = lit.formats.ShTest(not llvm_config.use_lit_shell)
++
++# suffixes: A list of file extensions to treat as test files.
++config.suffixes = [
++    ".c",
++    ".cpp",
++    ".f",
++    ".F",
++    ".ff",
++    ".FOR",
++    ".for",
++    ".f77",
++    ".f90",
++    ".F90",
++    ".ff90",
++    ".f95",
++    ".F95",
++    ".ff95",
++    ".fpp",
++    ".FPP",
++    ".cuf",
++    ".CUF",
++    ".f18",
++    ".F18",
++    ".f03",
++    ".F03",
++    ".f08",
++    ".F08",
++    ".ll",
++    ".fir",
++    ".mlir",
++]
++
++llvm_config.use_default_substitutions()
++
++# test_source_root: The root path where tests are located.
++config.test_source_root = os.path.dirname(__file__)
++
++# test_exec_root: The root path where tests should be run.
++# lit writes a '.lit_test_times.txt' file into this directory.
++config.test_exec_root = config.flang_rt_binary_test_dir
++
++# On MacOS, -isysroot is needed to build binaries.
++isysroot_flag = []
++if config.osx_sysroot:
++    isysroot_flag = ["-isysroot", config.osx_sysroot]
++
++tools = [
++    ToolSubst(
++        "%flang",
++        command=FindTool("flang"),
++        extra_args=isysroot_flag,
++        unresolved="fatal",
++    ),
++    ToolSubst(
++        "%clang",
++        command=FindTool("clang"),
++        extra_args=isysroot_flag,
++        unresolved="fatal",
++    ),
++    ToolSubst("%cc",
++        command=config.cc,
++        extra_args=isysroot_flag,
++        unresolved="fatal"
++    ),
++]
++llvm_config.add_tool_substitutions(tools)
++
++# Let tests find LLVM's standard tools (FileCheck, split-file, not, ...)
++llvm_config.with_environment("PATH", config.llvm_tools_dir, append_path=True)
++
++# Library path of libflang_rt.a
++config.substitutions.append(("%libdir", config.flang_rt_build_lib_dir))
++
++# Define some variables to help us test that the flang runtime doesn't depend on
++# the C++ runtime libraries. For this we need a C compiler.
++libruntime = os.path.join(config.flang_rt_build_lib_dir, "libflang_rt.a")
++include = os.path.join(config.flang_source_dir, "include")
++config.substitutions.append(("%libruntime", libruntime))
++config.substitutions.append(("%include", include))
++
++# Additional library depedendencies the that flang driver does not add itself.
++deplibs = []
++if config.flang_rt_experimental_offload_support == "CUDA":
++    deplibs.append('-lcudart')
++config.substitutions.append(("%deplibs", shjoin(deplibs)))
+diff --git a/flang-rt/test/lit.site.cfg.py.in b/flang-rt/test/lit.site.cfg.py.in
+new file mode 100644
+index 000000000000..a587bbf8dea0
+--- /dev/null
++++ b/flang-rt/test/lit.site.cfg.py.in
+@@ -0,0 +1,18 @@
++@LIT_SITE_CFG_IN_HEADER@
++
++import sys
++
++config.llvm_tools_dir = "@LLVM_TOOLS_DIR@"
++config.flang_source_dir = "@FLANG_SOURCE_DIR@"
++config.flang_rt_source_dir = "@FLANG_RT_SOURCE_DIR@"
++config.flang_rt_binary_test_dir = os.path.dirname(__file__)
++config.flang_rt_build_lib_dir = "@FLANG_RT_BUILD_LIB_DIR@"
++config.flang_rt_experimental_offload_support = "@FLANG_RT_EXPERIMENTAL_OFFLOAD_SUPPORT@"
++config.cc = "@CMAKE_C_COMPILER@"
++config.osx_sysroot = path(r"@CMAKE_OSX_SYSROOT@")
++
++import lit.llvm
++lit.llvm.initialize(lit_config, config)
++
++# Let the main config do the real work.
++lit_config.load_config(config, os.path.join(config.flang_rt_source_dir, 'test', 'lit.cfg.py'))
+diff --git a/flang-rt/unittests/CMakeLists.txt b/flang-rt/unittests/CMakeLists.txt
+new file mode 100644
+index 000000000000..aa2ce3aba0c4
+--- /dev/null
++++ b/flang-rt/unittests/CMakeLists.txt
+@@ -0,0 +1,101 @@
++#===-- unittests/CMakeLists.txt --------------------------------------------===#
++#
++# Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
++# See https://llvm.org/LICENSE.txt for license information.
++# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
++#
++#===------------------------------------------------------------------------===#
++
++# Add GTest if not already present.
++# Using a function so LLVM_SUBPROJECT_TITLE does not propagate.
++function (build_gtest)
++  set(LLVM_SUBPROJECT_TITLE "Third-Party/Google Test")
++  add_subdirectory("${LLVM_THIRD_PARTY_DIR}/unittest" "${CMAKE_CURRENT_BINARY_DIR}/third-party/unittest")
++endfunction ()
++if (NOT TARGET llvm_gtest)
++  build_gtest()
++endif ()
++
++# LLVM's modified GTest depends on LLVM, but not all sibling runtime projects
++# creating a llvm_gtest target also use target_include_directories.
++target_include_directories(llvm_gtest PUBLIC "${LLVM_INCLUDE_DIR}" "${LLVM_MAIN_INCLUDE_DIR}")
++
++# Required because LLVMSupport is compiled with this option (by default).
++set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
++
++if (CXX_SUPPORTS_SUGGEST_OVERRIDE_FLAG)
++  add_compile_options("-Wno-suggest-override")
++endif()
++
++
++# Target that depends on all unittests
++add_custom_target(FlangRTUnitTests)
++set_target_properties(FlangRTUnitTests PROPERTIES FOLDER "Flang-RT/Meta")
++
++
++function(add_flangrt_unittest_offload_properties target)
++  # Set CUDA_RESOLVE_DEVICE_SYMBOLS.
++  if (FLANG_RT_EXPERIMENTAL_OFFLOAD_SUPPORT STREQUAL "CUDA")
++    set_target_properties(${target}
++      PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON
++      )
++  endif()
++  # Enable OpenMP offload during linking. We may need to replace
++  # LINK_OPTIONS with COMPILE_OPTIONS when there are OpenMP offload
++  # unittests.
++  #
++  # FIXME: replace 'native' in --offload-arch option with the list
++  #        of targets that Fortran Runtime was built for.
++  if (FLANG_RT_EXPERIMENTAL_OFFLOAD_SUPPORT STREQUAL "OpenMP")
++    set_target_properties(${target}
++      PROPERTIES LINK_OPTIONS
++      "-fopenmp;--offload-arch=native"
++      )
++  endif()
++endfunction()
++
++
++function(add_flangrt_unittest test_dirname)
++  cmake_parse_arguments(ARG
++    ""
++    ""
++    "LINK_LIBS"
++    ${ARGN})
++
++  add_unittest(FlangRTUnitTests ${test_dirname} ${ARG_UNPARSED_ARGUMENTS})
++
++  target_include_directories(${test_dirname} PRIVATE "${FLANG_RT_SOURCE_DIR}/include")
++  target_include_directories(${test_dirname} PRIVATE "${FLANG_SOURCE_DIR}/include")
++  target_link_libraries(${test_dirname} PRIVATE ${ARG_LINK_LIBS})
++  add_flangrt_unittest_offload_properties(${test_dirname})
++endfunction()
++
++function(add_flangrt_nongtest_unittest test_name)
++  cmake_parse_arguments(ARG
++    "SLOW_TEST"
++    ""
++    "LINK_LIBS"
++    ${ARGN})
++
++  if(ARG_SLOW_TEST)
++      set(suffix .slow)
++  else()
++      set(suffix .test)
++  endif()
++
++  add_executable(${test_name}${suffix} ${ARG_UNPARSED_ARGUMENTS})
++  set_target_properties(${test_name}${suffix} PROPERTIES FOLDER "Flang-RT/Tests/Unit")
++
++  target_include_directories(${test_name}${suffix} PRIVATE "${FLANG_RT_SOURCE_DIR}/include")
++  target_include_directories(${test_name}${suffix} PRIVATE "${FLANG_SOURCE_DIR}/include")
++  target_link_libraries(${test_name}${suffix} PRIVATE NonGTestTesting ${ARG_LINK_LIBS})
++
++  if(NOT ARG_SLOW_TEST)
++    add_dependencies(FlangRTUnitTests ${test_name}${suffix})
++  endif()
++
++  add_flangrt_unittest_offload_properties(${test_name}${suffix})
++endfunction()
++
++add_subdirectory(Evaluate)
++add_subdirectory(Runtime)
+diff --git a/flang-rt/unittests/Evaluate/CMakeLists.txt b/flang-rt/unittests/Evaluate/CMakeLists.txt
+index ceb9e178d34e..15b813bcb19d 100644
+--- a/flang-rt/unittests/Evaluate/CMakeLists.txt
++++ b/flang-rt/unittests/Evaluate/CMakeLists.txt
+@@ -6,16 +6,16 @@
+ #
+ #===------------------------------------------------------------------------===#
+ 
+-add_flang_nongtest_unittest(reshape
+-  FortranEvaluateTesting
+-  FortranSemantics
+-  FortranEvaluate
+-  FortranRuntime
++add_flangrt_nongtest_unittest(reshape
++  reshape.cpp
++
++  LINK_LIBS
++    flang_rt.unittest
+ )
+ 
+-add_flang_nongtest_unittest(ISO-Fortran-binding
+-  FortranEvaluateTesting
+-  FortranEvaluate
+-  FortranSemantics
+-  FortranRuntime
++add_flangrt_nongtest_unittest(ISO-Fortran-binding
++  ISO-Fortran-binding.cpp
++
++  LINK_LIBS
++    flang_rt.unittest
+ )
+diff --git a/flang-rt/unittests/Runtime/CMakeLists.txt b/flang-rt/unittests/Runtime/CMakeLists.txt
+index d6684944e704..32f12b14caca 100644
+--- a/flang-rt/unittests/Runtime/CMakeLists.txt
++++ b/flang-rt/unittests/Runtime/CMakeLists.txt
+@@ -6,7 +6,7 @@
+ #
+ #===------------------------------------------------------------------------===#
+ 
+-add_flang_unittest(FlangRuntimeTests
++add_flangrt_unittest(RuntimeTests
+   AccessTest.cpp
+   Allocatable.cpp
+   ArrayConstructor.cpp
+@@ -37,13 +37,12 @@ add_flang_unittest(FlangRuntimeTests
+   Time.cpp
+   TemporaryStack.cpp
+   Transformational.cpp
+-)
+ 
+-target_link_libraries(FlangRuntimeTests
+-  PRIVATE
+-  FortranRuntime
++  LINK_LIBS
++    flang_rt.unittest
+ )
++target_compile_definitions(RuntimeTests PRIVATE NOT_EXE="${LLVM_TOOLS_DIR}/not${CMAKE_EXECUTABLE_SUFFIX}")
+ 
+-target_compile_definitions(FlangRuntimeTests PRIVATE NOT_EXE="$<TARGET_FILE:not>")
+-
+-add_subdirectory(CUDA)
++if (FLANG_RT_ENABLE_CUF)
++  add_subdirectory(CUDA)
++endif ()
+diff --git a/flang-rt/unittests/Runtime/CUDA/CMakeLists.txt b/flang-rt/unittests/Runtime/CUDA/CMakeLists.txt
+index 685b4bf5596c..6702f7c97a0d 100644
+--- a/flang-rt/unittests/Runtime/CUDA/CMakeLists.txt
++++ b/flang-rt/unittests/Runtime/CUDA/CMakeLists.txt
+@@ -6,18 +6,15 @@
+ #
+ #===------------------------------------------------------------------------===#
+ 
+-if (FLANG_CUF_RUNTIME)
+-
+-add_flang_unittest(FlangCufRuntimeTests
++add_flangrt_unittest(FlangCufRuntimeTests
++  Allocatable.cpp
+   AllocatorCUF.cpp
+ )
+ 
+ target_link_libraries(FlangCufRuntimeTests
+   PRIVATE
+   CufRuntime_cuda_${CUDAToolkit_VERSION_MAJOR}
+-  FortranRuntime
++  flang_rt
+ )
+ 
+ target_include_directories(FlangCufRuntimeTests PRIVATE ${CUDAToolkit_INCLUDE_DIRS})
+-
+-endif()
+diff --git a/flang/CMakeLists.txt b/flang/CMakeLists.txt
+index 455b6f597ff8..34c5661c963a 100644
+--- a/flang/CMakeLists.txt
++++ b/flang/CMakeLists.txt
+@@ -34,17 +34,6 @@ endif()
+ 
+ option(FLANG_ENABLE_WERROR "Fail and stop building flang if a warning is triggered." OFF)
+ 
+-# The out of tree builds of the compiler and the Fortran runtime
+-# must use the same setting of FLANG_RUNTIME_F128_MATH_LIB
+-# to be composable. Failure to synchronize this setting may result
+-# in linking errors or fatal failures in F128 runtime functions.
+-set(FLANG_RUNTIME_F128_MATH_LIB "" CACHE STRING
+-  "Specifies the target library used for implementing IEEE-754 128-bit float \
+-  math in F18 runtime, e.g. it might be libquadmath for targets where \
+-  REAL(16) is mapped to __float128, or libm for targets where REAL(16) \
+-  is mapped to long double, etc."
+-  )
+-
+ # Check for a standalone build and configure as appropriate from
+ # there.
+ if (CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+@@ -279,7 +268,7 @@ set(FLANG_DEFAULT_LINKER "" CACHE STRING
+   "Default linker to use (linker name or absolute path, empty for platform default)")
+ 
+ set(FLANG_DEFAULT_RTLIB "" CACHE STRING
+-   "Default Fortran runtime library to use (\"libFortranRuntime\"), leave empty for platform default.")
++   "Default Fortran runtime library to use (\"libflang_rt\"), leave empty for platform default.")
+ 
+ if (NOT(FLANG_DEFAULT_RTLIB STREQUAL ""))
+   message(WARNING "Resetting Flang's default runtime library to use platform default.")
+@@ -335,20 +324,6 @@ if (FLANG_REPOSITORY_STRING)
+   add_definitions(-DFLANG_REPOSITORY_STRING="${FLANG_REPOSITORY_STRING}")
+ endif()
+ 
+-if (FLANG_RUNTIME_F128_MATH_LIB)
+-  add_compile_definitions(
+-    FLANG_RUNTIME_F128_MATH_LIB="${FLANG_RUNTIME_F128_MATH_LIB}"
+-    )
+-endif()
+-
+-include(TestBigEndian)
+-test_big_endian(IS_BIGENDIAN)
+-if (IS_BIGENDIAN)
+-  add_compile_definitions(FLANG_BIG_ENDIAN=1)
+-else ()
+-  add_compile_definitions(FLANG_LITTLE_ENDIAN=1)
+-endif ()
+-
+ # Configure Flang's Version.inc file.
+ configure_file(
+   ${CMAKE_CURRENT_SOURCE_DIR}/include/flang/Version.inc.in
+@@ -447,6 +422,7 @@ endif()
+ 
+ include(CMakeParseArguments)
+ include(AddFlang)
++include(FlangCommon)
+ 
+ if (FLANG_INCLUDE_TESTS)
+   add_compile_definitions(FLANG_INCLUDE_TESTS=1)
+@@ -462,14 +438,6 @@ if (FLANG_BUILD_TOOLS)
+   add_subdirectory(tools)
+ endif()
+ 
+-option(FLANG_CUF_RUNTIME
+-  "Compile CUDA Fortran runtime sources" OFF)
+-if (FLANG_CUF_RUNTIME)
+-  find_package(CUDAToolkit REQUIRED)
+-endif()
+-
+-add_subdirectory(../flang-rt/lib/flang_rt runtime)
+-
+ if (LLVM_INCLUDE_EXAMPLES)
+   add_subdirectory(examples)
+ endif()
+diff --git a/flang/cmake/modules/FlangCommon.cmake b/flang/cmake/modules/FlangCommon.cmake
+new file mode 100644
+index 000000000000..1b8606843b22
+--- /dev/null
++++ b/flang/cmake/modules/FlangCommon.cmake
+@@ -0,0 +1,43 @@
++#===-- cmake/modules/FlangCommon.txt ----------------------------===#
++#
++# Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
++# See https://llvm.org/LICENSE.txt for license information.
++# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
++#
++#===------------------------------------------------------------------------===#
++#
++# CMake definitions shared between Flang and Flang-RT
++#
++#===------------------------------------------------------------------------===#
++
++# The out of tree builds of the compiler and the Fortran runtime
++# must use the same setting of FLANG_RUNTIME_F128_MATH_LIB
++# to be composable. Failure to synchronize this setting may result
++# in linking errors or fatal failures in F128 runtime functions.
++set(FLANG_RUNTIME_F128_MATH_LIB "" CACHE STRING
++  "Specifies the target library used for implementing IEEE-754 128-bit float \
++  math in F18 runtime, e.g. it might be libquadmath for targets where \
++  REAL(16) is mapped to __float128, or libm for targets where REAL(16) \
++  is mapped to long double, etc."
++  )
++if (FLANG_RUNTIME_F128_MATH_LIB)
++  add_compile_definitions(FLANG_RUNTIME_F128_MATH_LIB="${FLANG_RUNTIME_F128_MATH_LIB}")
++endif()
++
++# Check if 128-bit float computations can be done via long double
++check_cxx_source_compiles(
++  "#include <cfloat>
++   #if LDBL_MANT_DIG != 113
++   #error LDBL_MANT_DIG != 113
++   #endif
++   int main() { return 0; }
++  "
++  HAVE_LDBL_MANT_DIG_113)
++
++include(TestBigEndian)
++test_big_endian(IS_BIGENDIAN)
++if (IS_BIGENDIAN)
++  add_compile_definitions(FLANG_BIG_ENDIAN=1)
++else ()
++  add_compile_definitions(FLANG_LITTLE_ENDIAN=1)
++endif ()
+diff --git a/flang/docs/FlangDriver.md b/flang/docs/FlangDriver.md
+index 23cbab30ee90..f3a732b03989 100644
+--- a/flang/docs/FlangDriver.md
++++ b/flang/docs/FlangDriver.md
+@@ -175,19 +175,18 @@ like this:
+ 
+ ```
+ $ flang -v -o example example.o
+-"/usr/bin/ld" [...] example.o [...] "-lFortranRuntime" "-lFortranDecimal" [...]
++"/usr/bin/ld" [...] example.o [...] "-lflang_rt" [...]
+ ```
+ 
+ The automatically added libraries are:
+ 
+-* `FortranRuntime`: Provides most of the Flang runtime library.
+-* `FortranDecimal`: Provides operations for decimal numbers.
++* `flang_rt`: Provides most of the Flang runtime library.
+ 
+ If the code is C/C++ based and invokes Fortran routines, one can either use Clang
+ or Flang as the linker driver.  If Clang is used, it will automatically all
+ required runtime libraries needed by C++ (e.g., for STL) to the linker invocation.
+-In this case, one has to explicitly provide the Fortran runtime libraries
+-`FortranRuntime` and/or `FortranDecimal`.  An alternative is to use Flang to link.
++In this case, one has to explicitly provide the Fortran runtime library
++`flang_rt`.  An alternative is to use Flang to link.
+ In this case, it may be required to explicitly supply C++ runtime libraries.
+ 
+ On Darwin, the logical root where the system libraries are located (sysroot)
+diff --git a/flang/docs/GettingStarted.md b/flang/docs/GettingStarted.md
+index 1c85a6754b15..81d6552fa986 100644
+--- a/flang/docs/GettingStarted.md
++++ b/flang/docs/GettingStarted.md
+@@ -30,7 +30,7 @@ https://llvm.org/docs/GettingStarted.html.
+ All of the examples below use GCC as the C/C++ compilers and ninja as the build
+ tool.
+ 
+-### Building flang in tree
++### Building flang in tree (bootstrap build)
+ Building flang in tree means building flang along with all of the projects on
+ which it depends.  These projects include mlir, clang, flang, openmp, and
+ compiler-rt.  Note that compiler-rt is only needed to access libraries that
+@@ -82,7 +82,7 @@ cmake \
+   -DLLVM_TARGETS_TO_BUILD=host \
+   -DLLVM_LIT_ARGS=-v \
+   -DLLVM_ENABLE_PROJECTS="clang;mlir;flang;openmp" \
+-  -DLLVM_ENABLE_RUNTIMES="compiler-rt" \
++  -DLLVM_ENABLE_RUNTIMES="compiler-rt;flang_rt" \
+   ../llvm-project/llvm
+ 
+ ninja
+@@ -197,26 +197,27 @@ Flang runtime can be built for accelerators in experimental mode, i.e.
+ complete enabling is WIP.  CUDA and OpenMP target offload builds
+ are currently supported.
+ 
+-#### Building out-of-tree
++#### Building out-of-tree (runtime-only build)
+ 
+ ##### CUDA build
+ Clang with NVPTX backend and NVCC compilers are supported.
+ 
+ ```bash
+-cd llvm-project/flang
++cd llvm-project
+ rm -rf build_flang_runtime
+ mkdir build_flang_runtime
+ cd build_flang_runtime
+ 
+ cmake \
+-  -DFLANG_EXPERIMENTAL_CUDA_RUNTIME=ON \
++  -DLLVM_ENABLE_RUNTIMES=flang-rt \
++  -DFLANG_RT_EXPERIMENTAL_OFFLOAD_SUPPORT=CUDA \
+   -DCMAKE_CUDA_ARCHITECTURES=80 \
+   -DCMAKE_C_COMPILER=clang \
+   -DCMAKE_CXX_COMPILER=clang++ \
+   -DCMAKE_CUDA_COMPILER=clang \
+   -DCMAKE_CUDA_HOST_COMPILER=clang++ \
+-  ../runtime/
+-make -j FortranRuntime
++  ../runtimes/
++make flang-rt
+ ```
+ 
+ Note that the used version of `clang` must [support](https://releases.llvm.org/16.0.0/tools/clang/docs/ReleaseNotes.html#cuda-support)
+@@ -225,21 +226,22 @@ CUDA toolkit installations, please use `-DCUDAToolkit_ROOT=/some/path`
+ to specify the compatible version.
+ 
+ ```bash
+-cd llvm-project/flang
++cd llvm-project
+ rm -rf build_flang_runtime
+ mkdir build_flang_runtime
+ cd build_flang_runtime
+ 
+ cmake \
+-  -DFLANG_EXPERIMENTAL_CUDA_RUNTIME=ON \
++  -DLLVM_ENABLE_RUNTIMES=flang-rt \
++  -DFLANG_RT_EXPERIMENTAL_OFFLOAD_SUPPORT=CUDA \
+   -DCMAKE_CUDA_ARCHITECTURES=80 \
+   -DCMAKE_C_COMPILER=clang \
+   -DCMAKE_CXX_COMPILER=clang++ \
+   -DCMAKE_CUDA_COMPILER=nvcc \
+   -DCMAKE_CUDA_HOST_COMPILER=clang++ \
+-  ../runtime/
++  ../runtimes/
+ 
+-make -j FortranRuntime
++make flang-rt
+ ```
+ 
+ Note that `nvcc` might limit support to certain
+@@ -251,50 +253,59 @@ code.  Note that the packaging of the libraries is different
+ between [Clang](https://clang.llvm.org/docs/OffloadingDesign.html#linking-target-device-code) and NVCC, so the library must be linked using
+ compatible compiler drivers.
+ 
+-#### Building in-tree
++#### Building in-tree (bootstrap build)
+ One may build Flang runtime library along with building Flang itself
+ by providing these additional CMake variables on top of the Flang in-tree
+ build config:
+ 
+ For example:
+ ```bash
+-  -DFLANG_EXPERIMENTAL_CUDA_RUNTIME=ON \
++  -DLLVM_ENABLE_RUNTIMES=flang-rt \
++  -DFLANG_RT_EXPERIMENTAL_OFFLOAD_SUPPORT=CUDA \
+   -DCMAKE_CUDA_ARCHITECTURES=80 \
+   -DCMAKE_C_COMPILER=clang \
+   -DCMAKE_CXX_COMPILER=clang++ \
+   -DCMAKE_CUDA_COMPILER=clang \
+   -DCMAKE_CUDA_HOST_COMPILER=clang++ \
++  ../llvm
+ ```
+ 
+ Or:
+ ```bash
+-  -DFLANG_EXPERIMENTAL_CUDA_RUNTIME=ON \
++  -DLLVM_ENABLE_RUNTIMES=flang-rt \
++  -DFLANG_RT_EXPERIMENTAL_OFFLOAD_SUPPORT=CUDA \
+   -DCMAKE_CUDA_ARCHITECTURES=80 \
+   -DCMAKE_C_COMPILER=gcc \
+   -DCMAKE_CXX_COMPILER=g++ \
+   -DCMAKE_CUDA_COMPILER=nvcc \
+   -DCMAKE_CUDA_HOST_COMPILER=g++ \
++  ../llvm
+ ```
+ 
+-Normal `make -j check-flang` will work with such CMake configuration.
++Normal `make check-flang` will work with such CMake configuration.
++Consider building in parallel using the `-j<jobs>` flag, where `<jobs>` is a
++number low enough for all build jobs to fit into the available RAM. Using
++the number of harware threads (`nprocs`) is likely too much for most
++commodity computers.
+ 
+ ##### OpenMP target offload build
+ Only Clang compiler is currently supported.
+ 
+ ```bash
+-cd llvm-project/flang
++cd llvm-project
+ rm -rf build_flang_runtime
+ mkdir build_flang_runtime
+ cd build_flang_runtime
+ 
+ cmake \
+-  -DFLANG_EXPERIMENTAL_OMP_OFFLOAD_BUILD="host_device" \
++  -DLLVM_ENABLE_RUNTIMES=flang-rt \
++  -DFLANG_RT_EXPERIMENTAL_OFFLOAD_SUPPORT="OpenMP" \
+   -DCMAKE_C_COMPILER=clang \
+   -DCMAKE_CXX_COMPILER=clang++ \
+-  -DFLANG_OMP_DEVICE_ARCHITECTURES="all" \
+-  ../runtime/
++  -DFLANG_RT_DEVICE_ARCHITECTURES=all \
++  ../runtimes/
+ 
+-make -j FortranRuntime
++make flang-rt
+ ```
+ 
+ The result of the build is a "device-only" library, i.e. the host
+diff --git a/flang/docs/OpenACC-descriptor-management.md b/flang/docs/OpenACC-descriptor-management.md
+index 0b5103000d8e..215643086fb7 100644
+--- a/flang/docs/OpenACC-descriptor-management.md
++++ b/flang/docs/OpenACC-descriptor-management.md
+@@ -427,7 +427,7 @@ The implementation's behavior may be described as (OpenACC 2.7.2):
+ 
+ All the "is-present" checks and the data actions for the auxiliary pointers must be performed atomically with regards to the present counters bookkeeping.
+ 
+-The API relies on the primitives provided by `liboffload`, so it is provided by a new F18 runtime library, e.g. `FortranOffloadRuntime`, that depends on `FortranRuntime` and `liboffload`.  The F18 driver adds `FortranOffloadRuntime` for linking under `-fopenacc`/`-fopenmp` (and maybe additional switches like `-fopenmp-targets`).
++The API relies on the primitives provided by `liboffload`, so it is provided by a new F18 runtime library, e.g. `FortranOffloadRuntime`, that depends on `flang_rt` and `liboffload`.  The F18 driver adds `FortranOffloadRuntime` for linking under `-fopenacc`/`-fopenmp` (and maybe additional switches like `-fopenmp-targets`).
+ 
+ ## TODOs:
+ 
+diff --git a/flang/docs/ReleaseNotes.md b/flang/docs/ReleaseNotes.md
+index f0c956281915..347f470452b2 100644
+--- a/flang/docs/ReleaseNotes.md
++++ b/flang/docs/ReleaseNotes.md
+@@ -36,6 +36,14 @@ page](https://llvm.org/releases/).
+ 
+ ## Build System Changes
+ 
++ * The Fortran Runtime library has been move to a new top-level directory
++   named "flang-rt". The library was also renamed from `libFortranRuntime.a` to
++   `libflang_rt.a`. It now supports the
++   LLVM_ENABLE_RUNTIMES mechanism to build flang-rt for multiple target
++   triples. libflang_rt.a will now be emitted into Clang's per-target
++   resource directory (next to libclang_rt.*.*) where it is also found by
++   Flang's driver.
++
+ ## New Issues Found
+ 
+ 
+diff --git a/flang/examples/ExternalHelloWorld/CMakeLists.txt b/flang/examples/ExternalHelloWorld/CMakeLists.txt
+index 042d4b6238ba..213fc462ac2b 100644
+--- a/flang/examples/ExternalHelloWorld/CMakeLists.txt
++++ b/flang/examples/ExternalHelloWorld/CMakeLists.txt
+@@ -5,5 +5,5 @@ add_llvm_example(external-hello-world
+ 
+ target_link_libraries(external-hello-world
+   PRIVATE
+-  FortranRuntime
++  flang_rt
+   )
+diff --git a/flang/include/flang/Common/README.md b/flang/include/flang/Common/README.md
+new file mode 100644
+index 000000000000..5203465f7f2f
+--- /dev/null
++++ b/flang/include/flang/Common/README.md
+@@ -0,0 +1,27 @@
++Files in this directory are used by Flang (the compiler) and flang-rt
++(the runtime library for Flang-compiled programs). They must be compatible by
++both. For definitions used only by Flang, consider
++`flang/{lib,include/flang}/Support` instead. For definitions used only by
++the runtime, consider `flang-rt/{lib,include/flang-rt}/flang_rt`.
++
++The requirements for common code include:
++
++ * No dependence to LLVM, including LLVMSupport.
++
++ * No link-dependence to the C++ runtime. This means that e.g. `std::string`
++   cannot be used.
++
++ * No use of `std::optional<T>`; `fortran::common::optional<T>` can be used
++   instead.
++
++ * Preprocessor macros from `config.h` and CMake
++   `(target/add)_compile_definitions` must be defined by both build scripts.
++   See `flang/cmake/modules/FlangCommon.cmake`.
++
++ * Some header files are included from `.c` files.
++   `#include <flang/Common/c-or-cpp.h>` can help to support C++ and C.
++
++ * Global declarations may need to be annotated using definitions from
++   `api-attrs.h`.
++
++ * The `Runtime` component is header-only.
+diff --git a/flang/include/flang/Common/fast-int-set.h b/flang/include/flang/Common/fast-int-set.h
+index d1c9c756a44a..1214bac75a4b 100644
+--- a/flang/include/flang/Common/fast-int-set.h
++++ b/flang/include/flang/Common/fast-int-set.h
+@@ -24,7 +24,7 @@
+ #ifndef FORTRAN_COMMON_FAST_INT_SET_H_
+ #define FORTRAN_COMMON_FAST_INT_SET_H_
+ 
+-#include <optional>
++#include "optional.h"
+ 
+ namespace Fortran::common {
+ 
+@@ -83,9 +83,9 @@ public:
+     }
+   }
+ 
+-  std::optional<int> PopValue() {
++  optional<int> PopValue() {
+     if (IsEmpty()) {
+-      return std::nullopt;
++      return nullopt;
+     } else {
+       return value_[--size_];
+     }
+diff --git a/flang/include/flang/Runtime/README.md b/flang/include/flang/Runtime/README.md
+new file mode 100644
+index 000000000000..5203465f7f2f
+--- /dev/null
++++ b/flang/include/flang/Runtime/README.md
+@@ -0,0 +1,27 @@
++Files in this directory are used by Flang (the compiler) and flang-rt
++(the runtime library for Flang-compiled programs). They must be compatible by
++both. For definitions used only by Flang, consider
++`flang/{lib,include/flang}/Support` instead. For definitions used only by
++the runtime, consider `flang-rt/{lib,include/flang-rt}/flang_rt`.
++
++The requirements for common code include:
++
++ * No dependence to LLVM, including LLVMSupport.
++
++ * No link-dependence to the C++ runtime. This means that e.g. `std::string`
++   cannot be used.
++
++ * No use of `std::optional<T>`; `fortran::common::optional<T>` can be used
++   instead.
++
++ * Preprocessor macros from `config.h` and CMake
++   `(target/add)_compile_definitions` must be defined by both build scripts.
++   See `flang/cmake/modules/FlangCommon.cmake`.
++
++ * Some header files are included from `.c` files.
++   `#include <flang/Common/c-or-cpp.h>` can help to support C++ and C.
++
++ * Global declarations may need to be annotated using definitions from
++   `api-attrs.h`.
++
++ * The `Runtime` component is header-only.
+diff --git a/flang/include/flang/Testing/README.md b/flang/include/flang/Testing/README.md
+new file mode 100644
+index 000000000000..5203465f7f2f
+--- /dev/null
++++ b/flang/include/flang/Testing/README.md
+@@ -0,0 +1,27 @@
++Files in this directory are used by Flang (the compiler) and flang-rt
++(the runtime library for Flang-compiled programs). They must be compatible by
++both. For definitions used only by Flang, consider
++`flang/{lib,include/flang}/Support` instead. For definitions used only by
++the runtime, consider `flang-rt/{lib,include/flang-rt}/flang_rt`.
++
++The requirements for common code include:
++
++ * No dependence to LLVM, including LLVMSupport.
++
++ * No link-dependence to the C++ runtime. This means that e.g. `std::string`
++   cannot be used.
++
++ * No use of `std::optional<T>`; `fortran::common::optional<T>` can be used
++   instead.
++
++ * Preprocessor macros from `config.h` and CMake
++   `(target/add)_compile_definitions` must be defined by both build scripts.
++   See `flang/cmake/modules/FlangCommon.cmake`.
++
++ * Some header files are included from `.c` files.
++   `#include <flang/Common/c-or-cpp.h>` can help to support C++ and C.
++
++ * Global declarations may need to be annotated using definitions from
++   `api-attrs.h`.
++
++ * The `Runtime` component is header-only.
+diff --git a/flang/lib/CMakeLists.txt b/flang/lib/CMakeLists.txt
+index f41d4df1f07e..0ab7d1c888df 100644
+--- a/flang/lib/CMakeLists.txt
++++ b/flang/lib/CMakeLists.txt
+@@ -1,6 +1,6 @@
+ add_subdirectory(Common)
++add_subdirectory(Support)
+ add_subdirectory(Evaluate)
+-add_subdirectory(Decimal)
+ add_subdirectory(Lower)
+ add_subdirectory(Parser)
+ add_subdirectory(Semantics)
+diff --git a/flang/lib/Common/CMakeLists.txt b/flang/lib/Common/CMakeLists.txt
+index d588594743ef..e5d9c9eb8c3f 100644
+--- a/flang/lib/Common/CMakeLists.txt
++++ b/flang/lib/Common/CMakeLists.txt
+@@ -1,52 +1,12 @@
+-find_first_existing_vc_file("${LLVM_MAIN_SRC_DIR}" llvm_vc)
+-find_first_existing_vc_file("${FLANG_SOURCE_DIR}" flang_vc)
+-
+-# The VC revision include that we want to generate.
+-set(version_inc "${CMAKE_CURRENT_BINARY_DIR}/VCSVersion.inc")
+-
+-set(generate_vcs_version_script "${LLVM_CMAKE_DIR}/GenerateVersionFromVCS.cmake")
+-
+-if(llvm_vc AND LLVM_APPEND_VC_REV)
+-  set(llvm_source_dir ${LLVM_MAIN_SRC_DIR})
+-endif()
+-if(flang_vc AND LLVM_APPEND_VC_REV)
+-  set(flang_source_dir ${FLANG_SOURCE_DIR})
+-endif()
+-
+-# Create custom target to generate the VC revision include.
+-add_custom_command(OUTPUT "${version_inc}"
+-  DEPENDS "${llvm_vc}" "${flang_vc}" "${generate_vcs_version_script}"
+-  COMMAND ${CMAKE_COMMAND} "-DNAMES=\"LLVM;FLANG\""
+-                           "-DLLVM_SOURCE_DIR=${llvm_source_dir}"
+-                           "-DFLANG_SOURCE_DIR=${flang_source_dir}"
+-                           "-DHEADER_FILE=${version_inc}"
+-                           "-DLLVM_FORCE_VC_REVISION=${LLVM_FORCE_VC_REVISION}"
+-                           "-DLLVM_FORCE_VC_REPOSITORY=${LLVM_FORCE_VC_REPOSITORY}"
+-                           -P "${generate_vcs_version_script}")
+-
+-# Mark the generated header as being generated.
+-set_source_files_properties("${version_inc}"
+-  PROPERTIES GENERATED TRUE
+-             HEADER_FILE_ONLY TRUE)
+-
+-if(FLANG_VENDOR)
+-  set_source_files_properties(Version.cpp
+-    PROPERTIES COMPILE_DEFINITIONS "FLANG_VENDOR=\"${FLANG_VENDOR} \"")
+-endif()
+-
+-add_flang_library(FortranCommon PARTIAL_SOURCES_INTENDED
+-  ../Support/Fortran.cpp
+-  ../Support/Fortran-features.cpp
+-  ../Support/default-kinds.cpp
+-  ../Support/idioms.cpp
+-  ../Support/LangOptions.cpp
+-  ../Support/OpenMP-utils.cpp
+-  ../Support/Version.cpp
+-  ${version_inc}
+-
+-  LINK_COMPONENTS
+-  Support
+-
+-  LINK_LIBS
+-  MLIRIR
++#===-- lib/Common/CMakeLists.txt ------------------------------------===#
++#
++# Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
++# See https://llvm.org/LICENSE.txt for license information.
++# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
++#
++#===------------------------------------------------------------------------===#
++
++add_flang_library(FortranCommon
++  binary-to-decimal.cpp
++  decimal-to-binary.cpp
+ )
+diff --git a/flang/lib/Common/README.md b/flang/lib/Common/README.md
+new file mode 100644
+index 000000000000..5203465f7f2f
+--- /dev/null
++++ b/flang/lib/Common/README.md
+@@ -0,0 +1,27 @@
++Files in this directory are used by Flang (the compiler) and flang-rt
++(the runtime library for Flang-compiled programs). They must be compatible by
++both. For definitions used only by Flang, consider
++`flang/{lib,include/flang}/Support` instead. For definitions used only by
++the runtime, consider `flang-rt/{lib,include/flang-rt}/flang_rt`.
++
++The requirements for common code include:
++
++ * No dependence to LLVM, including LLVMSupport.
++
++ * No link-dependence to the C++ runtime. This means that e.g. `std::string`
++   cannot be used.
++
++ * No use of `std::optional<T>`; `fortran::common::optional<T>` can be used
++   instead.
++
++ * Preprocessor macros from `config.h` and CMake
++   `(target/add)_compile_definitions` must be defined by both build scripts.
++   See `flang/cmake/modules/FlangCommon.cmake`.
++
++ * Some header files are included from `.c` files.
++   `#include <flang/Common/c-or-cpp.h>` can help to support C++ and C.
++
++ * Global declarations may need to be annotated using definitions from
++   `api-attrs.h`.
++
++ * The `Runtime` component is header-only.
+diff --git a/flang/lib/Decimal/CMakeLists.txt b/flang/lib/Decimal/CMakeLists.txt
+deleted file mode 100644
+index 5dd82e10a665..000000000000
+--- a/flang/lib/Decimal/CMakeLists.txt
++++ /dev/null
+@@ -1,86 +0,0 @@
+-if (CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+-  cmake_minimum_required(VERSION 3.20.0)
+-
+-  project(FortranDecimal C CXX)
+-
+-  set(CMAKE_CXX_STANDARD 17)
+-  set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
+-  set(CMAKE_CXX_EXTENSIONS OFF)
+-
+-  set(FLANG_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../..")
+-
+-  set(LLVM_COMMON_CMAKE_UTILS "${FLANG_SOURCE_DIR}/../cmake")
+-  set(LLVM_CMAKE_UTILS "${FLANG_SOURCE_DIR}/../llvm/cmake")
+-  set(CLANG_CMAKE_UTILS "${FLANG_SOURCE_DIR}/../clang/cmake")
+-
+-  # Add path for custom modules
+-  list(INSERT CMAKE_MODULE_PATH 0
+-    "${FLANG_SOURCE_DIR}/cmake"
+-    "${FLANG_SOURCE_DIR}/cmake/modules"
+-    "${LLVM_COMMON_CMAKE_UTILS}"
+-    "${LLVM_COMMON_CMAKE_UTILS}/Modules"
+-    "${LLVM_CMAKE_UTILS}"
+-    "${LLVM_CMAKE_UTILS}/modules"
+-    "${CLANG_CMAKE_UTILS}/modules"
+-    )
+-
+-  include(AddClang)
+-  include(AddLLVM)
+-  include(AddFlang)
+-  include(HandleLLVMOptions)
+-
+-  include(TestBigEndian)
+-  test_big_endian(IS_BIGENDIAN)
+-  if (IS_BIGENDIAN)
+-    add_compile_definitions(FLANG_BIG_ENDIAN=1)
+-  else ()
+-    add_compile_definitions(FLANG_LITTLE_ENDIAN=1)
+-  endif ()
+-  include_directories(BEFORE
+-    ${FLANG_SOURCE_DIR}/include)
+-endif()
+-
+-check_cxx_compiler_flag(-fno-lto FLANG_RUNTIME_HAS_FNO_LTO_FLAG)
+-if (FLANG_RUNTIME_HAS_FNO_LTO_FLAG)
+-  append("-fno-lto" CMAKE_CXX_FLAGS)
+-endif()
+-
+-# Disable libstdc++ assertions, even in an LLVM_ENABLE_ASSERTIONS build, to
+-# avoid an unwanted dependency on libstdc++.so.
+-add_definitions(-U_GLIBCXX_ASSERTIONS)
+-
+-set(sources
+-  ../Common/binary-to-decimal.cpp
+-  ../Common/decimal-to-binary.cpp
+-)
+-
+-include(AddFlangOffloadRuntime)
+-enable_cuda_compilation(FortranDecimal "${sources}")
+-enable_omp_offload_compilation("${sources}")
+-
+-add_flang_library(FortranDecimal INSTALL_WITH_TOOLCHAIN ${sources})
+-
+-if (DEFINED MSVC)
+-  set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
+-  add_flang_library(FortranDecimal.static INSTALL_WITH_TOOLCHAIN
+-          ../Common/binary-to-decimal.cpp
+-          ../Common/decimal-to-binary.cpp
+-  )
+-  set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
+-  add_flang_library(FortranDecimal.dynamic INSTALL_WITH_TOOLCHAIN
+-    ../Common/binary-to-decimal.cpp
+-    ../Common/decimal-to-binary.cpp
+-  )
+-  set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDebug)
+-  add_flang_library(FortranDecimal.static_dbg INSTALL_WITH_TOOLCHAIN
+-          ../Common/binary-to-decimal.cpp
+-          ../Common/decimal-to-binary.cpp
+-  )
+-  set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDebugDLL)
+-  add_flang_library(FortranDecimal.dynamic_dbg INSTALL_WITH_TOOLCHAIN
+-    ../Common/binary-to-decimal.cpp
+-    ../Common/decimal-to-binary.cpp
+-  )
+-  add_dependencies(FortranDecimal FortranDecimal.static FortranDecimal.dynamic
+-    FortranDecimal.static_dbg FortranDecimal.dynamic_dbg)
+-endif()
+diff --git a/flang/lib/Evaluate/CMakeLists.txt b/flang/lib/Evaluate/CMakeLists.txt
+index b38f450d746e..1408f382255a 100644
+--- a/flang/lib/Evaluate/CMakeLists.txt
++++ b/flang/lib/Evaluate/CMakeLists.txt
+@@ -61,7 +61,7 @@ add_flang_library(FortranEvaluate
+ 
+   LINK_LIBS
+   FortranCommon
+-  FortranDecimal
++  FortranSupport
+   FortranParser
+   ${LIBPGMATH}
+   ${QUADMATHLIB}
+diff --git a/flang/lib/Frontend/CMakeLists.txt b/flang/lib/Frontend/CMakeLists.txt
+index e954800c3b88..acbed3a4b0cd 100644
+--- a/flang/lib/Frontend/CMakeLists.txt
++++ b/flang/lib/Frontend/CMakeLists.txt
+@@ -27,7 +27,7 @@ add_flang_library(flangFrontend
+   FortranParser
+   FortranSemantics
+   FortranEvaluate
+-  FortranCommon
++  FortranSupport
+   FortranLower
+   FIRDialect
+   FIRDialectSupport
+diff --git a/flang/lib/Lower/CMakeLists.txt b/flang/lib/Lower/CMakeLists.txt
+index ba6622d8504a..cb37857ab1de 100644
+--- a/flang/lib/Lower/CMakeLists.txt
++++ b/flang/lib/Lower/CMakeLists.txt
+@@ -56,7 +56,7 @@ add_flang_library(FortranLower
+   HLFIRDialect
+   ${dialect_libs}
+   ${extension_libs}
+-  FortranCommon
++  FortranSupport
+   FortranParser
+   FortranEvaluate
+   FortranSemantics
+diff --git a/flang/lib/Optimizer/Builder/CMakeLists.txt b/flang/lib/Optimizer/Builder/CMakeLists.txt
+index 1d63401f36a6..05164d41a4cb 100644
+--- a/flang/lib/Optimizer/Builder/CMakeLists.txt
++++ b/flang/lib/Optimizer/Builder/CMakeLists.txt
+@@ -1,7 +1,7 @@
+ get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
+ get_property(extension_libs GLOBAL PROPERTY MLIR_EXTENSION_LIBS)
+ 
+-add_flang_library(FIRBuilder PARTIAL_SOURCES_INTENDED
++add_flang_library(FIRBuilder
+   BoxValue.cpp
+   Character.cpp
+   Complex.cpp
+diff --git a/flang/lib/Optimizer/Builder/IntrinsicCall.cpp b/flang/lib/Optimizer/Builder/IntrinsicCall.cpp
+index 4e99a5bd74cb..db5491327498 100644
+--- a/flang/lib/Optimizer/Builder/IntrinsicCall.cpp
++++ b/flang/lib/Optimizer/Builder/IntrinsicCall.cpp
+@@ -751,7 +751,7 @@ prettyPrintIntrinsicName(fir::FirOpBuilder &builder, mlir::Location loc,
+ // Generate a call to the Fortran runtime library providing
+ // support for 128-bit float math.
+ // On 'HAS_LDBL128' targets the implementation
+-// is provided by FortranRuntime, otherwise, it is done via
++// is provided by flang_rt, otherwise, it is done via
+ // FortranFloat128Math library. In the latter case the compiler
+ // has to be built with FLANG_RUNTIME_F128_MATH_LIB to guarantee
+ // proper linking actions in the driver.
+diff --git a/flang/lib/Optimizer/Dialect/FIRType.cpp b/flang/lib/Optimizer/Dialect/FIRType.cpp
+index 44d7471b981a..4b86e0bf97aa 100644
+--- a/flang/lib/Optimizer/Dialect/FIRType.cpp
++++ b/flang/lib/Optimizer/Dialect/FIRType.cpp
+@@ -1390,4 +1390,4 @@ fir::getTypeSizeAndAlignmentOrCrash(mlir::Location loc, mlir::Type ty,
+   if (result)
+     return *result;
+   TODO(loc, "computing size of a component");
+-}
++}
+\ No newline at end of file
+diff --git a/flang/lib/Optimizer/Transforms/CMakeLists.txt b/flang/lib/Optimizer/Transforms/CMakeLists.txt
+index 9eafa4ec234b..5e02b02d794c 100644
+--- a/flang/lib/Optimizer/Transforms/CMakeLists.txt
++++ b/flang/lib/Optimizer/Transforms/CMakeLists.txt
+@@ -47,7 +47,7 @@ add_flang_library(FIRTransforms
+   FIRDialect
+   FIRDialectSupport
+   FIRSupport
+-  FortranCommon
++  FortranSupport
+   HLFIRDialect
+   MLIRAffineUtils
+   MLIRFuncDialect
+diff --git a/flang/lib/Parser/CMakeLists.txt b/flang/lib/Parser/CMakeLists.txt
+index d364671d7a32..76fe3d7ce6ba 100644
+--- a/flang/lib/Parser/CMakeLists.txt
++++ b/flang/lib/Parser/CMakeLists.txt
+@@ -25,7 +25,7 @@ add_flang_library(FortranParser
+   user-state.cpp
+ 
+   LINK_LIBS
+-  FortranCommon
++  FortranSupport
+ 
+   LINK_COMPONENTS
+   Support
+diff --git a/flang/lib/Semantics/CMakeLists.txt b/flang/lib/Semantics/CMakeLists.txt
+index 7855ae7eed13..00108dde49db 100644
+--- a/flang/lib/Semantics/CMakeLists.txt
++++ b/flang/lib/Semantics/CMakeLists.txt
+@@ -53,7 +53,7 @@ add_flang_library(FortranSemantics
+   omp_gen
+ 
+   LINK_LIBS
+-  FortranCommon
++  FortranSupport
+   FortranParser
+   FortranEvaluate
+ 
+diff --git a/flang/lib/Support/CMakeLists.txt b/flang/lib/Support/CMakeLists.txt
+new file mode 100644
+index 000000000000..a2badde61dfe
+--- /dev/null
++++ b/flang/lib/Support/CMakeLists.txt
+@@ -0,0 +1,61 @@
++#===-- lib/Support/CMakeLists.txt ------------------------------------------===#
++#
++# Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
++# See https://llvm.org/LICENSE.txt for license information.
++# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
++#
++#===------------------------------------------------------------------------===#
++
++find_first_existing_vc_file("${LLVM_MAIN_SRC_DIR}" llvm_vc)
++find_first_existing_vc_file("${FLANG_SOURCE_DIR}" flang_vc)
++
++# The VC revision include that we want to generate.
++set(version_inc "${CMAKE_CURRENT_BINARY_DIR}/VCSVersion.inc")
++
++set(generate_vcs_version_script "${LLVM_CMAKE_DIR}/GenerateVersionFromVCS.cmake")
++
++if(llvm_vc AND LLVM_APPEND_VC_REV)
++  set(llvm_source_dir ${LLVM_MAIN_SRC_DIR})
++endif()
++if(flang_vc AND LLVM_APPEND_VC_REV)
++  set(flang_source_dir ${FLANG_SOURCE_DIR})
++endif()
++
++# Create custom target to generate the VC revision include.
++add_custom_command(OUTPUT "${version_inc}"
++  DEPENDS "${llvm_vc}" "${flang_vc}" "${generate_vcs_version_script}"
++  COMMAND ${CMAKE_COMMAND} "-DNAMES=\"LLVM;FLANG\""
++                           "-DLLVM_SOURCE_DIR=${llvm_source_dir}"
++                           "-DFLANG_SOURCE_DIR=${flang_source_dir}"
++                           "-DHEADER_FILE=${version_inc}"
++                           "-DLLVM_FORCE_VC_REVISION=${LLVM_FORCE_VC_REVISION}"
++                           "-DLLVM_FORCE_VC_REPOSITORY=${LLVM_FORCE_VC_REPOSITORY}"
++                           -P "${generate_vcs_version_script}")
++
++# Mark the generated header as being generated.
++set_source_files_properties("${version_inc}"
++  PROPERTIES GENERATED TRUE
++             HEADER_FILE_ONLY TRUE)
++
++if(FLANG_VENDOR)
++  set_source_files_properties(Version.cpp
++    PROPERTIES COMPILE_DEFINITIONS "FLANG_VENDOR=\"${FLANG_VENDOR} \"")
++endif()
++
++
++add_flang_library(FortranSupport
++  Fortran.cpp
++  Fortran-features.cpp
++  default-kinds.cpp
++  idioms.cpp
++  LangOptions.cpp
++  OpenMP-utils.cpp
++  Version.cpp
++  ${version_inc}
++
++  LINK_COMPONENTS
++    Support
++
++  LINK_LIBS
++    MLIRIR
++)
+diff --git a/flang/lib/Testing/README.md b/flang/lib/Testing/README.md
+new file mode 100644
+index 000000000000..278de092ee5f
+--- /dev/null
++++ b/flang/lib/Testing/README.md
+@@ -0,0 +1,27 @@
++Files in this directory are used by Flang (the compiler) and flang-rt
++(the runtime library for Flang-compiled programs). They must be compatible by
++both. For definitions used only by Flang, consider
++`flang/{lib,include/flang}/Support` instead. For definitions used only by
++the runtime, consider `flang-rt/{lib,include/flang-rt}/flang_rt`.
++
++The requirements for common code include:
++
++ * No dependence to LLVM, including LLVMSupport.
++
++ * No link-dependence to the C++ runtime. This means that e.g. `std::string`
++   cannot be used.
++
++ * No use of `std::optional<T>`; `fortran::common::optional<T>` can be used
++   instead.
++
++ * Preprocessor macros from `config.h` and CMake
++   `(target/add)_compile_definitions` must be defined by both build scripts.
++   See `flang/cmake/modules/FlangCommon.cmake`.
++
++ * Some header files are included from `.c` files.
++   `#include <flang/Common/c-or-cpp.h>` can help to support C++ and C.
++
++ * Global declarations may need to be annotated using definitions from
++   `api-attrs.h`.
++
++ * The `Runtime` component is header-only.
+diff --git a/flang/module/iso_fortran_env_impl.f90 b/flang/module/iso_fortran_env_impl.f90
+index 4de54dda7bab..361191797a39 100644
+--- a/flang/module/iso_fortran_env_impl.f90
++++ b/flang/module/iso_fortran_env_impl.f90
+@@ -8,7 +8,7 @@
+ 
+ ! This MODULE implements part of the ISO_FORTRAN_ENV module file, which
+ ! partially requires linkable symbols for some entities defined
+-! (e.g., real_kinds).
++! (e.g., real_kinds). This file is also used by Flang-RT.
+ 
+ module iso_fortran_env_impl
+   implicit none
+diff --git a/flang/test/CMakeLists.txt b/flang/test/CMakeLists.txt
+index cab214c2ef4c..47040c63baa4 100644
+--- a/flang/test/CMakeLists.txt
++++ b/flang/test/CMakeLists.txt
+@@ -71,8 +71,6 @@ set(FLANG_TEST_DEPENDS
+   llvm-objdump
+   llvm-readobj
+   split-file
+-  FortranRuntime
+-  FortranDecimal
+ )
+ if (LLVM_ENABLE_PLUGINS AND NOT WIN32)
+   list(APPEND FLANG_TEST_DEPENDS Bye)
+diff --git a/flang/test/Driver/gcc-toolchain-install-dir.f90 b/flang/test/Driver/gcc-toolchain-install-dir.f90
+index 5a073b0c5171..d9160e197125 100644
+--- a/flang/test/Driver/gcc-toolchain-install-dir.f90
++++ b/flang/test/Driver/gcc-toolchain-install-dir.f90
+@@ -1,5 +1,5 @@
+ !! Test that --gcc-toolchain and --gcc-install-dir options are working as expected.
+-!! It does not test cross-compiling (--sysroot), so crtbegin.o, libgcc/compiler-rt, libc, libFortranRuntime, etc. are not supposed to be affected.
++!! It does not test cross-compiling (--sysroot), so crtbegin.o, libgcc/compiler-rt, libc, libflang_rt, etc. are not supposed to be affected.
+ !! PREFIX is captured twice because the driver escapes backslashes (occuring in Windows paths) in the -### output, but not on the "Selected GCC installation:" line.
+ 
+ ! RUN: %flang 2>&1 -### -v -o %t %s -no-integrated-as -fuse-ld=ld --target=i386-unknown-linux-gnu --gcc-install-dir=%S/Inputs/basic_cross_linux_tree/usr/lib/gcc/i386-unknown-linux-gnu/10.2.0 | FileCheck %s --check-prefix=CHECK-I386
+diff --git a/flang/test/Driver/linker-flags.f90 b/flang/test/Driver/linker-flags.f90
+index ac9500d7c45c..5dc89fe45c8c 100644
+--- a/flang/test/Driver/linker-flags.f90
++++ b/flang/test/Driver/linker-flags.f90
+@@ -33,28 +33,26 @@
+ ! SOLARIS-F128NONE-NOT: FortranFloat128Math
+ ! UNIX-F128LIBQUADMATH-SAME: "-lFortranFloat128Math" "--as-needed" "-lquadmath" "--no-as-needed"
+ ! SOLARIS-F128LIBQUADMATH-SAME: "-lFortranFloat128Math" "-z" "ignore" "-lquadmath" "-z" "record"
+-! UNIX-SAME: "-lFortranRuntime" "-lFortranDecimal" "-lm"
++! UNIX-SAME: "-lflang_rt" "-lm"
+ ! COMPILER-RT: "{{.*}}{{\\|/}}libclang_rt.builtins.a"
+ 
+ ! DARWIN-LABEL:  "{{.*}}ld{{(\.exe)?}}"
+ ! DARWIN-SAME: "[[object_file]]"
+ ! DARWIN-F128NONE-NOT: FortranFloat128Math
+ ! DARWIN-F128LIBQUADMATH-SAME: "-lFortranFloat128Math" "--as-needed" "-lquadmath" "--no-as-needed"
+-! DARWIN-SAME: -lFortranRuntime
+-! DARWIN-SAME: -lFortranDecimal
++! DARWIN-SAME: -lflang_rt
+ 
+ ! HAIKU-LABEL:  "{{.*}}ld{{(\.exe)?}}"
+ ! HAIKU-SAME: "[[object_file]]"
+ ! HAIKU-F128NONE-NOT: FortranFloat128Math
+ ! HAIKU-F128LIBQUADMATH-SAME: "-lFortranFloat128Math" "--as-needed" "-lquadmath" "--no-as-needed"
+-! HAIKU-SAME: "-lFortranRuntime" "-lFortranDecimal"
++! HAIKU-SAME: "-lflang_rt"
+ 
+ ! MINGW-LABEL:  "{{.*}}ld{{(\.exe)?}}"
+ ! MINGW-SAME: "[[object_file]]"
+ ! MINGW-F128NONE-NOT: FortranFloat128Math
+ ! MINGW-F128LIBQUADMATH-SAME: "-lFortranFloat128Math" "--as-needed" "-lquadmath" "--no-as-needed"
+-! MINGW-SAME: -lFortranRuntime
+-! MINGW-SAME: -lFortranDecimal
++! MINGW-SAME: -lflang_rt
+ 
+ ! NOTE: This also matches lld-link (when CLANG_DEFAULT_LINKER=lld) and
+ !       any .exe suffix that is added when resolving to the full path of
+diff --git a/flang/test/Driver/msvc-dependent-lib-flags.f90 b/flang/test/Driver/msvc-dependent-lib-flags.f90
+index 765917f07d8e..5e4e6d5952ef 100644
+--- a/flang/test/Driver/msvc-dependent-lib-flags.f90
++++ b/flang/test/Driver/msvc-dependent-lib-flags.f90
+@@ -4,33 +4,25 @@
+ ! RUN: %flang -### --target=aarch64-windows-msvc -resource-dir=%S/Inputs/resource_dir -fms-runtime-lib=dll_dbg %S/Inputs/hello.f90 -v 2>&1 | FileCheck %s --check-prefixes=MSVC-DLL-DEBUG
+ 
+ ! MSVC: -fc1
+-! MSVC-SAME: --dependent-lib=clang_rt.builtins.lib
+ ! MSVC-SAME: -D_MT
+ ! MSVC-SAME: --dependent-lib=libcmt
+-! MSVC-SAME: --dependent-lib=FortranRuntime.static.lib
+-! MSVC-SAME: --dependent-lib=FortranDecimal.static.lib
++! MSVC-SAME: --dependent-lib=flang_rt.static.lib
+ 
+ ! MSVC-DEBUG: -fc1
+-! MSVC-DEBUG-SAME: --dependent-lib=clang_rt.builtins.lib
+ ! MSVC-DEBUG-SAME: -D_MT
+ ! MSVC-DEBUG-SAME: -D_DEBUG
+ ! MSVC-DEBUG-SAME: --dependent-lib=libcmtd
+-! MSVC-DEBUG-SAME: --dependent-lib=FortranRuntime.static_dbg.lib
+-! MSVC-DEBUG-SAME: --dependent-lib=FortranDecimal.static_dbg.lib
++! MSVC-DEBUG-SAME: --dependent-lib=flang_rt.static_dbg.lib
+ 
+ ! MSVC-DLL: -fc1
+-! MSVC-DLL-SAME: --dependent-lib=clang_rt.builtins.lib
+ ! MSVC-DLL-SAME: -D_MT
+ ! MSVC-DLL-SAME: -D_DLL
+ ! MSVC-DLL-SAME: --dependent-lib=msvcrt
+-! MSVC-DLL-SAME: --dependent-lib=FortranRuntime.dynamic.lib
+-! MSVC-DLL-SAME: --dependent-lib=FortranDecimal.dynamic.lib
++! MSVC-DLL-SAME: --dependent-lib=flang_rt.dynamic.lib
+ 
+ ! MSVC-DLL-DEBUG: -fc1
+-! MSVC-DLL-DEBUG-SAME: --dependent-lib=clang_rt.builtins.lib
+ ! MSVC-DLL-DEBUG-SAME: -D_MT
+ ! MSVC-DLL-DEBUG-SAME: -D_DEBUG
+ ! MSVC-DLL-DEBUG-SAME: -D_DLL
+ ! MSVC-DLL-DEBUG-SAME: --dependent-lib=msvcrtd
+-! MSVC-DLL-DEBUG-SAME: --dependent-lib=FortranRuntime.dynamic_dbg.lib
+-! MSVC-DLL-DEBUG-SAME: --dependent-lib=FortranDecimal.dynamic_dbg.lib
++! MSVC-DLL-DEBUG-SAME: --dependent-lib=flang_rt.dynamic_dbg.lib
+diff --git a/flang/test/lit.cfg.py b/flang/test/lit.cfg.py
+index f43234fb125b..aa27fdc2fe41 100644
+--- a/flang/test/lit.cfg.py
++++ b/flang/test/lit.cfg.py
+@@ -163,29 +163,6 @@ else:
+         ToolSubst("%not_todo_abort_cmd", command=FindTool("not"), unresolved="fatal")
+     )
+ 
+-# Define some variables to help us test that the flang runtime doesn't depend on
+-# the C++ runtime libraries. For this we need a C compiler. If for some reason
+-# we don't have one, we can just disable the test.
+-if config.cc:
+-    libruntime = os.path.join(config.flang_lib_dir, "libFortranRuntime.a")
+-    libdecimal = os.path.join(config.flang_lib_dir, "libFortranDecimal.a")
+-    include = os.path.join(config.flang_src_dir, "include")
+-
+-    if (
+-        os.path.isfile(libruntime)
+-        and os.path.isfile(libdecimal)
+-        and os.path.isdir(include)
+-    ):
+-        config.available_features.add("c-compiler")
+-        tools.append(
+-            ToolSubst(
+-                "%cc", command=config.cc, extra_args=isysroot_flag, unresolved="fatal"
+-            )
+-        )
+-        tools.append(ToolSubst("%libruntime", command=libruntime, unresolved="fatal"))
+-        tools.append(ToolSubst("%libdecimal", command=libdecimal, unresolved="fatal"))
+-        tools.append(ToolSubst("%include", command=include, unresolved="fatal"))
+-
+ # Add all the tools and their substitutions (if applicable). Use the search paths provided for
+ # finding the tools.
+ if config.flang_standalone_build:
+diff --git a/flang/test/lit.site.cfg.py.in b/flang/test/lit.site.cfg.py.in
+index d1a0ac763cf8..1d26f99fa873 100644
+--- a/flang/test/lit.site.cfg.py.in
++++ b/flang/test/lit.site.cfg.py.in
+@@ -10,18 +10,15 @@ config.llvm_target_triple_env = "@LLVM_TARGET_TRIPLE_ENV@"
+ config.lit_tools_dir = "@LLVM_LIT_TOOLS_DIR@"
+ config.errc_messages = "@LLVM_LIT_ERRC_MESSAGES@"
+ config.flang_obj_root = "@FLANG_BINARY_DIR@"
+-config.flang_src_dir = "@FLANG_SOURCE_DIR@"
+ config.flang_tools_dir = lit_config.substitute("@FLANG_TOOLS_DIR@")
+ config.flang_intrinsic_modules_dir = "@FLANG_INTRINSIC_MODULES_DIR@"
+ config.flang_llvm_tools_dir = "@CMAKE_BINARY_DIR@/bin"
+-config.flang_lib_dir = "@CMAKE_BINARY_DIR@/lib"
+ config.flang_test_triple = "@FLANG_TEST_TARGET_TRIPLE@"
+ config.flang_examples = @LLVM_BUILD_EXAMPLES@
+ config.python_executable = "@PYTHON_EXECUTABLE@"
+ config.flang_standalone_build = @FLANG_STANDALONE_BUILD@
+ config.has_plugins = @LLVM_ENABLE_PLUGINS@
+ config.linked_bye_extension = @LLVM_BYE_LINK_INTO_TOOLS@
+-config.cc = "@CMAKE_C_COMPILER@"
+ config.osx_sysroot = path(r"@CMAKE_OSX_SYSROOT@")
+ config.targets_to_build = "@TARGETS_TO_BUILD@"
+ config.default_sysroot = "@DEFAULT_SYSROOT@"
+diff --git a/flang/tools/f18/CMakeLists.txt b/flang/tools/f18/CMakeLists.txt
+index 4362fcf05376..16a5f02580df 100644
+--- a/flang/tools/f18/CMakeLists.txt
++++ b/flang/tools/f18/CMakeLists.txt
+@@ -4,16 +4,9 @@ set(LLVM_LINK_COMPONENTS
+   Support
+   )
+ 
+-# Define the list of Fortran module files that need to be compiled
+-# to produce an object file for inclusion into the FortranRuntime
+-# library.
+-set(MODULES_WITH_IMPLEMENTATION
+-  "iso_fortran_env_impl"
+-)
+-
+ # Define the list of Fortran module files for which it is
+ # sufficient to generate the module file via -fsyntax-only.
+-set(MODULES_WITHOUT_IMPLEMENTATION
++set(MODULES
+   "__fortran_builtins"
+   "__fortran_ieee_exceptions"
+   "__fortran_type_info"
+@@ -27,10 +20,9 @@ set(MODULES_WITHOUT_IMPLEMENTATION
+   "ieee_features"
+   "iso_c_binding"
+   "iso_fortran_env"
++  "iso_fortran_env_impl"
+ )
+ 
+-set(MODULES ${MODULES_WITH_IMPLEMENTATION} ${MODULES_WITHOUT_IMPLEMENTATION})
+-
+ # Check if 128-bit float computations can be done via long double.
+ check_cxx_source_compiles(
+   "#include <cfloat>
+@@ -100,16 +92,9 @@ if (NOT CMAKE_CROSSCOMPILING)
+       set(decls "-DFLANG_SUPPORT_R16")
+     endif()
+ 
+-    # Some modules have an implementation part that needs to be added to the
+-    # FortranRuntime library.
+     set(compile_with "-fsyntax-only")
+     set(object_output "")
+     set(include_in_link FALSE)
+-    if(${filename} IN_LIST MODULES_WITH_IMPLEMENTATION)
+-      set(object_output "${CMAKE_CURRENT_BINARY_DIR}/${filename}${CMAKE_CXX_OUTPUT_EXTENSION}")
+-      set(compile_with -c -o ${object_output})
+-      set(include_in_link TRUE)
+-    endif()
+ 
+     set(base ${FLANG_INTRINSIC_MODULES_DIR}/${filename})
+     # TODO: We may need to flag this with conditional, in case Flang is built w/o OpenMP support
+@@ -121,19 +106,8 @@ if (NOT CMAKE_CROSSCOMPILING)
+     )
+     list(APPEND MODULE_FILES ${base}.mod)
+     install(FILES ${base}.mod DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/flang")
+-
+-    # If a module has been compiled into an object file, add the file to
+-    # the link line for the FortranRuntime library.
+-    if(include_in_link)
+-      list(APPEND module_objects ${object_output})
+-    endif()
+   endforeach()
+ 
+-  # Set a CACHE variable that is visible to the CMakeLists.txt in runtime/, so that
+-  # the compiled Fortran modules can be added to the link line of the FortranRuntime
+-  # library.
+-  set(FORTRAN_MODULE_OBJECTS ${module_objects} CACHE INTERNAL "" FORCE)
+-
+   # Special case for omp_lib.mod, because its source comes from openmp/runtime/src/include.
+   # It also produces two module files: omp_lib.mod and omp_lib_kinds.mod.  Compile these
+   # files only if OpenMP support has been configured.
+diff --git a/flang/unittests/CMakeLists.txt b/flang/unittests/CMakeLists.txt
+index 4a279c9bbf32..f9953bd434d4 100644
+--- a/flang/unittests/CMakeLists.txt
++++ b/flang/unittests/CMakeLists.txt
+@@ -1,42 +1,8 @@
+-if (FLANG_EXPERIMENTAL_CUDA_RUNTIME)
+-  # If Fortran runtime is built as CUDA library, the linking
+-  # of targets that link FortranRuntime must be done
+-  # with CUDA_RESOLVE_DEVICE_SYMBOLS.
+-  # CUDA language must be enabled for CUDA_RESOLVE_DEVICE_SYMBOLS
+-  # to take effect.
+-  enable_language(CUDA)
+-endif()
+-
+ add_custom_target(FlangUnitTests)
+ set_target_properties(FlangUnitTests PROPERTIES FOLDER "Flang/Tests")
+ 
+-include_directories("../../flang-rt/include")
+-
+-function(add_flang_unittest_offload_properties target)
+-  # Set CUDA_RESOLVE_DEVICE_SYMBOLS.
+-  if (FLANG_EXPERIMENTAL_CUDA_RUNTIME)
+-    set_target_properties(${target}
+-      PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON
+-      )
+-  endif()
+-  # Enable OpenMP offload during linking. We may need to replace
+-  # LINK_OPTIONS with COMPILE_OPTIONS when there are OpenMP offload
+-  # unittests.
+-  #
+-  # FIXME: replace 'native' in --offload-arch option with the list
+-  #        of targets that Fortran Runtime was built for.
+-  #        Common code must be moved from flang/runtime/CMakeLists.txt.
+-  if (NOT FLANG_EXPERIMENTAL_OMP_OFFLOAD_BUILD STREQUAL "off")
+-    set_target_properties(${target}
+-      PROPERTIES LINK_OPTIONS
+-      "-fopenmp;--offload-arch=native"
+-      )
+-  endif()
+-endfunction()
+-
+ function(add_flang_unittest test_dirname)
+   add_unittest(FlangUnitTests ${test_dirname} ${ARGN})
+-  add_flang_unittest_offload_properties(${test_dirname})
+ endfunction()
+ 
+ if (CXX_SUPPORTS_SUGGEST_OVERRIDE_FLAG)
+@@ -69,13 +35,8 @@ function(add_flang_nongtest_unittest test_name)
+   if(NOT ARG_SLOW_TEST)
+     add_dependencies(FlangUnitTests ${test_name}${suffix})
+   endif()
+-
+-  add_flang_unittest_offload_properties(${test_name}${suffix})
+ endfunction()
+ 
+ add_subdirectory(Optimizer)
+-add_subdirectory(Common)
+-add_subdirectory(Decimal)
+ add_subdirectory(Evaluate)
+-add_subdirectory(../../flang-rt/unittests/Runtime Runtime)
+ add_subdirectory(Frontend)
+diff --git a/flang/unittests/Common/CMakeLists.txt b/flang/unittests/Common/CMakeLists.txt
+deleted file mode 100644
+index bda02ed29a5e..000000000000
+--- a/flang/unittests/Common/CMakeLists.txt
++++ /dev/null
+@@ -1,3 +0,0 @@
+-add_flang_unittest(FlangCommonTests
+-  FastIntSetTest.cpp
+-)
+diff --git a/flang/unittests/Common/FastIntSetTest.cpp b/flang/unittests/Common/FastIntSetTest.cpp
+deleted file mode 100644
+index bd1b953fa166..000000000000
+--- a/flang/unittests/Common/FastIntSetTest.cpp
++++ /dev/null
+@@ -1,105 +0,0 @@
+-//===-- flang/unittests/Common/FastIntSetTest.cpp ---------------*- C++ -*-===//
+-//
+-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+-// See https://llvm.org/LICENSE.txt for license information.
+-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+-//
+-//===----------------------------------------------------------------------===//
+-
+-#include "gtest/gtest.h"
+-#include "flang/Common/fast-int-set.h"
+-#include <optional>
+-
+-TEST(FastIntSetTests, Sanity) {
+-  static constexpr int N{100};
+-  Fortran::common::FastIntSet<N> set;
+-
+-  ASSERT_FALSE(set.IsValidValue(-1));
+-  ASSERT_TRUE(set.IsValidValue(0));
+-  ASSERT_TRUE(set.IsValidValue(N - 1));
+-  ASSERT_FALSE(set.IsValidValue(N));
+-  ASSERT_TRUE(set.IsEmpty());
+-  ASSERT_EQ(set.size(), 0);
+-  ASSERT_FALSE(set.Contains(0));
+-  ASSERT_FALSE(set.Contains(N - 1));
+-
+-  ASSERT_TRUE(set.Add(0));
+-  ASSERT_FALSE(set.IsEmpty());
+-  ASSERT_EQ(set.size(), 1);
+-  ASSERT_TRUE(set.Contains(0));
+-
+-  ASSERT_TRUE(set.Add(0)); // duplicate
+-  ASSERT_EQ(set.size(), 1);
+-  ASSERT_TRUE(set.Contains(0));
+-
+-  ASSERT_TRUE(set.Remove(0));
+-  ASSERT_TRUE(set.IsEmpty());
+-  ASSERT_EQ(set.size(), 0);
+-  ASSERT_FALSE(set.Contains(0));
+-
+-  ASSERT_FALSE(set.Add(N));
+-  ASSERT_TRUE(set.IsEmpty());
+-  ASSERT_EQ(set.size(), 0);
+-  ASSERT_FALSE(set.Contains(N));
+-
+-  ASSERT_TRUE(set.Add(N - 1));
+-  ASSERT_FALSE(set.IsEmpty());
+-  ASSERT_EQ(set.size(), 1);
+-  ASSERT_TRUE(set.Contains(N - 1));
+-
+-  std::optional<int> x;
+-  x = set.PopValue();
+-  ASSERT_TRUE(x.has_value());
+-  ASSERT_EQ(*x, N - 1);
+-  ASSERT_TRUE(set.IsEmpty());
+-  ASSERT_EQ(set.size(), 0);
+-
+-  x = set.PopValue();
+-  ASSERT_FALSE(x.has_value());
+-
+-  for (int j{0}; j < N; ++j) {
+-    ASSERT_TRUE(set.Add(j)) << j;
+-  }
+-  ASSERT_FALSE(set.IsEmpty());
+-  ASSERT_EQ(set.size(), N);
+-  for (int j{0}; j < N; ++j) {
+-    ASSERT_TRUE(set.Contains(j)) << j;
+-  }
+-
+-  for (int j{0}; j < N; ++j) {
+-    ASSERT_TRUE(set.Remove(j)) << j;
+-    ASSERT_EQ(set.size(), N - j - 1) << j;
+-    ASSERT_FALSE(set.Contains(j)) << j;
+-  }
+-
+-  ASSERT_TRUE(set.IsEmpty());
+-  ASSERT_EQ(set.size(), 0);
+-
+-  for (int j{N - 1}; j >= 0; --j) {
+-    ASSERT_TRUE(set.Add(j)) << j;
+-  }
+-  for (int j{0}; j < N; j++) {
+-    x = set.PopValue();
+-    ASSERT_TRUE(x.has_value());
+-    ASSERT_EQ(*x, j) << j;
+-  }
+-  ASSERT_TRUE(set.IsEmpty());
+-  ASSERT_EQ(set.size(), 0);
+-
+-  for (int j{0}; j < N; j++) {
+-    ASSERT_TRUE(set.Add(j)) << j;
+-  }
+-  ASSERT_FALSE(set.IsEmpty());
+-  ASSERT_EQ(set.size(), N);
+-  for (int j{0}; j < N; j += 2) {
+-    ASSERT_TRUE(set.Remove(j)) << j;
+-  }
+-  ASSERT_FALSE(set.IsEmpty());
+-  ASSERT_EQ(set.size(), N / 2);
+-  for (int j{0}; j < N; j++) {
+-    ASSERT_EQ(set.Contains(j), (j & 1) == 1);
+-  }
+-
+-  set.Clear();
+-  ASSERT_TRUE(set.IsEmpty());
+-}
+diff --git a/flang/unittests/Decimal/CMakeLists.txt b/flang/unittests/Decimal/CMakeLists.txt
+deleted file mode 100644
+index d301a9d3628c..000000000000
+--- a/flang/unittests/Decimal/CMakeLists.txt
++++ /dev/null
+@@ -1,10 +0,0 @@
+-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+-add_flang_nongtest_unittest(quick-sanity-test
+-  FortranDecimal
+-)
+-
+-# This test is not run by default as it takes a long time to execute.
+-add_flang_nongtest_unittest(thorough-test
+-  SLOW_TEST
+-  FortranDecimal
+-)
+diff --git a/flang/unittests/Decimal/quick-sanity-test.cpp b/flang/unittests/Decimal/quick-sanity-test.cpp
+deleted file mode 100644
+index c36c73b817e1..000000000000
+--- a/flang/unittests/Decimal/quick-sanity-test.cpp
++++ /dev/null
+@@ -1,145 +0,0 @@
+-#include "flang/Common/decimal.h"
+-#include "llvm/Support/raw_ostream.h"
+-#include <cinttypes>
+-#include <cstdio>
+-#include <cstring>
+-
+-using namespace Fortran::decimal;
+-
+-static int tests{0};
+-static int fails{0};
+-
+-union u {
+-  float x;
+-  std::uint32_t u;
+-};
+-
+-llvm::raw_ostream &failed(float x) {
+-  ++fails;
+-  union u u;
+-  u.x = x;
+-  llvm::outs() << "FAIL: 0x";
+-  return llvm::outs().write_hex(u.u);
+-}
+-
+-void testDirect(float x, const char *expect, int expectExpo, int flags = 0) {
+-  char buffer[1024];
+-  ++tests;
+-  auto result{ConvertFloatToDecimal(buffer, sizeof buffer,
+-      static_cast<enum DecimalConversionFlags>(flags), 1024, RoundNearest, x)};
+-  if (result.str == nullptr) {
+-    failed(x) << ' ' << flags << ": no result str\n";
+-  } else if (std::strcmp(result.str, expect) != 0 ||
+-      result.decimalExponent != expectExpo) {
+-    failed(x) << ' ' << flags << ": expect '." << expect << 'e' << expectExpo
+-              << "', got '." << result.str << 'e' << result.decimalExponent
+-              << "'\n";
+-  }
+-}
+-
+-void testReadback(float x, int flags) {
+-  char buffer[1024];
+-  ++tests;
+-  auto result{ConvertFloatToDecimal(buffer, sizeof buffer,
+-      static_cast<enum DecimalConversionFlags>(flags), 1024, RoundNearest, x)};
+-  if (result.str == nullptr) {
+-    failed(x) << ' ' << flags << ": no result str\n";
+-  } else {
+-    float y{0};
+-    char *q{const_cast<char *>(result.str)};
+-    int expo{result.decimalExponent};
+-    expo -= result.length;
+-    if (*q == '-' || *q == '+') {
+-      ++expo;
+-    }
+-    if (q >= buffer && q < buffer + sizeof buffer) {
+-      std::snprintf(q + result.length,
+-          buffer + sizeof buffer - (q + result.length), "e%d", expo);
+-    }
+-    const char *p{q};
+-    auto rflags{ConvertDecimalToFloat(&p, &y, RoundNearest)};
+-    union u u;
+-    if (!(x == x)) {
+-      if (y == y || *p != '\0' || (rflags & Invalid)) {
+-        u.x = y;
+-        (failed(x) << " (NaN) " << flags << ": -> '" << result.str << "' -> 0x")
+-                .write_hex(u.u)
+-            << " '" << p << "' " << rflags << '\n';
+-      }
+-    } else if (x != y || *p != '\0' || (rflags & Invalid)) {
+-      u.x = x;
+-      (failed(x) << ' ' << flags << ": -> '" << result.str << "' -> 0x")
+-              .write_hex(u.u)
+-          << " '" << p << "' " << rflags << '\n';
+-    }
+-  }
+-}
+-
+-int main() {
+-  union u u;
+-  testDirect(-1.0, "-1", 1);
+-  testDirect(0.0, "0", 0);
+-  testDirect(0.0, "+0", 0, AlwaysSign);
+-  testDirect(1.0, "1", 1);
+-  testDirect(2.0, "2", 1);
+-  testDirect(-1.0, "-1", 1);
+-  testDirect(314159, "314159", 6);
+-  testDirect(0.0625, "625", -1);
+-  u.u = 0x80000000;
+-  testDirect(u.x, "-0", 0);
+-  u.u = 0x7f800000;
+-  testDirect(u.x, "Inf", 0);
+-  testDirect(u.x, "+Inf", 0, AlwaysSign);
+-  u.u = 0xff800000;
+-  testDirect(u.x, "-Inf", 0);
+-  u.u = 0xffffffff;
+-  testDirect(u.x, "NaN", 0);
+-  testDirect(u.x, "NaN", 0, AlwaysSign);
+-  u.u = 1;
+-  testDirect(u.x,
+-      "140129846432481707092372958328991613128026194187651577175706828388979108"
+-      "268586060148663818836212158203125",
+-      -44, 0);
+-  testDirect(u.x, "1", -44, Minimize);
+-  u.u = 0x7f777777;
+-  testDirect(u.x, "3289396118917826996438159226753253376", 39, 0);
+-  testDirect(u.x, "32893961", 39, Minimize);
+-  for (u.u = 0; u.u < 16; ++u.u) {
+-    testReadback(u.x, 0);
+-    testReadback(-u.x, 0);
+-    testReadback(u.x, Minimize);
+-    testReadback(-u.x, Minimize);
+-  }
+-  for (u.u = 1; u.u < 0x7f800000; u.u *= 2) {
+-    testReadback(u.x, 0);
+-    testReadback(-u.x, 0);
+-    testReadback(u.x, Minimize);
+-    testReadback(-u.x, Minimize);
+-  }
+-  for (u.u = 0x7f7ffff0; u.u < 0x7f800010; ++u.u) {
+-    testReadback(u.x, 0);
+-    testReadback(-u.x, 0);
+-    testReadback(u.x, Minimize);
+-    testReadback(-u.x, Minimize);
+-  }
+-  for (u.u = 0; u.u < 0x7f800000; u.u += 65536) {
+-    testReadback(u.x, 0);
+-    testReadback(-u.x, 0);
+-    testReadback(u.x, Minimize);
+-    testReadback(-u.x, Minimize);
+-  }
+-  for (u.u = 0; u.u < 0x7f800000; u.u += 99999) {
+-    testReadback(u.x, 0);
+-    testReadback(-u.x, 0);
+-    testReadback(u.x, Minimize);
+-    testReadback(-u.x, Minimize);
+-  }
+-  for (u.u = 0; u.u < 0x7f800000; u.u += 32767) {
+-    testReadback(u.x, 0);
+-    testReadback(-u.x, 0);
+-    testReadback(u.x, Minimize);
+-    testReadback(-u.x, Minimize);
+-  }
+-  llvm::outs() << tests << " tests run, " << fails << " tests failed\n";
+-  return fails > 0;
+-}
+diff --git a/flang/unittests/Decimal/thorough-test.cpp b/flang/unittests/Decimal/thorough-test.cpp
+deleted file mode 100644
+index 0f7a2d4b33e7..000000000000
+--- a/flang/unittests/Decimal/thorough-test.cpp
++++ /dev/null
+@@ -1,89 +0,0 @@
+-#include "flang/Common/decimal.h"
+-#include "llvm/Support/raw_ostream.h"
+-#include <cinttypes>
+-#include <cstdio>
+-#include <cstring>
+-
+-static constexpr int incr{1}; // steps through all values
+-static constexpr bool doNegative{true};
+-static constexpr bool doMinimize{true};
+-
+-using namespace Fortran::decimal;
+-
+-static std::uint64_t tests{0};
+-static std::uint64_t fails{0};
+-
+-union u {
+-  float x;
+-  std::uint32_t u;
+-};
+-
+-llvm::raw_ostream &failed(float x) {
+-  ++fails;
+-  union u u;
+-  u.x = x;
+-  llvm::outs() << "FAIL: 0x";
+-  return llvm::outs().write_hex(u.u);
+-}
+-
+-void testReadback(float x, int flags) {
+-  char buffer[1024];
+-  union u u;
+-  u.x = x;
+-  if (!(tests & 0x3fffff)) {
+-    llvm::errs() << "\n0x";
+-    llvm::errs().write_hex(u.u) << ' ';
+-  } else if (!(tests & 0xffff)) {
+-    llvm::errs() << '.';
+-  }
+-  ++tests;
+-  auto result{ConvertFloatToDecimal(buffer, sizeof buffer,
+-      static_cast<enum DecimalConversionFlags>(flags), 1024, RoundNearest, x)};
+-  if (result.str == nullptr) {
+-    failed(x) << ' ' << flags << ": no result str\n";
+-  } else {
+-    float y{0};
+-    char *q{const_cast<char *>(result.str)};
+-    if ((*q >= '0' && *q <= '9') ||
+-        ((*q == '-' || *q == '+') && q[1] >= '0' && q[1] <= '9')) {
+-      int expo{result.decimalExponent};
+-      expo -= result.length;
+-      if (*q == '-' || *q == '+') {
+-        ++expo;
+-      }
+-      std::snprintf(q + result.length,
+-          buffer + sizeof buffer - (q + result.length), "e%d", expo);
+-    }
+-    const char *p{q};
+-    auto rflags{ConvertDecimalToFloat(&p, &y, RoundNearest)};
+-    if (!(x == x)) {
+-      if (y == y || *p != '\0' || (rflags & Invalid)) {
+-        u.x = y;
+-        failed(x) << " (NaN) " << flags << ": -> '" << result.str << "' -> 0x";
+-        failed(x).write_hex(u.u) << " '" << p << "' " << rflags << '\n';
+-      }
+-    } else if (x != y || *p != '\0' || (rflags & Invalid)) {
+-      u.x = y;
+-      failed(x) << ' ' << flags << ": -> '" << result.str << "' -> 0x";
+-      failed(x).write_hex(u.u) << " '" << p << "' " << rflags << '\n';
+-    }
+-  }
+-}
+-
+-int main() {
+-  union u u;
+-  for (u.u = 0; u.u < 0x7f800010; u.u += incr) {
+-    testReadback(u.x, 0);
+-    if constexpr (doNegative) {
+-      testReadback(-u.x, 0);
+-    }
+-    if constexpr (doMinimize) {
+-      testReadback(u.x, Minimize);
+-      if constexpr (doNegative) {
+-        testReadback(-u.x, Minimize);
+-      }
+-    }
+-  }
+-  llvm::outs() << '\n' << tests << " tests run, " << fails << " tests failed\n";
+-  return fails > 0;
+-}
+diff --git a/flang/unittests/Evaluate/CMakeLists.txt b/flang/unittests/Evaluate/CMakeLists.txt
+index 8557b68991df..0339098df455 100644
+--- a/flang/unittests/Evaluate/CMakeLists.txt
++++ b/flang/unittests/Evaluate/CMakeLists.txt
+@@ -43,10 +43,9 @@ add_flang_nongtest_unittest(intrinsics
+   FortranCommon
+   FortranEvaluateTesting
+   FortranEvaluate
+-  FortranDecimal
++  FortranSupport
+   FortranSemantics
+   FortranParser
+-  FortranRuntime
+ )
+ 
+ add_flang_nongtest_unittest(logical
+@@ -64,7 +63,7 @@ set(LLVM_REQUIRES_RTTI ON)
+ add_flang_nongtest_unittest(real
+   FortranEvaluateTesting
+   FortranEvaluate
+-  FortranDecimal
++  FortranSupport
+   FortranSemantics
+ )
+ llvm_update_compile_flags(real.test)
+@@ -75,5 +74,3 @@ add_flang_nongtest_unittest(folding
+   FortranEvaluate
+   FortranSemantics
+ )
+-
+-add_subdirectory(../../../flang-rt/unittests/Evaluate runtime)
+diff --git a/runtimes/CMakeLists.txt b/runtimes/CMakeLists.txt
+index 4a6b317a03f6..7f1e2ae065d6 100644
+--- a/runtimes/CMakeLists.txt
++++ b/runtimes/CMakeLists.txt
+@@ -36,7 +36,7 @@ list(INSERT CMAKE_MODULE_PATH 0
+ # We order libraries to mirror roughly how they are layered, except that compiler-rt can depend
+ # on libc++, so we put it after.
+ set(LLVM_DEFAULT_RUNTIMES "libc;libunwind;libcxxabi;pstl;libcxx;compiler-rt;openmp;offload")
+-set(LLVM_SUPPORTED_RUNTIMES "${LLVM_DEFAULT_RUNTIMES};llvm-libgcc")
++set(LLVM_SUPPORTED_RUNTIMES "${LLVM_DEFAULT_RUNTIMES};llvm-libgcc;flang-rt")
+ set(LLVM_ENABLE_RUNTIMES "" CACHE STRING
+   "Semicolon-separated list of runtimes to build, or \"all\" (${LLVM_DEFAULT_RUNTIMES}). Supported runtimes are ${LLVM_SUPPORTED_RUNTIMES}.")
+ if(LLVM_ENABLE_RUNTIMES STREQUAL "all" )
