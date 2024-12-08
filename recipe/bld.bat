@@ -22,6 +22,7 @@ cmake -G "Ninja" ^
     -DLLVM_LIT_ARGS=-v ^
     -DLLVM_CMAKE_DIR=%LIBRARY_LIB%/cmake/llvm ^
     -DLLVM_DIR=%LIBRARY_LIB%/cmake/llvm ^
+    -DLLVM_ENABLE_RUNTIMES="flang-rt" ^
     -DCLANG_DIR=%LIBRARY_LIB%/cmake/clang ^
     -DFLANG_INCLUDE_TESTS=OFF ^
     -DMLIR_DIR=%LIBRARY_LIB%/cmake/mlir ^
