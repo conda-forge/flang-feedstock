@@ -12,6 +12,8 @@ set "PROCESSOR_ARCHITECTURE=AMD64"
 :: set "CXXFLAGS=%CXXFLAGS% -DAVOID_NATIVE_UINT128_T=1"
 
 cmake -G "Ninja" ^
+    -DCMAKE_C_COMPILER=clang-cl ^
+    -DCMAKE_CXX_COMPILER=clang-cl ^
     -DCMAKE_BUILD_TYPE="Release" ^
     -DCMAKE_CXX_STANDARD=17 ^
     -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
@@ -22,6 +24,7 @@ cmake -G "Ninja" ^
     -DLLVM_LIT_ARGS=-v ^
     -DLLVM_CMAKE_DIR=%LIBRARY_LIB%/cmake/llvm ^
     -DLLVM_DIR=%LIBRARY_LIB%/cmake/llvm ^
+    -DLLVM_ENABLE_RUNTIMES="flang-rt" ^
     -DCLANG_DIR=%LIBRARY_LIB%/cmake/clang ^
     -DFLANG_INCLUDE_TESTS=OFF ^
     -DMLIR_DIR=%LIBRARY_LIB%/cmake/mlir ^
