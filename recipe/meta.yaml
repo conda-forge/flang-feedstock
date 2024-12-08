@@ -1,5 +1,4 @@
 {% set version = "20.0.0.dev1" %}
-{% set major_version = version.split(".")[0] %}
 
 package:
   name: flang-split
@@ -34,8 +33,6 @@ requirements:
     - compiler-rt =={{ version }}
     - lit =={{ version }}
     - llvmdev =={{ version }}
-    # while we fix CMake metadata for llvmdev
-    - libllvm-c{{ major_version }}              # [win]
     - mlir =={{ version }}
     - zlib
 
