@@ -22,8 +22,8 @@ build:
 
 requirements:
   build:
-    - {{ compiler('c') }}
     - {{ stdlib('c') }}
+    - {{ compiler('c') }}
     - {{ compiler('cxx') }}
     - cmake
     - ninja
@@ -45,8 +45,8 @@ outputs:
     requirements:
       build:
         # for strong run-exports
-        - {{ compiler('c') }}
         - {{ stdlib('c') }}
+        - {{ compiler('c') }}
         - {{ compiler('cxx') }}
       host:
         - clangdev =={{ version }}
@@ -71,8 +71,8 @@ outputs:
         - cmake
         - ninja
         # for strong run-exports
-        - {{ compiler('c') }}
         - {{ stdlib('c') }}
+        - {{ compiler('c') }}
         - {{ compiler('cxx') }}
       host:
         - clangdev =={{ version }}
