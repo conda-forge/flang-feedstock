@@ -75,7 +75,7 @@ outputs:
     script: install_flang.sh  # [unix]
     script: install_flang.bat  # [win]
     run_exports:
-      strong:
+      strong:                       # [not win]
         # runtime is static on windows
         - libflang >={{ version }}  # [not win]
     requirements:
