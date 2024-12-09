@@ -39,15 +39,15 @@ requirements:
     - zlib
 
 outputs:
-  - name: libflang
-    script: install_libflang.sh  # [unix]
-    script: install_libflang.bat  # [win]
+  - name: flang-rt
+    script: install_flang-rt.sh   # [unix]
+    script: install_flang-rt.bat  # [win]
     requirements:
       build:
-        # for strong run-exports
         - {{ stdlib('c') }}
         - {{ compiler('c') }}
         - {{ compiler('cxx') }}
+        - {{ pin_subpackage('flang', exact=True) }}
       host:
         - clangdev =={{ version }}
         - compiler-rt =={{ version }}
@@ -56,16 +56,28 @@ outputs:
     test:
       commands:
         # shared lib on linux
-        - test -f $PREFIX/lib/libFortranRuntime.so              # [linux]
-        # static lib on win (fails to export symbols for shared build)
-        - if not exist %LIBRARY_LIB%\FortranRuntime.lib exit 1  # [win]
+        - test -f $PREFIX/lib/libflang_rt.so              # [linux]
+        # static lib on win (shared builds not supported yet)
+        - if not exist %LIBRARY_LIB%\flang_rt.lib exit 1  # [win]
+
+  # compatibility output for previous name
+  - name: libflang
+    requirements:
+      host:
+        - {{ pin_subpackage('flang-rt', exact=True) }}
+      run:
+        - {{ pin_subpackage('flang-rt', exact=True) }}
+    test:
+      commands:
+        - echo "pure metapackage"
 
   - name: flang
     script: install_flang.sh  # [unix]
     script: install_flang.bat  # [win]
     run_exports:
       strong:
-        - libflang >={{ version }}
+        # runtime is static on windows
+        - libflang >={{ version }}  # [not win]
     requirements:
       build:
         - cmake
@@ -85,12 +97,10 @@ outputs:
         # ninja really wants to find z.lib on win
         - zlib  # [win]
         - zstd  # [win]
-        - {{ pin_subpackage('libflang', exact=True) }}
       run:
         - sysroot_{{ target_platform }} >={{ c_stdlib_version }}    # [linux]
         - clang =={{ version }}
         - compiler-rt =={{ version }}   # [win]
-        - {{ pin_subpackage('libflang', exact=True) }}
     test:
       commands:
         - test -f $PREFIX/bin/flang                     # [linux]
