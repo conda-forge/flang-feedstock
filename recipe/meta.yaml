@@ -15,8 +15,8 @@ build:
 
 requirements:
   build:
-    - {{ compiler('c') }}
     - {{ stdlib('c') }}
+    - {{ compiler('c') }}
     - {{ compiler('cxx') }}
     - cmake
     # some bug with misinterpreting `...\tools` as a tab (`\t`)
@@ -39,8 +39,8 @@ outputs:
     requirements:
       build:
         # for strong run-exports
-        - {{ compiler('c') }}
         - {{ stdlib('c') }}
+        - {{ compiler('c') }}
         - {{ compiler('cxx') }}
       host:
         - clangdev =={{ version }}
@@ -65,8 +65,8 @@ outputs:
         - cmake
         - ninja <1.13
         # for strong run-exports
-        - {{ compiler('c') }}
         - {{ stdlib('c') }}
+        - {{ compiler('c') }}
         - {{ compiler('cxx') }}
       host:
         - clangdev =={{ version }}
