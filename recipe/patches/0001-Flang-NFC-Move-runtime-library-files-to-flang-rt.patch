@@ -1,7 +1,7 @@
 From 18407f0f60693ab7e58c3a94d4796fe2cb87bed3 Mon Sep 17 00:00:00 2001
 From: Michael Kruse <llvm-project@meinersbur.de>
 Date: Fri, 27 Sep 2024 17:20:13 +0200
-Subject: [PATCH 1/2] [Flang][NFC] Move runtime library files to flang-rt
+Subject: [PATCH 1/3] [Flang][NFC] Move runtime library files to flang-rt
 
 ---
  flang-rt/.clang-format                        | 21 +++++++++++
