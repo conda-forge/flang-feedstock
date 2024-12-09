@@ -30,6 +30,3 @@ cmake -G Ninja \
     ../flang
 
 cmake --build . -j2
-
-cd ..
-rm -rf build
