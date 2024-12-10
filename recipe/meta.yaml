@@ -57,8 +57,8 @@ outputs:
         - mlir =={{ version }}
     test:
       commands:
-        # shared lib on linux
-        - test -f $PREFIX/lib/libflang_rt.so              # [linux]
+        # shared lib on linux (currently static due to bug)
+        - test -f $PREFIX/lib/libflang_rt.a               # [linux]
         # static lib on win (shared builds not supported yet)
         - if not exist %LIBRARY_LIB%\flang_rt.lib exit 1  # [win]
 
@@ -76,10 +76,6 @@ outputs:
   - name: flang
     script: install_flang.sh  # [unix]
     script: install_flang.bat  # [win]
-    run_exports:
-      strong:                       # [not win]
-        # runtime is static on windows
-        - libflang >={{ version }}  # [not win]
     requirements:
       build:
         - cmake
