@@ -25,8 +25,6 @@ cmake -G Ninja \
     -DLLVM_DIR=$PREFIX/lib/cmake/llvm \
     -DLLVM_ENABLE_RUNTIMES="flang-rt" \
     -DFLANG_RT_INCLUDE_TESTS=OFF \
-    -DCLANG_DIR=$PREFIX/lib/cmake/clang \
-    -DMLIR_DIR=$PREFIX/lib/cmake/mlir \
     ../runtimes
 
 cmake --build . -j2
