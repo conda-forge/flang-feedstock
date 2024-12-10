@@ -44,6 +44,8 @@ outputs:
     script: install_flang-rt.bat  # [win]
     requirements:
       build:
+        - cmake
+        - ninja
         - {{ stdlib('c') }}
         - {{ compiler('c') }}
         - {{ compiler('cxx') }}
