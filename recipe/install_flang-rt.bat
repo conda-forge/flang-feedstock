@@ -9,7 +9,7 @@ cmake -G "Ninja" ^
     -DCMAKE_BUILD_TYPE="Release" ^
     -DCMAKE_CXX_STANDARD=17 ^
     -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
-    -DCMAKE_Fortran_COMPILER=%BUILD_PREFIX%/Library/bin/flang ^
+    -DCMAKE_Fortran_COMPILER=%BUILD_PREFIX%/Library/bin/flang.exe ^
     -DCMAKE_Fortran_COMPILER_WORKS=yes ^
     -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
     -DCMAKE_MODULE_PATH=../cmake/Modules ^
