@@ -12,8 +12,6 @@ source:
     # backport https://github.com/llvm/llvm-project/pull/110217 (stacked PR)
     - patches/0001-Flang-NFC-Move-runtime-library-files-to-flang-rt.patch
     - patches/0002-Flang-LLVM_ENABLE_RUNTIMES-flang-rt.patch
-    # https://github.com/llvm/llvm-project/pull/110217/commits/a03606822b0eaef8efdeb00c4f2c33e1a029f79f
-    - patches/0003-Link-FortranSupport.patch
 
 build:
   number: 0

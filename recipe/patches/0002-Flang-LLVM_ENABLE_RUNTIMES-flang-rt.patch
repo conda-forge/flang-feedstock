@@ -1,7 +1,7 @@
-From 419146f12242a239c9d80c7c11c2156b95fdaf62 Mon Sep 17 00:00:00 2001
+From 75d7b535dfc831925dfc43b636b8c084cd69fa4f Mon Sep 17 00:00:00 2001
 From: Michael Kruse <llvm-project@meinersbur.de>
 Date: Fri, 27 Sep 2024 09:18:49 +0200
-Subject: [PATCH 2/3] [Flang] LLVM_ENABLE_RUNTIMES=flang-rt
+Subject: [PATCH 2/2] [Flang] LLVM_ENABLE_RUNTIMES=flang-rt
 
 Extract Flang's runtime library to use the LLVM_ENABLE_RUNTIME
 mechanism.
@@ -11,13 +11,13 @@ mechanism.
  flang-rt/CODE_OWNERS.TXT                      |  14 +
  flang-rt/LICENSE.TXT                          | 234 +++++++++++
  flang-rt/README.md                            | 198 ++++++++++
- flang-rt/cmake/modules/AddFlangRT.cmake       | 159 ++++++++
+ flang-rt/cmake/modules/AddFlangRT.cmake       | 166 ++++++++
  .../cmake/modules/AddFlangRTOffload.cmake     |  84 ++--
  flang-rt/lib/CMakeLists.txt                   |  18 +
  flang-rt/lib/CufRuntime/CMakeLists.txt        |  15 +-
  .../lib/FortranFloat128Math/CMakeLists.txt    |  37 +-
  flang-rt/lib/Testing/CMakeLists.txt           |  19 +
- flang-rt/lib/flang_rt/CMakeLists.txt          | 363 ++++++------------
+ flang-rt/lib/flang_rt/CMakeLists.txt          | 362 ++++++------------
  flang-rt/lib/flang_rt/allocator-registry.cpp  |   4 +-
  flang-rt/lib/flang_rt/environment.cpp         |   4 +-
  flang-rt/lib/flang_rt/io-api-minimal.cpp      |   2 +-
@@ -33,7 +33,7 @@ mechanism.
  flang-rt/test/Unit/lit.cfg.py                 |  21 +
  flang-rt/test/Unit/lit.site.cfg.py.in         |  15 +
  flang-rt/test/lit.cfg.py                      | 106 +++++
- flang-rt/test/lit.site.cfg.py.in              |  18 +
+ flang-rt/test/lit.site.cfg.py.in              |  19 +
  flang-rt/unittests/CMakeLists.txt             | 101 +++++
  flang-rt/unittests/Evaluate/CMakeLists.txt    |  20 +-
  flang-rt/unittests/Runtime/CMakeLists.txt     |  15 +-
@@ -59,6 +59,8 @@ mechanism.
  flang/lib/Optimizer/Builder/CMakeLists.txt    |   2 +-
  flang/lib/Optimizer/Builder/IntrinsicCall.cpp |   2 +-
  flang/lib/Optimizer/Dialect/FIRType.cpp       |   2 +-
+ flang/lib/Optimizer/OpenMP/CMakeLists.txt     |   1 +
+ flang/lib/Optimizer/Passes/CMakeLists.txt     |   4 +-
  flang/lib/Optimizer/Transforms/CMakeLists.txt |   2 +-
  flang/lib/Parser/CMakeLists.txt               |   2 +-
  flang/lib/Semantics/CMakeLists.txt            |   2 +-
@@ -71,16 +73,20 @@ mechanism.
  .../test/Driver/msvc-dependent-lib-flags.f90  |  16 +-
  flang/test/lit.cfg.py                         |  23 --
  flang/test/lit.site.cfg.py.in                 |   3 -
+ flang/tools/bbc/CMakeLists.txt                |   1 +
+ flang/tools/f18-parse-demo/CMakeLists.txt     |   1 +
  flang/tools/f18/CMakeLists.txt                |  30 +-
+ flang/tools/tco/CMakeLists.txt                |   1 +
  flang/unittests/CMakeLists.txt                |  39 --
  flang/unittests/Common/CMakeLists.txt         |   3 -
  flang/unittests/Common/FastIntSetTest.cpp     | 105 -----
  flang/unittests/Decimal/CMakeLists.txt        |  10 -
  flang/unittests/Decimal/quick-sanity-test.cpp | 145 -------
  flang/unittests/Decimal/thorough-test.cpp     |  89 -----
- flang/unittests/Evaluate/CMakeLists.txt       |   7 +-
+ flang/unittests/Evaluate/CMakeLists.txt       |  17 +-
+ flang/unittests/Frontend/CMakeLists.txt       |   1 +
  runtimes/CMakeLists.txt                       |   2 +-
- 74 files changed, 1775 insertions(+), 1072 deletions(-)
+ 80 files changed, 1794 insertions(+), 1079 deletions(-)
  create mode 100644 flang-rt/.clang-tidy
  create mode 100644 flang-rt/CMakeLists.txt
  create mode 100644 flang-rt/CODE_OWNERS.TXT
@@ -818,10 +824,10 @@ index 000000000000..31e92f63afc0
 +   `LIBOMPTARGET_DEVICE_ARCHITECTURES` from liboffload.
 diff --git a/flang-rt/cmake/modules/AddFlangRT.cmake b/flang-rt/cmake/modules/AddFlangRT.cmake
 new file mode 100644
-index 000000000000..3cec4327c20f
+index 000000000000..7144575eefc7
 --- /dev/null
 +++ b/flang-rt/cmake/modules/AddFlangRT.cmake
-@@ -0,0 +1,159 @@
+@@ -0,0 +1,166 @@
 +#===-- cmake/modules/AddFlangRT.cmake --------------------------------------===#
 +#
 +# Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -860,6 +866,13 @@ index 000000000000..3cec4327c20f
 +    ""
 +    "${multiValueArgs}"
 +    ${ARGN})
++
++  if (ARG_INSTALL_WITH_TOOLCHAIN AND ARG_EXCLUDE_FROM_ALL)
++     message(SEND_ERROR "add_flangrt_library(${name} ...):
++       INSTALL_WITH_TOOLCHAIN and EXCLUDE_FROM_ALL are in conflict. When
++       installing an artifact it must have been built first in the 'all' target.
++     ")
++  endif ()
 +
 +  # Also add header files to IDEs to list as part of the library
 +  set_source_files_properties(${ARG_ADDITIONAL_HEADERS} PROPERTIES HEADER_FILE_ONLY ON)
@@ -1281,17 +1294,16 @@ index 000000000000..bdfca0ee9d3f
 +   ${public_headers}
 +)
 diff --git a/flang-rt/lib/flang_rt/CMakeLists.txt b/flang-rt/lib/flang_rt/CMakeLists.txt
-index b9c6f2cecb95..4b7315c2b4bd 100644
+index 2f8af14ee99c..3d670e25198d 100644
 --- a/flang-rt/lib/flang_rt/CMakeLists.txt
 +++ b/flang-rt/lib/flang_rt/CMakeLists.txt
-@@ -6,108 +6,10 @@
+@@ -6,113 +6,15 @@
  #
  #===------------------------------------------------------------------------===#
  
 -if (CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 -  cmake_minimum_required(VERSION 3.20.0)
-+include(AddFlangRTOffload)
- 
+-
 -  project(FlangRuntime C CXX)
 -
 -  set(CMAKE_CXX_STANDARD 17)
@@ -1344,6 +1356,12 @@ index b9c6f2cecb95..4b7315c2b4bd 100644
 -
 -include_directories(BEFORE ../../include)
 -
++include(AddFlangRTOffload)
+ # function checks
+ find_package(Backtrace)
+ set(HAVE_BACKTRACE ${Backtrace_FOUND})
+ set(BACKTRACE_HEADER ${Backtrace_HEADER})
+ 
 -include(CheckCXXSymbolExists)
 -include(CheckCXXSourceCompiles)
 -check_cxx_symbol_exists(strerror_r string.h HAVE_STRERROR_R)
@@ -1387,7 +1405,7 @@ index b9c6f2cecb95..4b7315c2b4bd 100644
 -# to avoid an unwanted dependency on libstdc++/libc++.so.
 -add_definitions(-U_GLIBCXX_ASSERTIONS)
 -add_definitions(-U_LIBCPP_ENABLE_ASSERTIONS)
--
+ 
 -add_subdirectory(../FortranFloat128Math Float128Math)
 -
 -set(sources
@@ -1396,7 +1414,7 @@ index b9c6f2cecb95..4b7315c2b4bd 100644
    ISO_Fortran_binding.cpp
    allocator-registry.cpp
    allocatable.cpp
-@@ -115,9 +17,6 @@ set(sources
+@@ -120,9 +22,6 @@ set(sources
    assign.cpp
    buffer.cpp
    character.cpp
@@ -1406,7 +1424,7 @@ index b9c6f2cecb95..4b7315c2b4bd 100644
    connection.cpp
    copy.cpp
    derived-api.cpp
-@@ -128,9 +27,6 @@ set(sources
+@@ -133,9 +32,6 @@ set(sources
    edit-input.cpp
    edit-output.cpp
    environment.cpp
@@ -1416,7 +1434,7 @@ index b9c6f2cecb95..4b7315c2b4bd 100644
    external-unit.cpp
    extrema.cpp
    file.cpp
-@@ -143,7 +39,6 @@ set(sources
+@@ -148,7 +44,6 @@ set(sources
    io-error.cpp
    io-stmt.cpp
    iostat.cpp
@@ -1424,7 +1442,7 @@ index b9c6f2cecb95..4b7315c2b4bd 100644
    matmul-transpose.cpp
    matmul.cpp
    memory.cpp
-@@ -155,169 +50,139 @@ set(sources
+@@ -160,169 +55,138 @@ set(sources
    product.cpp
    pseudo-unit.cpp
    ragged.cpp
@@ -1653,7 +1671,6 @@ index b9c6f2cecb95..4b7315c2b4bd 100644
 +    add_flangrt_library(${name} ${libtype}
 +        ${sources}
 +        ${ARGN}
-+        INSTALL_WITH_TOOLCHAIN
 +        ADDITIONAL_HEADERS ${public_headers} ${private_headers}
 +      )
  
@@ -1682,8 +1699,8 @@ index b9c6f2cecb95..4b7315c2b4bd 100644
 +    add_dependencies(flang_rt ${name})
 +  endfunction ()
 +
-+  add_win_flangrt_library(STATIC static     MultiThreaded)
-+  add_win_flangrt_library(STATIC static_dbg MultiThreadedDebug)
++  add_win_flangrt_library(STATIC static     MultiThreaded      INSTALL_WITH_TOOLCHAIN)
++  add_win_flangrt_library(STATIC static_dbg MultiThreadedDebug INSTALL_WITH_TOOLCHAIN)
 +
 +  # unittests link against LLVMSupport which is compiled with /MD
 +  add_win_flangrt_library(STATIC unittest   MultiThreadedDLL EXCLUDE_FROM_ALL)
@@ -1875,7 +1892,7 @@ index 000000000000..5ca07b66e4f9
 +    DEPENDS flang-rt-test-depends
 +  )
 diff --git a/flang-rt/test/Driver/ctofortran.f90 b/flang-rt/test/Driver/ctofortran.f90
-index 78eac32133b1..9cf7571ffd2c 100644
+index 78eac32133b1..3656737d8ef2 100644
 --- a/flang-rt/test/Driver/ctofortran.f90
 +++ b/flang-rt/test/Driver/ctofortran.f90
 @@ -1,7 +1,9 @@
@@ -1884,7 +1901,7 @@ index 78eac32133b1..9cf7571ffd2c 100644
  ! RUN: split-file %s %t
 -! RUN: chmod +x %t/runtest.sh
 -! RUN: %t/runtest.sh %t %t/ffile.f90 %t/cfile.c %flang | FileCheck %s
-+! RUN: %clang -c %t/cfile.c -o %t/cfile.o
++! RUN: %clang -I"%include/flang" -c %t/cfile.c -o %t/cfile.o
 +! RUN: %flang -L"%libdir" %deplibs %t/ffile.f90 %t/cfile.o -o %t/ctofortran
 +! RUN: env LD_LIBRARY_PATH="$LD_LIBRARY_PATH:%libdir" %t/ctofortran | FileCheck %s
  
@@ -2056,7 +2073,7 @@ index 000000000000..ed6dea07bcdd
 +lit_config.load_config(config, os.path.join(config.flang_rt_source_dir, 'test', 'Unit', 'lit.cfg.py'))
 diff --git a/flang-rt/test/lit.cfg.py b/flang-rt/test/lit.cfg.py
 new file mode 100644
-index 000000000000..8c21877a9188
+index 000000000000..4f24a5bca6aa
 --- /dev/null
 +++ b/flang-rt/test/lit.cfg.py
 @@ -0,0 +1,106 @@
@@ -2130,7 +2147,7 @@ index 000000000000..8c21877a9188
 +tools = [
 +    ToolSubst(
 +        "%flang",
-+        command=FindTool("flang"),
++        command=config.flang,
 +        extra_args=isysroot_flag,
 +        unresolved="fatal",
 +    ),
@@ -2168,10 +2185,10 @@ index 000000000000..8c21877a9188
 +config.substitutions.append(("%deplibs", shjoin(deplibs)))
 diff --git a/flang-rt/test/lit.site.cfg.py.in b/flang-rt/test/lit.site.cfg.py.in
 new file mode 100644
-index 000000000000..a587bbf8dea0
+index 000000000000..564a197f8776
 --- /dev/null
 +++ b/flang-rt/test/lit.site.cfg.py.in
-@@ -0,0 +1,18 @@
+@@ -0,0 +1,19 @@
 +@LIT_SITE_CFG_IN_HEADER@
 +
 +import sys
@@ -2183,6 +2200,7 @@ index 000000000000..a587bbf8dea0
 +config.flang_rt_build_lib_dir = "@FLANG_RT_BUILD_LIB_DIR@"
 +config.flang_rt_experimental_offload_support = "@FLANG_RT_EXPERIMENTAL_OFFLOAD_SUPPORT@"
 +config.cc = "@CMAKE_C_COMPILER@"
++config.flang = "@CMAKE_Fortran_COMPILER@"
 +config.osx_sysroot = path(r"@CMAKE_OSX_SYSROOT@")
 +
 +import lit.llvm
@@ -3152,6 +3170,40 @@ index 44d7471b981a..4b86e0bf97aa 100644
 -}
 +}
 \ No newline at end of file
+diff --git a/flang/lib/Optimizer/OpenMP/CMakeLists.txt b/flang/lib/Optimizer/OpenMP/CMakeLists.txt
+index 51ecbe1a664f..1192403dd1c6 100644
+--- a/flang/lib/Optimizer/OpenMP/CMakeLists.txt
++++ b/flang/lib/Optimizer/OpenMP/CMakeLists.txt
+@@ -21,6 +21,7 @@ add_flang_library(FlangOpenMPTransforms
+   FIRDialectSupport
+   FIRSupport
+   FortranCommon
++  FortranSupport
+   MLIRFuncDialect
+   MLIROpenMPDialect
+   HLFIRDialect
+diff --git a/flang/lib/Optimizer/Passes/CMakeLists.txt b/flang/lib/Optimizer/Passes/CMakeLists.txt
+index 40abbdfbdd65..029588dc7f7b 100644
+--- a/flang/lib/Optimizer/Passes/CMakeLists.txt
++++ b/flang/lib/Optimizer/Passes/CMakeLists.txt
+@@ -5,9 +5,6 @@ add_flang_library(flangPasses
+   CommandLineOpts.cpp
+   Pipelines.cpp
+ 
+-  DEPENDS
+-  FortranCommon
+-
+   LINK_LIBS
+   FIRCodeGen
+   FIRTransforms
+@@ -15,6 +12,7 @@ add_flang_library(flangPasses
+   ${dialect_libs}
+   ${extension_libs}
+   FortranCommon
++  FortranSupport
+   HLFIRTransforms
+   MLIRPass
+   MLIRReconcileUnrealizedCasts
 diff --git a/flang/lib/Optimizer/Transforms/CMakeLists.txt b/flang/lib/Optimizer/Transforms/CMakeLists.txt
 index 9eafa4ec234b..5e02b02d794c 100644
 --- a/flang/lib/Optimizer/Transforms/CMakeLists.txt
@@ -3464,6 +3516,29 @@ index d1a0ac763cf8..1d26f99fa873 100644
  config.osx_sysroot = path(r"@CMAKE_OSX_SYSROOT@")
  config.targets_to_build = "@TARGETS_TO_BUILD@"
  config.default_sysroot = "@DEFAULT_SYSROOT@"
+diff --git a/flang/tools/bbc/CMakeLists.txt b/flang/tools/bbc/CMakeLists.txt
+index 9abdcf17b6eb..a608d472fd99 100644
+--- a/flang/tools/bbc/CMakeLists.txt
++++ b/flang/tools/bbc/CMakeLists.txt
+@@ -33,6 +33,7 @@ target_link_libraries(bbc PRIVATE
+   MLIRAffineToStandard
+   MLIRSCFToControlFlow
+   FortranCommon
++  FortranSupport
+   FortranParser
+   FortranEvaluate
+   FortranSemantics
+diff --git a/flang/tools/f18-parse-demo/CMakeLists.txt b/flang/tools/f18-parse-demo/CMakeLists.txt
+index df1f1d24a55e..800b29fcf425 100644
+--- a/flang/tools/f18-parse-demo/CMakeLists.txt
++++ b/flang/tools/f18-parse-demo/CMakeLists.txt
+@@ -12,5 +12,6 @@ add_flang_tool(f18-parse-demo
+ target_link_libraries(f18-parse-demo
+   PRIVATE
+   FortranCommon
++  FortranSupport
+   FortranParser
+   )
 diff --git a/flang/tools/f18/CMakeLists.txt b/flang/tools/f18/CMakeLists.txt
 index 4362fcf05376..16a5f02580df 100644
 --- a/flang/tools/f18/CMakeLists.txt
@@ -3535,6 +3610,18 @@ index 4362fcf05376..16a5f02580df 100644
    # Special case for omp_lib.mod, because its source comes from openmp/runtime/src/include.
    # It also produces two module files: omp_lib.mod and omp_lib_kinds.mod.  Compile these
    # files only if OpenMP support has been configured.
+diff --git a/flang/tools/tco/CMakeLists.txt b/flang/tools/tco/CMakeLists.txt
+index aac80437ee11..4d05ba5d1f90 100644
+--- a/flang/tools/tco/CMakeLists.txt
++++ b/flang/tools/tco/CMakeLists.txt
+@@ -20,6 +20,7 @@ target_link_libraries(tco PRIVATE
+   flangPasses
+   FlangOpenMPTransforms
+   FortranCommon
++  FortranSupport
+   ${dialect_libs}
+   ${extension_libs}
+   MLIRIR
 diff --git a/flang/unittests/CMakeLists.txt b/flang/unittests/CMakeLists.txt
 index 4a279c9bbf32..f9953bd434d4 100644
 --- a/flang/unittests/CMakeLists.txt
@@ -3979,36 +4066,73 @@ index 0f7a2d4b33e7..000000000000
 -  return fails > 0;
 -}
 diff --git a/flang/unittests/Evaluate/CMakeLists.txt b/flang/unittests/Evaluate/CMakeLists.txt
-index 8557b68991df..0339098df455 100644
+index 8557b68991df..49f0d06d5325 100644
 --- a/flang/unittests/Evaluate/CMakeLists.txt
 +++ b/flang/unittests/Evaluate/CMakeLists.txt
-@@ -43,10 +43,9 @@ add_flang_nongtest_unittest(intrinsics
+@@ -27,6 +27,7 @@ add_flang_nongtest_unittest(uint128
+ 
+ add_flang_nongtest_unittest(expression
    FortranCommon
++  FortranSupport
    FortranEvaluateTesting
    FortranEvaluate
--  FortranDecimal
+   FortranSemantics
+@@ -41,17 +42,16 @@ add_flang_nongtest_unittest(integer
+ 
+ add_flang_nongtest_unittest(intrinsics
+   FortranCommon
+-  FortranEvaluateTesting
 +  FortranSupport
+   FortranEvaluate
+-  FortranDecimal
++  FortranEvaluateTesting
    FortranSemantics
    FortranParser
 -  FortranRuntime
  )
  
  add_flang_nongtest_unittest(logical
-@@ -64,7 +63,7 @@ set(LLVM_REQUIRES_RTTI ON)
+-  FortranEvaluateTesting
+   FortranEvaluate
++  FortranEvaluateTesting
+   FortranSemantics
+ )
+ 
+@@ -62,18 +62,17 @@ add_flang_nongtest_unittest(logical
+ set(LLVM_REQUIRES_EH ON)
+ set(LLVM_REQUIRES_RTTI ON)
  add_flang_nongtest_unittest(real
-   FortranEvaluateTesting
+-  FortranEvaluateTesting
++  FortranSupport
    FortranEvaluate
 -  FortranDecimal
-+  FortranSupport
++  FortranEvaluateTesting
    FortranSemantics
  )
  llvm_update_compile_flags(real.test)
-@@ -75,5 +74,3 @@ add_flang_nongtest_unittest(folding
+ 
+ add_flang_nongtest_unittest(folding
+   FortranCommon
+-  FortranEvaluateTesting
++  FortranSupport
    FortranEvaluate
++  FortranEvaluateTesting
    FortranSemantics
  )
 -
 -add_subdirectory(../../../flang-rt/unittests/Evaluate runtime)
+diff --git a/flang/unittests/Frontend/CMakeLists.txt b/flang/unittests/Frontend/CMakeLists.txt
+index 22c568af3d12..a4a18e313c1f 100644
+--- a/flang/unittests/Frontend/CMakeLists.txt
++++ b/flang/unittests/Frontend/CMakeLists.txt
+@@ -19,6 +19,7 @@ target_link_libraries(FlangFrontendTests
+   FortranParser
+   FortranSemantics
+   FortranCommon
++  FortranSupport
+   FortranEvaluate
+   MLIRIR
+ )
 diff --git a/runtimes/CMakeLists.txt b/runtimes/CMakeLists.txt
 index 4a6b317a03f6..7f1e2ae065d6 100644
 --- a/runtimes/CMakeLists.txt
