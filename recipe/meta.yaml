@@ -104,8 +104,8 @@ outputs:
   - name: flang_impl_{{ cross_target_platform }}
     script: install_flang_impl.sh   # [unix]
     requirements:
-      - flang ={{ version }}
-      - flang-rt ={{ version }}
+      - {{ pin_subpackage("flang", exact=True) }}
+      - {{ pin_subpackage("flang-rt", exact=True) }}
       - lld                     # [win]
       # for llvm-ar.exe
       - llvm-tools              # [win]
