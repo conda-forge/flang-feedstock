@@ -1,3 +1,7 @@
+CBUILD:
+- x86_64-conda-linux-gnu
+CHOST:
+- x86_64-conda-linux-gnu
 c_compiler:
 - gcc
 c_compiler_version:
@@ -12,6 +16,8 @@ channel_sources:
 - conda-forge/label/llvm_dev,conda-forge
 channel_targets:
 - conda-forge llvm_dev
+cross_target_platform:
+- linux-64
 cxx_compiler:
 - gxx
 cxx_compiler_version:
@@ -21,6 +27,8 @@ docker_image:
 target_platform:
 - linux-64
 zip_keys:
+- - CHOST
+  - cross_target_platform
 - - c_compiler_version
   - cxx_compiler_version
 zlib:
