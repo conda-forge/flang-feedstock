@@ -103,24 +103,25 @@ outputs:
 
   - name: flang_impl_{{ cross_target_platform }}
     script: install_flang_impl.sh   # [unix]
-    # we don't cross-compile on windows -> no symlinks
     requirements:
       - flang ={{ version }}
+      - flang-rt ={{ version }}
       - lld                     # [win]
       # for llvm-ar.exe
       - llvm-tools              # [win]
       - compiler-rt_{{ cross_target_platform }} ={{ version }}
     test:
       commands:
+        # we don't cross-compile on windows -> no symlinks
         - {{ CBUILD }}-flang --version  # [unix]
         - {{ CHOST }}-flang --version   # [unix]
 
   - name: flang_{{ cross_target_platform }}
-    script: install_flang.sh   # [unix]
-    script: install_flang.bat  # [win]
-    run_exports:
-      strong:                       # [unix]
-        - libflang >={{ version }}  # [unix]
+    script: install_flang_scripts.sh   # [unix]
+    script: install_flang_scripts.bat  # [win]
+    # run_exports:
+    #   strong:                       # [unix]
+    #     - flang-rt >={{ version }}  # [unix]
     requirements:
       build:
         - sed       # [unix]
@@ -131,9 +132,7 @@ outputs:
       files:
         - hello_world.f90
       commands:
-        # on linux we point FC to the symlink; on windows, we point to the binary;
-        # the latter is still named "flang-new" instead of "flang" as of v19, see
-        # https://discourse.llvm.org/t/proposal-rename-flang-new-to-flang/69462
+        # on linux we point FC to the symlink; on windows, we point to the binary
         - $FC hello_world.f90       # [unix]
         - "%FC% hello_world.f90"    # [win]
         - ./a.out   # [unix]
