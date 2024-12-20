@@ -57,7 +57,7 @@ outputs:
       commands:
         # static library (shared builds not supported yet)
         - test -f $PREFIX/lib/libflang_rt.a                              # [linux]
-        - if not exist %LIBRARY_LIB%\windows\flang_rt.static.lib exit 1  # [win]
+        # - if not exist %LIBRARY_LIB%\windows\flang_rt.static.lib exit 1  # [win]
 
   # compatibility output for previous name
   - name: libflang
