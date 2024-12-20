@@ -1,4 +1,4 @@
-From 75d7b535dfc831925dfc43b636b8c084cd69fa4f Mon Sep 17 00:00:00 2001
+From 294f2fae956a294a1f4753522056389c305f8750 Mon Sep 17 00:00:00 2001
 From: Michael Kruse <llvm-project@meinersbur.de>
 Date: Fri, 27 Sep 2024 09:18:49 +0200
 Subject: [PATCH 2/2] [Flang] LLVM_ENABLE_RUNTIMES=flang-rt
@@ -7,17 +7,18 @@ Extract Flang's runtime library to use the LLVM_ENABLE_RUNTIME
 mechanism.
 ---
  flang-rt/.clang-tidy                          |   2 +
- flang-rt/CMakeLists.txt                       | 226 +++++++++++
+ flang-rt/CMakeLists.txt                       | 236 +++++++++++
  flang-rt/CODE_OWNERS.TXT                      |  14 +
  flang-rt/LICENSE.TXT                          | 234 +++++++++++
- flang-rt/README.md                            | 198 ++++++++++
+ flang-rt/README.md                            | 188 +++++++++
  flang-rt/cmake/modules/AddFlangRT.cmake       | 166 ++++++++
  .../cmake/modules/AddFlangRTOffload.cmake     |  84 ++--
+ flang-rt/cmake/modules/GetToolchainDirs.cmake | 127 ++++++
  flang-rt/lib/CMakeLists.txt                   |  18 +
  flang-rt/lib/CufRuntime/CMakeLists.txt        |  15 +-
  .../lib/FortranFloat128Math/CMakeLists.txt    |  37 +-
  flang-rt/lib/Testing/CMakeLists.txt           |  19 +
- flang-rt/lib/flang_rt/CMakeLists.txt          | 362 ++++++------------
+ flang-rt/lib/flang_rt/CMakeLists.txt          | 383 ++++++------------
  flang-rt/lib/flang_rt/allocator-registry.cpp  |   4 +-
  flang-rt/lib/flang_rt/environment.cpp         |   4 +-
  flang-rt/lib/flang_rt/io-api-minimal.cpp      |   2 +-
@@ -27,21 +28,21 @@ mechanism.
  flang-rt/test/CMakeLists.txt                  |  59 +++
  flang-rt/test/Driver/ctofortran.f90           |  27 +-
  flang-rt/test/Driver/exec.f90                 |   6 +-
- flang-rt/test/NonGtestUnit/lit.cfg.py         |  22 ++
+ flang-rt/test/NonGtestUnit/lit.cfg.py         |  22 +
  flang-rt/test/NonGtestUnit/lit.site.cfg.py.in |  14 +
  flang-rt/test/Runtime/no-cpp-dep.c            |   9 +-
  flang-rt/test/Unit/lit.cfg.py                 |  21 +
  flang-rt/test/Unit/lit.site.cfg.py.in         |  15 +
- flang-rt/test/lit.cfg.py                      | 106 +++++
+ flang-rt/test/lit.cfg.py                      | 104 +++++
  flang-rt/test/lit.site.cfg.py.in              |  19 +
- flang-rt/unittests/CMakeLists.txt             | 101 +++++
+ flang-rt/unittests/CMakeLists.txt             | 109 +++++
  flang-rt/unittests/Evaluate/CMakeLists.txt    |  20 +-
  flang-rt/unittests/Runtime/CMakeLists.txt     |  15 +-
  .../unittests/Runtime/CUDA/CMakeLists.txt     |   9 +-
- flang/CMakeLists.txt                          |  43 +--
- flang/cmake/modules/FlangCommon.cmake         |  43 +++
+ flang/CMakeLists.txt                          |  43 +-
+ flang/cmake/modules/FlangCommon.cmake         |  43 ++
  flang/docs/FlangDriver.md                     |   9 +-
- flang/docs/GettingStarted.md                  |  51 ++-
+ flang/docs/GettingStarted.md                  | 108 ++---
  flang/docs/OpenACC-descriptor-management.md   |   2 +-
  flang/docs/ReleaseNotes.md                    |   8 +
  .../ExternalHelloWorld/CMakeLists.txt         |   2 +-
@@ -52,7 +53,7 @@ mechanism.
  flang/lib/CMakeLists.txt                      |   2 +-
  flang/lib/Common/CMakeLists.txt               |  62 +--
  flang/lib/Common/README.md                    |  27 ++
- flang/lib/Decimal/CMakeLists.txt              |  86 -----
+ flang/lib/Decimal/CMakeLists.txt              |  86 ----
  flang/lib/Evaluate/CMakeLists.txt             |   2 +-
  flang/lib/Frontend/CMakeLists.txt             |   2 +-
  flang/lib/Lower/CMakeLists.txt                |   2 +-
@@ -82,11 +83,11 @@ mechanism.
  flang/unittests/Common/FastIntSetTest.cpp     | 105 -----
  flang/unittests/Decimal/CMakeLists.txt        |  10 -
  flang/unittests/Decimal/quick-sanity-test.cpp | 145 -------
- flang/unittests/Decimal/thorough-test.cpp     |  89 -----
+ flang/unittests/Decimal/thorough-test.cpp     |  89 ----
  flang/unittests/Evaluate/CMakeLists.txt       |  17 +-
  flang/unittests/Frontend/CMakeLists.txt       |   1 +
  runtimes/CMakeLists.txt                       |   2 +-
- 80 files changed, 1794 insertions(+), 1079 deletions(-)
+ 81 files changed, 1975 insertions(+), 1109 deletions(-)
  create mode 100644 flang-rt/.clang-tidy
  create mode 100644 flang-rt/CMakeLists.txt
  create mode 100644 flang-rt/CODE_OWNERS.TXT
@@ -94,6 +95,7 @@ mechanism.
  create mode 100644 flang-rt/README.md
  create mode 100644 flang-rt/cmake/modules/AddFlangRT.cmake
  rename flang/cmake/modules/AddFlangOffloadRuntime.cmake => flang-rt/cmake/modules/AddFlangRTOffload.cmake (54%)
+ create mode 100644 flang-rt/cmake/modules/GetToolchainDirs.cmake
  create mode 100644 flang-rt/lib/CMakeLists.txt
  create mode 100644 flang-rt/lib/Testing/CMakeLists.txt
  create mode 100644 flang-rt/test/CMakeLists.txt
@@ -128,10 +130,10 @@ index 000000000000..ee3a0ab2201b
 +InheritParentConfig: true
 diff --git a/flang-rt/CMakeLists.txt b/flang-rt/CMakeLists.txt
 new file mode 100644
-index 000000000000..d39c39e0caac
+index 000000000000..d808e291ce0c
 --- /dev/null
 +++ b/flang-rt/CMakeLists.txt
-@@ -0,0 +1,226 @@
+@@ -0,0 +1,236 @@
 +#===-- CMakeLists.txt ------------------------------------------------------===#
 +#
 +# Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -145,7 +147,14 @@ index 000000000000..d39c39e0caac
 +#
 +#===------------------------------------------------------------------------===#
 +
-+set(LLVM_SUBPROJECT_TITLE "Fortran Runtime")
++if (NOT LLVM_RUNTIMES_BUILD)
++  message(FATAL_ERROR "Use this CMakeLists.txt from LLVM's runtimes build system.
++      Example:
++        cmake <llvm-project>/runtimes -DLLVM_ENABLE_RUNTIMES=flang-rt
++    ")
++endif ()
++
++set(LLVM_SUBPROJECT_TITLE "Flang-RT")
 +set(FLANG_RT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 +set(FLANG_RT_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
 +set(FLANG_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../flang")
@@ -191,24 +200,31 @@ index 000000000000..d39c39e0caac
 +    "${FLANG_SOURCE_DIR}/cmake/modules"
 +  )
 +include(AddFlangRT)
++include(GetToolchainDirs)
 +include(FlangCommon)
++include(HandleCompilerRT)
++include(ExtendPath)
++include(GNUInstallDirs)
 +
 +
 +############################
 +# Build Mode Introspection #
 +############################
 +
-+# Setting these variables from an LLVM build is sufficient that flang-rt can
-+# construct the output paths, so it can behave as if it was in-tree here.
++# Determine whether we are in the runtimes/runtimes-bins directory of a
++# bootstrap build.
 +set(LLVM_TREE_AVAILABLE OFF)
 +if (LLVM_LIBRARY_OUTPUT_INTDIR AND LLVM_RUNTIME_OUTPUT_INTDIR AND PACKAGE_VERSION)
-+  # This is a bootstap build
 +  set(LLVM_TREE_AVAILABLE ON)
 +endif()
 +
 +# Path to LLVM development tools (FileCheck, llvm-lit, not, ...)
 +set(LLVM_TOOLS_DIR "${LLVM_BINARY_DIR}/bin")
 +
++# Determine build and install paths.
++# The build path is absolute, but the install dir is relative, CMake's install
++# command has to apply CMAKE_INSTALL_PREFIX itself.
++get_toolchain_library_subdir(toolchain_lib_subdir)
 +if (LLVM_TREE_AVAILABLE)
 +  # In a bootstrap build emit the libraries into a default search path in the
 +  # build directory of the just-built compiler. This allows using the
@@ -217,25 +233,31 @@ index 000000000000..d39c39e0caac
 +  # Despite Clang in the name, get_clang_resource_dir does not depend on Clang
 +  # being added to the build. Flang uses the same resource dir as clang.
 +  include(GetClangResourceDir)
-+  get_clang_resource_dir(FLANG_RT_BUILD_LIB_DIR PREFIX "${LLVM_LIBRARY_OUTPUT_INTDIR}/.." SUBDIR "lib${LLVM_LIBDIR_SUFFIX}")
-+  get_clang_resource_dir(FLANG_RT_INSTALL_LIB_DIR SUBDIR "lib${LLVM_LIBDIR_SUFFIX}") # No prefix, CMake's install command finds the install prefix itself
++  get_clang_resource_dir(FLANG_RT_OUTPUT_DIR PREFIX "${LLVM_LIBRARY_OUTPUT_INTDIR}/..")
++  get_clang_resource_dir(FLANG_RT_INSTALL_PATH)
++
++  extend_path(FLANG_RT_BUILD_TOOLCHAIN_LIB_DIR "${FLANG_RT_OUTPUT_DIR}" "${toolchain_lib_subdir}")
 +else ()
-+  # In a runtimes build never write into LLVM's build dir. It might be reused
-+  # for mutliple Flang-RT builds (e.g. Debug/Release). Instead create our own
-+  # library directory.
-+  #
-+  # TODO: Support multi-config generators
-+  set(FLANG_RT_BUILD_LIB_DIR "${CMAKE_BINARY_DIR}/lib${LLVM_LIBDIR_SUFFIX}")
-+  set(FLANG_RT_INSTALL_LIB_DIR "lib${LLVM_LIBDIR_SUFFIX}")
++  # In a standalone runtimes build, do not write into LLVM_BINARY_DIR. It may be
++  # read-only and/or shared by multiple runtimes with different build
++  # configurations (e.g. Debug/Release). Use the runtime's own lib dir like any
++  # non-toolchain library.
++  # For the install prefix, still use the resource dir assuming that Flang will
++  # be installed there using the same prefix. This is to not have a difference
++ # between bootstrap and standalone runtimes builds.
++  set(FLANG_RT_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}")
++  set(FLANG_RT_INSTALL_PATH "${CMAKE_INSTALL_LIBDIR}/clang/${LLVM_VERSION_MAJOR}")
++
++  extend_path(FLANG_RT_BUILD_TOOLCHAIN_LIB_DIR "${FLANG_RT_OUTPUT_DIR}" "${CMAKE_INSTALL_DIR}")
 +endif ()
 +
-+if (DEFINED WIN32)
-+  set(FLANG_RT_BUILD_LIB_DIR "${FLANG_RT_BUILD_LIB_DIR}/windows")
-+  set(FLANG_RT_INSTALL_LIB_DIR "${FLANG_RT_INSTALL_LIB_DIR}/windows")
-+elseif (LLVM_ENABLE_PER_TARGET_RUNTIME_DIR)
-+  set(FLANG_RT_BUILD_LIB_DIR "${FLANG_RT_BUILD_LIB_DIR}/${LLVM_TARGET_TRIPLE}")
-+  set(FLANG_RT_INSTALL_LIB_DIR "${FLANG_RT_INSTALL_LIB_DIR}/${LLVM_TARGET_TRIPLE}")
-+endif ()
++# Apply the arch-specific library dir with the resource dir.
++extend_path(FLANG_RT_INSTALL_TOOLCHAIN_LIB_DIR "${FLANG_RT_INSTALL_PATH}" "${toolchain_lib_subdir}")
++
++cmake_path(NORMAL_PATH FLANG_RT_OUTPUT_DIR)
++cmake_path(NORMAL_PATH FLANG_RT_INSTALL_PATH)
++cmake_path(NORMAL_PATH FLANG_RT_BUILD_TOOLCHAIN_LIB_DIR)
++cmake_path(NORMAL_PATH FLANG_RT_INSTALL_TOOLCHAIN_LIB_DIR)
 +
 +
 +#################
@@ -294,19 +316,9 @@ index 000000000000..d39c39e0caac
 +  HAVE_DECL_STRERROR_S)
 +
 +
-+# Search for clang_rt.builtins library.
++# Search for clang_rt.builtins library. Need in addition to msvcrt.
 +if (WIN32)
-+  execute_process(
-+      COMMAND "${CMAKE_CXX_COMPILER}" "-print-libgcc-file-name" "-rtlib=compiler-rt"
-+      RESULT_VARIABLE CXX_COMPILER_PRINT_LIBGCC_PATH_FAILURE
-+      OUTPUT_VARIABLE CXX_COMPILER_PRINT_LIBGCC_PATH_RESULT
-+      ERROR_QUIET
-+    )
-+  if (NOT CXX_COMPILER_PRINT_LIBGCC_PATH_FAILURE AND CXX_COMPILER_PRINT_LIBGCC_PATH_RESULT)
-+    string(STRIP "${CXX_COMPILER_PRINT_LIBGCC_PATH_RESULT}" FLANG_RT_LIBCALL)
-+  else ()
-+    set(FLANG_RT_LIBCALL "")
-+  endif ()
++  find_compiler_rt_library(builtins FLANG_RT_BUILTINS_LIBRARY)
 +endif ()
 +
 +
@@ -620,10 +632,10 @@ index 000000000000..53bb2e7fbc76
 +   file.
 diff --git a/flang-rt/README.md b/flang-rt/README.md
 new file mode 100644
-index 000000000000..31e92f63afc0
+index 000000000000..4b92d6fb1dae
 --- /dev/null
 +++ b/flang-rt/README.md
-@@ -0,0 +1,198 @@
+@@ -0,0 +1,188 @@
 +<!--===- README.md
 +
 +   Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -657,10 +669,10 @@ index 000000000000..31e92f63afc0
 +  * [Same as LLVM](https://llvm.org/docs/GettingStarted.html#requirements).
 +
 +
-+### Bootstrap/In-Tree Build
++### Bootstrappng Runtimes Build
 +
-+The bootstrap build will first build Clang and Flang, then use these compilers
-+to compile Flang-RT. CMake will create a secondary build tree
++The bootstrapping build will first build Clang and Flang, then use these
++compilers to compile Flang-RT. CMake will create a secondary build tree
 +configured to use these just-built compilers. The secondary build will reuse
 +the same build options (Flags, Debug/Release, ...) as the primary build.
 +It will also ensure that once built, Flang-RT is found by Flang from either
@@ -704,12 +716,12 @@ index 000000000000..31e92f63afc0
 +```
 +
 +
-+### Runtime-only/Out-of-Tree Build
++### Standalone Runtimes Build
 +
-+Instead of building Clang and Flang from scratch, the Runtime-only build uses
-+CMake's environment introspection to find a C, C++, and Fortran compiler. The
-+compiler to be used can be controlled using CMake's standard mechanisms such as
-+`CMAKE_CXX_COMPILER`, `CMAKE_CXX_COMPILER`, and `CMAKE_Fortran_COMPILER`.
++Instead of building Clang and Flang from scratch, the standalone Runtime build
++uses CMake's environment introspection to find a C, C++, and Fortran compiler.
++The compiler to be used can be controlled using CMake's standard mechanisms such
++as `CMAKE_CXX_COMPILER`, `CMAKE_CXX_COMPILER`, and `CMAKE_Fortran_COMPILER`.
 +`CMAKE_Fortran_COMPILER` must be `flang` built from the same Git commit as
 +Flang-RT to ensure they are using the same ABI. The C and C++ compiler
 +can be any compiler supporting the same ABI.
@@ -739,24 +751,14 @@ index 000000000000..31e92f63afc0
 +configurations, but have to be located manually when using with the Flang
 +driver using the `-L` option.
 +
-+A more complete build configuration could be the following:
++After configuration, build, test, and install the runtime via
 +
-+```bash
-+cmake -S <path-to-llvm-project-source>/runtimes                               \
-+  -GNinja                                                                     \
-+  -DCMAKE_BUILD_TYPE=Release                                                  \
-+  -DCMAKE_INSTALL_PREFIX="${HOME}/local"                                      \
-+  -DLLVM_ENABLE_RUNTIMES="compiler-rt;flang-rt"                               \
-+  -DCMAKE_C_COMPILER=gcc                                                      \
-+  -DCMAKE_CXX_COMPILER=g++                                                    \
-+  -DLLVM_BINARY_DIR=<path-to-llvm-builddir>                                   \
-+  -DLLVM_DIR=<path-to-llvm-builddir>/lib/cmake/llvm                           \
-+  -DClang_DIR=<path-to-llvm-builddir>/lib/cmake/clang                         \
-+  -DCMAKE_Fortran_COMPILER=<path-to-llvm-builddir-or-installprefix>/bin/flang \
-+  -DLLVM_DEFAULT_TARGET_TRIPLE=x86_64-linux-gnu                               \
-+  -DLLVM_RUNTIMES_TARGET=x86_64-linux-gnu                                     \
-+  ...
++```shell
++$ ninja
++$ ninja check-flang-rt
++$ ninja install
 +```
++
 +
 +## Configuration Option Reference
 +
@@ -796,7 +798,7 @@ index 000000000000..31e92f63afc0
 +   (no `CMAKE_CUDA_COMPILER`).
 +
 +
-+### Exprimental CUDA Support
++### Experimental CUDA Support
 +
 +With `-DFLANG_RT_EXPERIMENTAL_OFFLOAD_SUPPORT=CUDA`, the following
 +additional configuration options become available.
@@ -812,7 +814,7 @@ index 000000000000..31e92f63afc0
 +   default.
 +
 +
-+### Exprimental OpenMP Offload Support
++### Experimental OpenMP Offload Support
 +
 +With `-DFLANG_RT_EXPERIMENTAL_OFFLOAD_SUPPORT=OpenMP`, the following
 +additional configuration options become available.
@@ -824,7 +826,7 @@ index 000000000000..31e92f63afc0
 +   `LIBOMPTARGET_DEVICE_ARCHITECTURES` from liboffload.
 diff --git a/flang-rt/cmake/modules/AddFlangRT.cmake b/flang-rt/cmake/modules/AddFlangRT.cmake
 new file mode 100644
-index 000000000000..7144575eefc7
+index 000000000000..58870da9bb36
 --- /dev/null
 +++ b/flang-rt/cmake/modules/AddFlangRT.cmake
 @@ -0,0 +1,166 @@
@@ -868,10 +870,10 @@ index 000000000000..7144575eefc7
 +    ${ARGN})
 +
 +  if (ARG_INSTALL_WITH_TOOLCHAIN AND ARG_EXCLUDE_FROM_ALL)
-+     message(SEND_ERROR "add_flangrt_library(${name} ...):
-+       INSTALL_WITH_TOOLCHAIN and EXCLUDE_FROM_ALL are in conflict. When
-+       installing an artifact it must have been built first in the 'all' target.
-+     ")
++    message(SEND_ERROR "add_flangrt_library(${name} ...):
++        INSTALL_WITH_TOOLCHAIN and EXCLUDE_FROM_ALL are in conflict. When
++        installing an artifact it must have been built first in the 'all' target.
++      ")
 +  endif ()
 +
 +  # Also add header files to IDEs to list as part of the library
@@ -940,7 +942,7 @@ index 000000000000..7144575eefc7
 +  # User applications can use #include <ISO_Fortran_binding.h>
 +  target_include_directories(${name} PRIVATE "${FLANG_SOURCE_DIR}/include")
 +
-+  # For flang-rt's configured config.h to be found
++  # For Flang-RT's configured config.h to be found
 +  target_include_directories(${name} PRIVATE "${FLANG_RT_BINARY_DIR}")
 +
 +  # Disable libstdc++/libc++ assertions, even in an LLVM_ENABLE_ASSERTIONS
@@ -955,8 +957,8 @@ index 000000000000..7144575eefc7
 +  # functions in some cases like 128-bit integer math (__udivti3, __modti3,
 +  # __fixsfti, __floattidf, ...) that msvc does not support. We are injecting a
 +  # dependency to Compiler-RT's builtin library where these are implemented.
-+  if (MSVC AND (CMAKE_CXX_COMPILER_ID MATCHES ".*Clang") AND FLANG_RT_LIBCALL)
-+    target_compile_options(${name} PRIVATE "$<$<COMPILE_LANGUAGE:CXX,C>:-Xclang>$<$<COMPILE_LANGUAGE:Fortran>:-Xflang>" "--dependent-lib=${FLANG_RT_LIBCALL}")
++  if (MSVC AND (CMAKE_CXX_COMPILER_ID MATCHES ".*Clang") AND FLANG_RT_BUILTINS_LIBRARY)
++    target_compile_options(${name} PRIVATE "$<$<COMPILE_LANGUAGE:CXX,C>:-Xclang>$<$<COMPILE_LANGUAGE:Fortran>:-Xflang>" "--dependent-lib=${FLANG_RT_BUILTINS_LIBRARY}")
 +  endif ()
 +
 +  # Non-GTest unittests depend on LLVMSupport
@@ -976,15 +978,15 @@ index 000000000000..7144575eefc7
 +  if (ARG_INSTALL_WITH_TOOLCHAIN)
 +    set_target_properties(${name}
 +      PROPERTIES
-+        LIBRARY_OUTPUT_DIRECTORY "${FLANG_RT_BUILD_LIB_DIR}"
-+        ARCHIVE_OUTPUT_DIRECTORY "${FLANG_RT_BUILD_LIB_DIR}"
-+        RUNTIME_OUTPUT_DIRECTORY "${FLANG_RT_BUILD_LIB_DIR}"
++        LIBRARY_OUTPUT_DIRECTORY "${FLANG_RT_BUILD_TOOLCHAIN_LIB_DIR}"
++        ARCHIVE_OUTPUT_DIRECTORY "${FLANG_RT_BUILD_TOOLCHAIN_LIB_DIR}"
++        RUNTIME_OUTPUT_DIRECTORY "${FLANG_RT_BUILD_TOOLCHAIN_LIB_DIR}"
 +      )
 +
 +    install(TARGETS ${name}
-+        LIBRARY DESTINATION "${FLANG_RT_INSTALL_LIB_DIR}"
-+        ARCHIVE DESTINATION "${FLANG_RT_INSTALL_LIB_DIR}"
-+        RUNTIME DESTINATION "${FLANG_RT_INSTALL_LIB_DIR}"
++        LIBRARY DESTINATION "${FLANG_RT_INSTALL_TOOLCHAIN_LIB_DIR}"
++        ARCHIVE DESTINATION "${FLANG_RT_INSTALL_TOOLCHAIN_LIB_DIR}"
++        RUNTIME DESTINATION "${FLANG_RT_INSTALL_TOOLCHAIN_LIB_DIR}"
 +      )
 +  endif ()
 +
@@ -1130,6 +1132,139 @@ index 8e4f47d18535..84eabba05b49 100644
          "CMAKE_CXX_COMPILER_ID: ${CMAKE_CXX_COMPILER_ID}\n"
          "CMAKE_C_COMPILER_ID: ${CMAKE_C_COMPILER_ID}")
      endif()
+diff --git a/flang-rt/cmake/modules/GetToolchainDirs.cmake b/flang-rt/cmake/modules/GetToolchainDirs.cmake
+new file mode 100644
+index 000000000000..1f251790f22a
+--- /dev/null
++++ b/flang-rt/cmake/modules/GetToolchainDirs.cmake
+@@ -0,0 +1,127 @@
++#===-- cmake/modules/GetToolchainDirs.cmake --------------------------------===#
++#
++# Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
++# See https://llvm.org/LICENSE.txt for license information.
++# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
++#
++#===------------------------------------------------------------------------===#
++
++include(GNUInstallDirs)
++
++
++# Determine the subdirectory relative to Clang's resource dir/sysroot where to
++# install target-specific libraries, to be found by Clang/Flang driver. This was
++# adapted from Compiler-RT's mechanism to find the path for
++# libclang_rt.builtins.a.
++#
++# Compiler-RT has two mechanisms for the path (simplified):
++#
++# * LLVM_ENABLE_PER_TARGET_RUNTIME_DIR=1: lib/${oslibname}/libclang_rt.builtins-${arch}.a
++# * LLVM_ENABLE_PER_TARGET_RUNTIME_DIR=0: lib/${triple}/libclang_rt.builtins.a
++#
++# LLVM_ENABLE_PER_TARGET_RUNTIME_DIR=ON is the newer scheme, but the old one is
++# currently still used for some platforms such as Windows. Clang looks for which
++# of the files exist before passing the path to the linker. Hence, the
++# directories have to match what Clang is looking for, which is done in
++# ToolChain::getArchSpecificLibPaths(..), ToolChain::getRuntimePath(),
++# ToolChain::getCompilerRTPath(), and ToolChain::getCompilerRT(..), not entirely
++# consistent between these functions, Compiler-RT's CMake code, and overrides
++# in different toolchains.
++#
++# For Fortran, Flang always assumes the library name libflang_rt.a without
++# architecture suffix. Hence, we always use the second scheme even as if
++# LLVM_ENABLE_PER_TARGET_RUNTIME_DIR=ON, even if it actually set to OFF. It as
++# added unconditionally to the library search path by
++# ToolChain::getArchSpecificLibPaths(...).
++function (get_toolchain_library_subdir outvar)
++  if (NOT APPLE)
++    set(outval "${CMAKE_INSTALL_LIBDIR}")
++  else ()
++    # Required to be "darwin" for MachO toolchain.
++    get_toolchain_os_dirname(os_dirname)
++    set(outval "${CMAKE_INSTALL_LIBDIR}/${os_dirname}")
++  endif ()
++
++  get_toolchain_arch_dirname(arch_dirname)
++  set(outval "${CMAKE_INSTALL_LIBDIR}/${arch_dirname}")
++
++  set(${outvar} "${outval}" PARENT_SCOPE)
++endfunction ()
++
++
++# Corresponds to Clang's ToolChain::getOSLibName(). Adapted from Compiler-RT.
++function (get_toolchain_os_dirname outvar)
++  if (ANDROID)
++    # The CMAKE_SYSTEM_NAME for Android is "Android", but the OS is Linux and the
++    # driver will search for libraries in the "linux" directory.
++    set(outval "linux")
++  else ()
++    string(TOLOWER "${CMAKE_SYSTEM_NAME}" outval)
++  endif ()
++  set(${outvar} "${outval}" PARENT_SCOPE)
++endfunction ()
++
++
++# Corresponds to Clang's ToolChain::getRuntimePath(). Adapted from Compiler-RT.
++function (get_toolchain_arch_dirname outvar)
++  string(REPLACE "-" ";" triple_list ${LLVM_TARGET_TRIPLE})
++  list(GET triple_list 0 arch)
++
++  if("${arch}" MATCHES "^i.86$")
++    # Android uses i686, but that's remapped at a later stage.
++    set(arch "i386")
++  endif()
++
++  string(FIND ${LLVM_TARGET_TRIPLE} "-" dash_index)
++  string(SUBSTRING ${LLVM_TARGET_TRIPLE} ${dash_index} -1 triple_suffix)
++  string(SUBSTRING ${LLVM_TARGET_TRIPLE} 0 ${dash_index} triple_cpu)
++  set(arch "${triple_cpu}")
++  if("${arch}" MATCHES "^i.86$")
++    # Android uses i686, but that's remapped at a later stage.
++    set(arch "i386")
++  endif()
++
++  if(ANDROID AND ${arch} STREQUAL "i386")
++    set(target "i686${triple_suffix}")
++  elseif(${arch} STREQUAL "amd64")
++    set(target "x86_64${triple_suffix}")
++  elseif(${arch} STREQUAL "sparc64")
++    set(target "sparcv9${triple_suffix}")
++  elseif("${arch}" MATCHES "mips64|mips64el")
++    string(REGEX REPLACE "-gnu.*" "-gnuabi64" triple_suffix_gnu "${triple_suffix}")
++    string(REGEX REPLACE "mipsisa32" "mipsisa64" triple_cpu_mips "${triple_cpu}")
++    string(REGEX REPLACE "^mips$" "mips64" triple_cpu_mips "${triple_cpu_mips}")
++    string(REGEX REPLACE "^mipsel$" "mips64el" triple_cpu_mips "${triple_cpu_mips}")
++    set(target "${triple_cpu_mips}${triple_suffix_gnu}")
++  elseif("${arch}" MATCHES "mips|mipsel")
++    string(REGEX REPLACE "-gnuabi.*" "-gnu" triple_suffix_gnu "${triple_suffix}")
++    string(REGEX REPLACE "mipsisa64" "mipsisa32" triple_cpu_mips "${triple_cpu}")
++    string(REGEX REPLACE "mips64" "mips" triple_cpu_mips "${triple_cpu_mips}")
++    set(target "${triple_cpu_mips}${triple_suffix_gnu}")
++  elseif("${arch}" MATCHES "^arm")
++    # FIXME: Handle arch other than arm, armhf, armv6m
++    if (${arch} STREQUAL "armhf")
++      # If we are building for hard float but our ABI is soft float.
++      if ("${triple_suffix}" MATCHES ".*eabi$")
++        # Change "eabi" -> "eabihf"
++        set(triple_suffix "${triple_suffix}hf")
++      endif()
++      # ABI is already set in the triple, don't repeat it in the architecture.
++      set(arch "arm")
++    else ()
++      # If we are building for soft float, but the triple's ABI is hard float.
++      if ("${triple_suffix}" MATCHES ".*eabihf$")
++        # Change "eabihf" -> "eabi"
++        string(REGEX REPLACE "hf$" "" triple_suffix "${triple_suffix}")
++      endif()
++    endif()
++    set(target "${arch}${triple_suffix}")
++  elseif("${arch}" MATCHES "^amdgcn")
++    set(target "amdgcn-amd-amdhsa")
++  elseif("${arch}" MATCHES "^nvptx")
++    set(target "nvptx64-nvidia-cuda")
++  else()
++    set(target "${arch}${triple_suffix}")
++  endif()
++  set(${outvar} "${target}" PARENT_SCOPE)
++endfunction()
 diff --git a/flang-rt/lib/CMakeLists.txt b/flang-rt/lib/CMakeLists.txt
 new file mode 100644
 index 000000000000..5d48043a7459
@@ -1294,7 +1429,7 @@ index 000000000000..bdfca0ee9d3f
 +   ${public_headers}
 +)
 diff --git a/flang-rt/lib/flang_rt/CMakeLists.txt b/flang-rt/lib/flang_rt/CMakeLists.txt
-index 2f8af14ee99c..3d670e25198d 100644
+index 2f8af14ee99c..ff45e26961a4 100644
 --- a/flang-rt/lib/flang_rt/CMakeLists.txt
 +++ b/flang-rt/lib/flang_rt/CMakeLists.txt
 @@ -6,113 +6,15 @@
@@ -1374,7 +1509,7 @@ index 2f8af14ee99c..3d670e25198d 100644
 -   }
 -  "
 -  HAVE_DECL_STRERROR_S)
--
+ 
 -# Check if 128-bit float computations can be done via long double.
 -check_cxx_source_compiles(
 -  "#include <cfloat>
@@ -1405,7 +1540,7 @@ index 2f8af14ee99c..3d670e25198d 100644
 -# to avoid an unwanted dependency on libstdc++/libc++.so.
 -add_definitions(-U_GLIBCXX_ASSERTIONS)
 -add_definitions(-U_LIBCPP_ENABLE_ASSERTIONS)
- 
+-
 -add_subdirectory(../FortranFloat128Math Float128Math)
 -
 -set(sources
@@ -1442,7 +1577,7 @@ index 2f8af14ee99c..3d670e25198d 100644
    matmul-transpose.cpp
    matmul.cpp
    memory.cpp
-@@ -160,169 +55,138 @@ set(sources
+@@ -160,169 +55,159 @@ set(sources
    product.cpp
    pseudo-unit.cpp
    ragged.cpp
@@ -1684,11 +1819,17 @@ index 2f8af14ee99c..3d670e25198d 100644
 -if (TARGET flang AND TARGET module_files)
 -  add_dependencies(FortranRuntime flang module_files)
 -endif()
++    if (msvc_lib)
++      set_target_properties(${name}
++          PROPERTIES
++            MSVC_RUNTIME_LIBRARY "${msvc_lib}"
++        )
++    endif ()
++
 +    # Setting an unique Fortran_MODULE_DIRECTORY is required for each variant to
 +    # write a different .mod file.
 +    set_target_properties(${name}
 +        PROPERTIES
-+          MSVC_RUNTIME_LIBRARY ${msvc_lib}
 +          Fortran_MODULE_DIRECTORY "module.${suffix}"
 +      )
  
@@ -1699,14 +1840,12 @@ index 2f8af14ee99c..3d670e25198d 100644
 +    add_dependencies(flang_rt ${name})
 +  endfunction ()
 +
-+  add_win_flangrt_library(STATIC static     MultiThreaded      INSTALL_WITH_TOOLCHAIN)
-+  add_win_flangrt_library(STATIC static_dbg MultiThreadedDebug INSTALL_WITH_TOOLCHAIN)
-+
-+  # unittests link against LLVMSupport which is compiled with /MD
-+  add_win_flangrt_library(STATIC unittest   MultiThreadedDLL EXCLUDE_FROM_ALL)
-+
-+  # FIXME: Generating runtime DLLs is currently not possible. There are two
-+  # roadblocks:
++  # Variants of the static flang_rt for different versions of the msvc runtime.
++  #
++  # The dynamic/dynamic_dbg variants are not DLLs themselves, only require
++  # linking to msvcrt(d).dll.
++  # FIXME: Generating actual runtime DLLs is currently not possible. There are
++  # two roadblocks:
 +  #
 +  #  * Flang emits /DEFAULTLIB:flang_rt.dynamic.lib into
 +  #    iso_fortran_env_impl.f90.obj. Because that file is itself part of
@@ -1718,9 +1857,26 @@ index 2f8af14ee99c..3d670e25198d 100644
 +  #    is CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS which would also export the internal
 +  #    C++ symbols and still requires global data symbols to be annotated
 +  #    manually.
-+  #
-+  #add_win_flangrt_library(SHARED dynamic     MultiThreadedDLL)
-+  #add_win_flangrt_library(SHARED dynamic_dbg MultiThreadedDebugDLL)
++  add_win_flangrt_library(STATIC static      MultiThreaded         INSTALL_WITH_TOOLCHAIN)
++  add_win_flangrt_library(STATIC static_dbg  MultiThreadedDebug    INSTALL_WITH_TOOLCHAIN)
++  add_win_flangrt_library(STATIC dynamic     MultiThreadedDLL      INSTALL_WITH_TOOLCHAIN)
++  add_win_flangrt_library(STATIC dynamic_dbg MultiThreadedDebugDLL INSTALL_WITH_TOOLCHAIN)
++
++  # Unittests link against LLVMSupport which is using CMake's default runtime
++  # library selection, which is either MultiThreadedDLL or MultiThreadedDebugDLL
++  # depending on the configuration. They have to match or linking will fail.
++  if (GENERATOR_IS_MULTI_CONFIG)
++    # We cannot select an ALIAS library because it may be different
++    # per configuration. Fallback to CMake's default.
++    add_win_flangrt_library(STATIC unittest "" EXCLUDE_FROM_ALL)
++  else ()
++    string(TOLOWER ${CMAKE_BUILD_TYPE} build_type)
++    if (build_type STREQUAL "debug")
++      add_library(flang_rt.unittest ALIAS flang_rt.dynamic_dbg)
++    else ()
++      add_library(flang_rt.unittest ALIAS flang_rt.dynamic)
++    endif ()
++  endif ()
  endif()
 diff --git a/flang-rt/lib/flang_rt/allocator-registry.cpp b/flang-rt/lib/flang_rt/allocator-registry.cpp
 index b53f70bf6044..c6e799d7cba0 100644
@@ -2073,10 +2229,10 @@ index 000000000000..ed6dea07bcdd
 +lit_config.load_config(config, os.path.join(config.flang_rt_source_dir, 'test', 'Unit', 'lit.cfg.py'))
 diff --git a/flang-rt/test/lit.cfg.py b/flang-rt/test/lit.cfg.py
 new file mode 100644
-index 000000000000..4f24a5bca6aa
+index 000000000000..b32fa70f5ed3
 --- /dev/null
 +++ b/flang-rt/test/lit.cfg.py
-@@ -0,0 +1,106 @@
+@@ -0,0 +1,104 @@
 +# -*- Python -*-
 +
 +import shlex
@@ -2085,8 +2241,10 @@ index 000000000000..4f24a5bca6aa
 +from lit.llvm import llvm_config
 +from lit.llvm.subst import ToolSubst, FindTool
 +
-+def shjoin(args, sep=' '):
++
++def shjoin(args, sep=" "):
 +    return sep.join([shlex.quote(arg) for arg in args])
++
 +
 +# Configuration file for the 'lit' test runner.
 +
@@ -2157,11 +2315,7 @@ index 000000000000..4f24a5bca6aa
 +        extra_args=isysroot_flag,
 +        unresolved="fatal",
 +    ),
-+    ToolSubst("%cc",
-+        command=config.cc,
-+        extra_args=isysroot_flag,
-+        unresolved="fatal"
-+    ),
++    ToolSubst("%cc", command=config.cc, extra_args=isysroot_flag, unresolved="fatal"),
 +]
 +llvm_config.add_tool_substitutions(tools)
 +
@@ -2181,11 +2335,11 @@ index 000000000000..4f24a5bca6aa
 +# Additional library depedendencies the that flang driver does not add itself.
 +deplibs = []
 +if config.flang_rt_experimental_offload_support == "CUDA":
-+    deplibs.append('-lcudart')
++    deplibs.append("-lcudart")
 +config.substitutions.append(("%deplibs", shjoin(deplibs)))
 diff --git a/flang-rt/test/lit.site.cfg.py.in b/flang-rt/test/lit.site.cfg.py.in
 new file mode 100644
-index 000000000000..564a197f8776
+index 000000000000..b6db393527ec
 --- /dev/null
 +++ b/flang-rt/test/lit.site.cfg.py.in
 @@ -0,0 +1,19 @@
@@ -2197,7 +2351,7 @@ index 000000000000..564a197f8776
 +config.flang_source_dir = "@FLANG_SOURCE_DIR@"
 +config.flang_rt_source_dir = "@FLANG_RT_SOURCE_DIR@"
 +config.flang_rt_binary_test_dir = os.path.dirname(__file__)
-+config.flang_rt_build_lib_dir = "@FLANG_RT_BUILD_LIB_DIR@"
++config.flang_rt_build_lib_dir = "@FLANG_RT_BUILD_TOOLCHAIN_LIB_DIR@"
 +config.flang_rt_experimental_offload_support = "@FLANG_RT_EXPERIMENTAL_OFFLOAD_SUPPORT@"
 +config.cc = "@CMAKE_C_COMPILER@"
 +config.flang = "@CMAKE_Fortran_COMPILER@"
@@ -2210,10 +2364,10 @@ index 000000000000..564a197f8776
 +lit_config.load_config(config, os.path.join(config.flang_rt_source_dir, 'test', 'lit.cfg.py'))
 diff --git a/flang-rt/unittests/CMakeLists.txt b/flang-rt/unittests/CMakeLists.txt
 new file mode 100644
-index 000000000000..aa2ce3aba0c4
+index 000000000000..203ce42c3303
 --- /dev/null
 +++ b/flang-rt/unittests/CMakeLists.txt
-@@ -0,0 +1,101 @@
+@@ -0,0 +1,109 @@
 +#===-- unittests/CMakeLists.txt --------------------------------------------===#
 +#
 +# Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -2221,6 +2375,13 @@ index 000000000000..aa2ce3aba0c4
 +# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 +#
 +#===------------------------------------------------------------------------===#
++
++# LLVM uses a modified version of GTest that uses LLVMSupport for console
++# output. Therefore it also needs to include files from LLVM. Unfortunately,
++# LLVM/GTest doesn't add the include search path itself. Limiting the scope
++# using target_include_directories does not work because with
++# LLVM_INSTALL_GTEST=ON, llvm_gtest is an IMPORT library.
++include_directories("${LLVM_INCLUDE_DIR}" "${LLVM_MAIN_INCLUDE_DIR}")
 +
 +# Add GTest if not already present.
 +# Using a function so LLVM_SUBPROJECT_TITLE does not propagate.
@@ -2231,13 +2392,6 @@ index 000000000000..aa2ce3aba0c4
 +if (NOT TARGET llvm_gtest)
 +  build_gtest()
 +endif ()
-+
-+# LLVM's modified GTest depends on LLVM, but not all sibling runtime projects
-+# creating a llvm_gtest target also use target_include_directories.
-+target_include_directories(llvm_gtest PUBLIC "${LLVM_INCLUDE_DIR}" "${LLVM_MAIN_INCLUDE_DIR}")
-+
-+# Required because LLVMSupport is compiled with this option (by default).
-+set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
 +
 +if (CXX_SUPPORTS_SUGGEST_OVERRIDE_FLAG)
 +  add_compile_options("-Wno-suggest-override")
@@ -2284,6 +2438,14 @@ index 000000000000..aa2ce3aba0c4
 +  target_include_directories(${test_dirname} PRIVATE "${FLANG_SOURCE_DIR}/include")
 +  target_link_libraries(${test_dirname} PRIVATE ${ARG_LINK_LIBS})
 +  add_flangrt_unittest_offload_properties(${test_dirname})
++
++  # Required because LLVMSupport is compiled with this option.
++  # FIXME: According to CMake documentation, this is the default. Why is it
++  #        needed? LLVM's add_unittest doesn't set it either.
++  set_target_properties(${test_dirname}
++      PROPERTIES
++        MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
++    )
 +endfunction()
 +
 +function(add_flangrt_nongtest_unittest test_name)
@@ -2572,7 +2734,7 @@ index 23cbab30ee90..f3a732b03989 100644
  
  On Darwin, the logical root where the system libraries are located (sysroot)
 diff --git a/flang/docs/GettingStarted.md b/flang/docs/GettingStarted.md
-index 1c85a6754b15..81d6552fa986 100644
+index 1c85a6754b15..47ba268b3e76 100644
 --- a/flang/docs/GettingStarted.md
 +++ b/flang/docs/GettingStarted.md
 @@ -30,7 +30,7 @@ https://llvm.org/docs/GettingStarted.html.
@@ -2580,7 +2742,7 @@ index 1c85a6754b15..81d6552fa986 100644
  tool.
  
 -### Building flang in tree
-+### Building flang in tree (bootstrap build)
++### Building flang in tree with bootstrapped Flang-RT
  Building flang in tree means building flang along with all of the projects on
  which it depends.  These projects include mlir, clang, flang, openmp, and
  compiler-rt.  Note that compiler-rt is only needed to access libraries that
@@ -2593,12 +2755,87 @@ index 1c85a6754b15..81d6552fa986 100644
    ../llvm-project/llvm
  
  ninja
-@@ -197,26 +197,27 @@ Flang runtime can be built for accelerators in experimental mode, i.e.
+@@ -101,7 +101,7 @@ the cmake command above:
+ To run the flang tests on this build, execute the command in the "build"
+ directory:
+ ```bash
+-ninja check-flang
++ninja check-flang check-flang-rt
+ ```
+ 
+ To create the installed files:
+@@ -111,34 +111,6 @@ ninja install
+ echo "latest" > $INSTALLDIR/bin/versionrc
+ ```
+ 
+-To build compiler-rt:
+-```bash
+-cd $ROOTDIR
+-rm -rf compiler-rt
+-mkdir compiler-rt
+-cd compiler-rt
+-CC=$INSTALLDIR/bin/clang \
+-CXX=$INSTALLDIR/bin/clang++ \
+-cmake \
+-  -G Ninja \
+-  ../llvm-project/compiler-rt \
+-  -DCMAKE_BUILD_TYPE=Release \
+-  -DCMAKE_INSTALL_PREFIX=$INSTALLDIR \
+-  -DCMAKE_CXX_STANDARD=11 \
+-  -DCMAKE_C_CFLAGS=-mlong-double-128 \
+-  -DCMAKE_CXX_CFLAGS=-mlong-double-128 \
+-  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+-  -DCOMPILER_RT_BUILD_ORC=OFF \
+-  -DCOMPILER_RT_BUILD_XRAY=OFF \
+-  -DCOMPILER_RT_BUILD_MEMPROF=OFF \
+-  -DCOMPILER_RT_BUILD_LIBFUZZER=OFF \
+-  -DCOMPILER_RT_BUILD_SANITIZERS=OFF \
+-  -DLLVM_CONFIG_PATH=$INSTALLDIR/bin/llvm-config
+-
+-ninja
+-ninja install
+-```
+-
+ Note that these instructions specify flang as one of the projects to build in
+ the in tree build.  This is not strictly necessary for subsequent standalone
+ builds, but doing so lets you run the flang tests to verify that the source
+@@ -192,31 +164,57 @@ directory:
+ ninja check-flang
+ ```
+ 
+-### Building flang runtime for accelerators
++To build Flang-RT (required for linking executables):
++```bash
++cd $ROOTDIR
++rm -rf flang-rt
++mkdir flang-rt
++cd flang-rt
++CC=$INSTALLDIR/bin/clang \
++CXX=$INSTALLDIR/bin/clang++ \
++cmake \
++  -G Ninja \
++  ../llvm-project/runtimes \
++  -DCMAKE_BUILD_TYPE=Release \
++  -DCMAKE_INSTALL_PREFIX=$INSTALLDIR \
++  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
++  -DLLVM_ENABLE_RUNTIMES=flang-rt \
++  -DLLVM_BINARY_DIR=$ROOTDIR/build \
++  -DLLVM_Fortran_COMPILER=$INSTALLDIR/bin/flang \
++  -DLLVM_Fortran_COMPILER_WORKS=ON
++
++ninja
++ninja check-flang-rt
++ninja install
++```
++
++
++### Building Flang-RT for accelerators
+ Flang runtime can be built for accelerators in experimental mode, i.e.
  complete enabling is WIP.  CUDA and OpenMP target offload builds
  are currently supported.
  
 -#### Building out-of-tree
-+#### Building out-of-tree (runtime-only build)
++#### Bootstrapping Build of Flang-RT
  
  ##### CUDA build
  Clang with NVPTX backend and NVCC compilers are supported.
@@ -2626,7 +2863,7 @@ index 1c85a6754b15..81d6552fa986 100644
  ```
  
  Note that the used version of `clang` must [support](https://releases.llvm.org/16.0.0/tools/clang/docs/ReleaseNotes.html#cuda-support)
-@@ -225,21 +226,22 @@ CUDA toolkit installations, please use `-DCUDAToolkit_ROOT=/some/path`
+@@ -225,21 +223,22 @@ CUDA toolkit installations, please use `-DCUDAToolkit_ROOT=/some/path`
  to specify the compatible version.
  
  ```bash
@@ -2653,7 +2890,7 @@ index 1c85a6754b15..81d6552fa986 100644
  ```
  
  Note that `nvcc` might limit support to certain
-@@ -251,50 +253,59 @@ code.  Note that the packaging of the libraries is different
+@@ -251,50 +250,59 @@ code.  Note that the packaging of the libraries is different
  between [Clang](https://clang.llvm.org/docs/OffloadingDesign.html#linking-target-device-code) and NVCC, so the library must be linked using
  compatible compiler drivers.
  
