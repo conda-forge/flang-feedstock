@@ -12,6 +12,7 @@ source:
     # backport https://github.com/llvm/llvm-project/pull/110217 (stacked PR)
     - patches/0001-Flang-NFC-Move-runtime-library-files-to-flang-rt.patch
     - patches/0002-Flang-LLVM_ENABLE_RUNTIMES-flang-rt.patch
+    - patches/0003-Wrong-variable.patch
 
 build:
   number: 0

@@ -1,0 +1,22 @@
+From 84c2bb89f06112f32b1899f7c0e4aae5e5dbe732 Mon Sep 17 00:00:00 2001
+From: Michael Kruse <llvm-project@meinersbur.de>
+Date: Mon, 23 Dec 2024 11:09:40 +0100
+Subject: [PATCH 3/3] Wrong variable
+
+---
+ flang-rt/CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/flang-rt/CMakeLists.txt b/flang-rt/CMakeLists.txt
+index d808e291ce0c..91521469e407 100644
+--- a/flang-rt/CMakeLists.txt
++++ b/flang-rt/CMakeLists.txt
+@@ -112,7 +112,7 @@ else ()
+   set(FLANG_RT_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+   set(FLANG_RT_INSTALL_PATH "${CMAKE_INSTALL_LIBDIR}/clang/${LLVM_VERSION_MAJOR}")
+ 
+-  extend_path(FLANG_RT_BUILD_TOOLCHAIN_LIB_DIR "${FLANG_RT_OUTPUT_DIR}" "${CMAKE_INSTALL_DIR}")
++  extend_path(FLANG_RT_BUILD_TOOLCHAIN_LIB_DIR "${FLANG_RT_OUTPUT_DIR}" "${CMAKE_INSTALL_LIBDIR}")
+ endif ()
+ 
+ # Apply the arch-specific library dir with the resource dir.
