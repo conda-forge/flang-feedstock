@@ -20,6 +20,7 @@ cmake -G Ninja \
     -DCMAKE_INSTALL_PREFIX=$PREFIX \
     -DCMAKE_MODULE_PATH=../cmake/Modules \
     -DCMAKE_PREFIX_PATH=$PREFIX \
+    -DLLVM_ENABLE_RUNTIMES=compiler-rt \
     -DLLVM_EXTERNAL_LIT=$PREFIX/bin/lit \
     -DLLVM_LIT_ARGS=-v \
     -DLLVM_CMAKE_DIR=$PREFIX/lib/cmake/llvm \
