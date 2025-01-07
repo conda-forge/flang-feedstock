@@ -1,24 +1,17 @@
-From c99df959fccc25ad3546cfe516f996c7a5c4334e Mon Sep 17 00:00:00 2001
+From d73f3d3b527ff67937bef6817c80e2ae4374cc7a Mon Sep 17 00:00:00 2001
 From: Michael Kruse <llvm-project@meinersbur.de>
 Date: Fri, 27 Sep 2024 17:20:13 +0200
 Subject: [PATCH 1/2] [Flang][NFC] Move runtime library files to flang-rt
 
 ---
- flang-rt/.clang-format                        | 21 +++++++++++
- flang-rt/cmake/config.h.cmake.in              | 19 ++++++++++
- .../include/flang-rt}/CUDA/allocator.h        | 10 +++---
- .../include/flang-rt}/allocator-registry.h    |  8 ++---
- .../include/flang-rt}/array-constructor.h     | 18 +++-------
- .../include/flang-rt}/descriptor.h            | 14 ++++----
- .../include/flang-rt}/memory.h                |  8 ++---
- .../include/flang-rt}/type-code.h             | 10 +++---
- .../lib/CufRuntime}/CMakeLists.txt            |  2 +-
- .../lib/CufRuntime}/allocatable.cpp           |  9 ++---
- .../lib/CufRuntime}/allocator.cpp             | 18 +++++-----
- .../lib/CufRuntime}/descriptor.cpp            |  8 ++---
- .../lib/CufRuntime}/kernel.cpp                |  4 +--
- .../lib/CufRuntime}/memory.cpp                |  6 ++--
- .../lib/CufRuntime}/registration.cpp          |  4 +--
+ flang-rt/.clang-format                        | 21 +++++++++++++++++
+ flang-rt/cmake/config.h.cmake.in              | 19 +++++++++++++++
+ .../include/flang-rt}/CUDA/allocator.h        | 10 ++++----
+ .../include/flang-rt}/allocator-registry.h    |  8 +++----
+ .../include/flang-rt}/array-constructor.h     | 18 ++++-----------
+ .../include/flang-rt}/descriptor.h            | 14 +++++------
+ .../include/flang-rt}/memory.h                |  8 +++----
+ .../include/flang-rt}/type-code.h             | 10 ++++----
  .../lib/FortranFloat128Math}/CMakeLists.txt   |  2 +-
  .../lib/FortranFloat128Math}/acos.cpp         |  2 +-
  .../lib/FortranFloat128Math}/acosh.cpp        |  2 +-
@@ -28,8 +21,8 @@ Subject: [PATCH 1/2] [Flang][NFC] Move runtime library files to flang-rt
  .../lib/FortranFloat128Math}/atan2.cpp        |  2 +-
  .../lib/FortranFloat128Math}/atanh.cpp        |  2 +-
  .../lib/FortranFloat128Math}/ceil.cpp         |  2 +-
- .../lib/FortranFloat128Math}/complex-math.c   |  5 ++-
- .../lib/FortranFloat128Math}/complex-math.h   |  8 ++---
+ .../lib/FortranFloat128Math}/complex-math.c   |  5 ++--
+ .../lib/FortranFloat128Math}/complex-math.h   |  8 +++----
  .../lib/FortranFloat128Math}/cos.cpp          |  2 +-
  .../lib/FortranFloat128Math}/cosh.cpp         |  2 +-
  .../lib/FortranFloat128Math}/erf.cpp          |  2 +-
@@ -48,13 +41,13 @@ Subject: [PATCH 1/2] [Flang][NFC] Move runtime library files to flang-rt
  .../lib/FortranFloat128Math}/log.cpp          |  2 +-
  .../lib/FortranFloat128Math}/log10.cpp        |  2 +-
  .../lib/FortranFloat128Math}/lround.cpp       |  2 +-
- .../lib/FortranFloat128Math}/math-entries.h   |  8 ++---
+ .../lib/FortranFloat128Math}/math-entries.h   |  8 +++----
  .../lib/FortranFloat128Math}/mod-real.cpp     |  2 +-
  .../lib/FortranFloat128Math}/modulo-real.cpp  |  2 +-
  .../lib/FortranFloat128Math}/nearbyint.cpp    |  2 +-
  .../lib/FortranFloat128Math}/nearest.cpp      |  2 +-
  .../lib/FortranFloat128Math}/norm2.cpp        |  2 +-
- .../numeric-template-specs.h                  |  8 ++---
+ .../numeric-template-specs.h                  |  8 +++----
  .../lib/FortranFloat128Math}/pow.cpp          |  2 +-
  .../lib/FortranFloat128Math}/random.cpp       |  2 +-
  .../lib/FortranFloat128Math}/remainder.cpp    |  2 +-
@@ -73,173 +66,181 @@ Subject: [PATCH 1/2] [Flang][NFC] Move runtime library files to flang-rt
  .../lib/FortranFloat128Math}/y0.cpp           |  2 +-
  .../lib/FortranFloat128Math}/y1.cpp           |  2 +-
  .../lib/FortranFloat128Math}/yn.cpp           |  2 +-
- .../lib/flang_rt}/CMakeLists.txt              | 12 ++++---
- .../lib/flang_rt}/ISO_Fortran_binding.cpp     |  8 ++---
- .../lib/flang_rt}/ISO_Fortran_util.h          | 14 ++++----
- .../lib/flang_rt}/allocatable.cpp             | 10 ++++--
- .../lib/flang_rt}/allocator-registry.cpp      |  4 +--
- .../lib/flang_rt}/array-constructor.cpp       |  6 ++--
- .../lib/flang_rt}/assign-impl.h               |  8 ++---
- .../lib/flang_rt}/assign.cpp                  |  4 +--
+ .../lib/flang_rt}/CMakeLists.txt              | 10 ++++----
+ .../lib/flang_rt}/CUDA/CMakeLists.txt         |  2 +-
+ .../lib/flang_rt}/CUDA/allocatable.cpp        |  9 ++++----
+ .../lib/flang_rt}/CUDA/allocator.cpp          | 18 +++++++--------
+ .../lib/flang_rt}/CUDA/descriptor.cpp         |  8 +++----
+ .../lib/flang_rt}/CUDA/kernel.cpp             |  4 ++--
+ .../lib/flang_rt}/CUDA/memmove-function.cpp   |  2 +-
+ .../lib/flang_rt}/CUDA/memory.cpp             |  6 ++---
+ .../lib/flang_rt}/CUDA/registration.cpp       |  4 ++--
+ .../lib/flang_rt}/ISO_Fortran_binding.cpp     |  8 +++----
+ .../lib/flang_rt}/ISO_Fortran_util.h          | 14 +++++------
+ .../lib/flang_rt}/allocatable.cpp             | 10 +++++---
+ .../lib/flang_rt}/allocator-registry.cpp      |  4 ++--
+ .../lib/flang_rt}/array-constructor.cpp       |  6 ++---
+ .../lib/flang_rt}/assign-impl.h               |  8 +++----
+ .../lib/flang_rt}/assign.cpp                  |  4 ++--
  .../lib/flang_rt}/buffer.cpp                  |  2 +-
- .../lib/flang_rt}/buffer.h                    | 10 +++---
- .../lib/flang_rt}/character.cpp               |  4 +--
- .../lib/flang_rt}/command.cpp                 |  4 +--
- .../lib/flang_rt}/complex-powi.cpp            | 15 ++++----
- .../lib/flang_rt}/complex-reduction.c         |  5 ++-
- .../lib/flang_rt}/complex-reduction.h         | 11 +++---
+ .../lib/flang_rt}/buffer.h                    | 10 ++++----
+ .../lib/flang_rt}/character.cpp               |  4 ++--
+ .../lib/flang_rt}/command.cpp                 |  4 ++--
+ .../lib/flang_rt}/complex-powi.cpp            | 15 ++++++------
+ .../lib/flang_rt}/complex-reduction.c         |  5 ++--
+ .../lib/flang_rt}/complex-reduction.h         | 11 ++++-----
  .../lib/flang_rt}/connection.cpp              |  2 +-
- .../lib/flang_rt}/connection.h                |  8 ++---
- .../lib/flang_rt}/copy.cpp                    |  4 +--
- .../runtime => flang-rt/lib/flang_rt}/copy.h  | 10 +++---
- .../lib/flang_rt}/derived-api.cpp             |  5 ++-
- .../lib/flang_rt}/derived.cpp                 |  4 +--
- .../lib/flang_rt}/derived.h                   |  8 ++---
+ .../lib/flang_rt}/connection.h                |  8 +++----
+ .../lib/flang_rt}/copy.cpp                    |  4 ++--
+ .../runtime => flang-rt/lib/flang_rt}/copy.h  | 10 ++++----
+ .../lib/flang_rt}/derived-api.cpp             |  5 ++--
+ .../lib/flang_rt}/derived.cpp                 |  4 ++--
+ .../lib/flang_rt}/derived.h                   |  8 +++----
  .../lib/flang_rt}/descriptor-io.cpp           |  2 +-
- .../lib/flang_rt}/descriptor-io.h             | 10 +++---
- .../lib/flang_rt}/descriptor.cpp              | 12 ++++---
- .../lib/flang_rt}/dot-product.cpp             |  4 +--
+ .../lib/flang_rt}/descriptor-io.h             | 10 ++++----
+ .../lib/flang_rt}/descriptor.cpp              | 12 ++++++----
+ .../lib/flang_rt}/dot-product.cpp             |  4 ++--
  .../lib/flang_rt}/edit-input.cpp              |  2 +-
- .../lib/flang_rt}/edit-input.h                | 10 +++---
+ .../lib/flang_rt}/edit-input.h                | 10 ++++----
  .../lib/flang_rt}/edit-output.cpp             |  2 +-
- .../lib/flang_rt}/edit-output.h               | 10 +++---
- .../lib/flang_rt}/emit-encoded.h              |  8 ++---
- .../lib/flang_rt}/environment-default-list.h  | 11 +++---
+ .../lib/flang_rt}/edit-output.h               | 10 ++++----
+ .../lib/flang_rt}/emit-encoded.h              |  8 +++----
+ .../lib/flang_rt}/environment-default-list.h  | 11 ++++-----
  .../lib/flang_rt}/environment.cpp             |  2 +-
- .../lib/flang_rt}/environment.h               | 10 +++---
+ .../lib/flang_rt}/environment.h               | 10 ++++----
  .../lib/flang_rt}/exceptions.cpp              |  2 +-
- .../lib/flang_rt}/execute.cpp                 |  4 +--
- .../lib/flang_rt}/extensions.cpp              |  4 +--
+ .../lib/flang_rt}/execute.cpp                 |  4 ++--
+ .../lib/flang_rt}/extensions.cpp              |  4 ++--
  .../lib/flang_rt}/external-unit.cpp           |  2 +-
  .../lib/flang_rt}/extrema.cpp                 |  2 +-
- .../lib/flang_rt}/file.cpp                    |  4 +--
- .../runtime => flang-rt/lib/flang_rt}/file.h  | 10 +++---
+ .../lib/flang_rt}/file.cpp                    |  4 ++--
+ .../runtime => flang-rt/lib/flang_rt}/file.h  | 10 ++++----
  .../lib/flang_rt}/findloc.cpp                 |  2 +-
- .../lib/flang_rt}/format-implementation.h     | 10 +++---
+ .../lib/flang_rt}/format-implementation.h     | 10 ++++----
  .../lib/flang_rt}/format.cpp                  |  2 +-
- .../lib/flang_rt}/format.h                    | 10 +++---
- .../lib/flang_rt}/inquiry.cpp                 |  4 +--
- .../lib/flang_rt}/internal-unit.cpp           |  4 +--
- .../lib/flang_rt}/internal-unit.h             | 10 +++---
- .../lib/flang_rt}/io-api-common.h             |  8 ++---
+ .../lib/flang_rt}/format.h                    | 10 ++++----
+ .../lib/flang_rt}/inquiry.cpp                 |  4 ++--
+ .../lib/flang_rt}/internal-unit.cpp           |  4 ++--
+ .../lib/flang_rt}/internal-unit.h             | 10 ++++----
+ .../lib/flang_rt}/io-api-common.h             |  8 +++----
  .../lib/flang_rt}/io-api-minimal.cpp          |  2 +-
- .../lib/flang_rt}/io-api.cpp                  |  6 ++--
+ .../lib/flang_rt}/io-api.cpp                  |  6 ++---
  .../lib/flang_rt}/io-error.cpp                |  2 +-
- .../lib/flang_rt}/io-error.h                  | 10 +++---
- .../lib/flang_rt}/io-stmt.cpp                 |  4 +--
- .../lib/flang_rt}/io-stmt.h                   | 10 +++---
+ .../lib/flang_rt}/io-error.h                  | 10 ++++----
+ .../lib/flang_rt}/io-stmt.cpp                 |  4 ++--
+ .../lib/flang_rt}/io-stmt.h                   | 10 ++++----
  .../lib/flang_rt}/iostat.cpp                  |  2 +-
- .../runtime => flang-rt/lib/flang_rt}/lock.h  |  8 ++---
+ .../runtime => flang-rt/lib/flang_rt}/lock.h  |  8 +++----
  .../lib/flang_rt}/main.cpp                    |  2 +-
- .../lib/flang_rt}/matmul-transpose.cpp        |  4 +--
- .../lib/flang_rt}/matmul.cpp                  |  4 +--
- .../lib/flang_rt}/memory.cpp                  |  4 +--
- .../lib/flang_rt}/misc-intrinsic.cpp          |  4 +--
+ .../lib/flang_rt}/matmul-transpose.cpp        |  4 ++--
+ .../lib/flang_rt}/matmul.cpp                  |  4 ++--
+ .../lib/flang_rt}/memory.cpp                  |  4 ++--
+ .../lib/flang_rt}/misc-intrinsic.cpp          |  4 ++--
  .../lib/flang_rt}/namelist.cpp                |  2 +-
- .../lib/flang_rt}/namelist.h                  |  8 ++---
+ .../lib/flang_rt}/namelist.h                  |  8 +++----
  .../lib/flang_rt}/non-tbp-dio.cpp             |  2 +-
- .../lib/flang_rt}/non-tbp-dio.h               |  8 ++---
- .../lib/flang_rt}/numeric-templates.h         |  8 ++---
+ .../lib/flang_rt}/non-tbp-dio.h               |  8 +++----
+ .../lib/flang_rt}/numeric-templates.h         |  8 +++----
  .../lib/flang_rt}/numeric.cpp                 |  2 +-
  .../lib/flang_rt}/pointer.cpp                 |  2 +-
  .../lib/flang_rt}/product.cpp                 |  2 +-
  .../lib/flang_rt}/pseudo-unit.cpp             |  2 +-
  .../lib/flang_rt}/ragged.cpp                  |  2 +-
- .../lib/flang_rt}/random-templates.h          | 10 +++---
- .../lib/flang_rt}/random.cpp                  |  4 +--
- .../lib/flang_rt}/reduce.cpp                  |  4 +--
- .../lib/flang_rt}/reduction-templates.h       | 10 +++---
- .../lib/flang_rt}/reduction.cpp               |  4 +--
- .../runtime => flang-rt/lib/flang_rt}/stack.h | 10 +++---
- .../lib/flang_rt}/stat.cpp                    |  4 +--
- .../runtime => flang-rt/lib/flang_rt}/stat.h  | 10 +++---
+ .../lib/flang_rt}/random-templates.h          | 10 ++++----
+ .../lib/flang_rt}/random.cpp                  |  4 ++--
+ .../lib/flang_rt}/reduce.cpp                  |  4 ++--
+ .../lib/flang_rt}/reduction-templates.h       | 10 ++++----
+ .../lib/flang_rt}/reduction.cpp               |  4 ++--
+ .../runtime => flang-rt/lib/flang_rt}/stack.h | 10 ++++----
+ .../lib/flang_rt}/stat.cpp                    |  4 ++--
+ .../runtime => flang-rt/lib/flang_rt}/stat.h  | 10 ++++----
  .../lib/flang_rt}/stop.cpp                    |  2 +-
  .../runtime => flang-rt/lib/flang_rt}/sum.cpp |  2 +-
- .../lib/flang_rt}/support.cpp                 |  4 +--
- .../lib/flang_rt}/temporary-stack.cpp         |  8 ++---
+ .../lib/flang_rt}/support.cpp                 |  4 ++--
+ .../lib/flang_rt}/temporary-stack.cpp         |  8 +++----
  .../lib/flang_rt}/terminator.cpp              |  2 +-
- .../lib/flang_rt}/terminator.h                |  8 ++---
- .../lib/flang_rt}/time-intrinsic.cpp          |  4 +--
+ .../lib/flang_rt}/terminator.h                |  8 +++----
+ .../lib/flang_rt}/time-intrinsic.cpp          |  4 ++--
  .../lib/flang_rt}/tools.cpp                   |  2 +-
- .../runtime => flang-rt/lib/flang_rt}/tools.h | 12 +++----
- .../lib/flang_rt}/transformational.cpp        |  4 +--
- .../lib/flang_rt}/type-code.cpp               |  5 +--
- .../lib/flang_rt}/type-info.cpp               | 12 ++++---
- .../lib/flang_rt}/type-info.h                 | 10 +++---
+ .../runtime => flang-rt/lib/flang_rt}/tools.h | 12 +++++-----
+ .../lib/flang_rt}/transformational.cpp        |  4 ++--
+ .../lib/flang_rt}/type-code.cpp               |  5 ++--
+ .../lib/flang_rt}/type-info.cpp               | 12 ++++++----
+ .../lib/flang_rt}/type-info.h                 | 10 ++++----
  .../lib/flang_rt}/unit-map.cpp                |  2 +-
- .../lib/flang_rt}/unit-map.h                  | 10 +++---
+ .../lib/flang_rt}/unit-map.h                  | 10 ++++----
  .../lib/flang_rt}/unit.cpp                    |  2 +-
- .../runtime => flang-rt/lib/flang_rt}/unit.h  | 10 +++---
+ .../runtime => flang-rt/lib/flang_rt}/unit.h  | 10 ++++----
  .../runtime => flang-rt/lib/flang_rt}/utf.cpp |  2 +-
- .../runtime => flang-rt/lib/flang_rt}/utf.h   |  8 ++---
+ .../runtime => flang-rt/lib/flang_rt}/utf.h   |  8 +++----
  .../test/Driver/ctofortran.f90                |  0
  {flang => flang-rt}/test/Driver/exec.f90      |  0
  {flang => flang-rt}/test/Runtime/no-cpp-dep.c |  0
- flang-rt/unittests/Evaluate/CMakeLists.txt    | 21 +++++++++++
- .../Evaluate/ISO-Fortran-binding.cpp          | 17 +++++++--
- .../unittests/Evaluate/reshape.cpp            | 12 +++++--
+ flang-rt/unittests/Evaluate/CMakeLists.txt    | 21 +++++++++++++++++
+ .../Evaluate/ISO-Fortran-binding.cpp          | 17 +++++++++++---
+ .../unittests/Evaluate/reshape.cpp            | 12 ++++++++--
  .../unittests/Runtime/AccessTest.cpp          |  2 +-
  .../unittests/Runtime/Allocatable.cpp         |  2 +-
- .../unittests/Runtime/ArrayConstructor.cpp    |  8 ++---
- .../unittests/Runtime/BufferTest.cpp          |  4 +--
- .../unittests/Runtime/CMakeLists.txt          |  8 +++++
- .../unittests/Runtime/CUDA/Allocatable.cpp    | 11 +++---
- .../unittests/Runtime/CUDA/AllocatorCUF.cpp   | 14 ++++----
- .../unittests/Runtime/CUDA/CMakeLists.txt     | 23 ++++++++++++
- .../unittests/Runtime/CharacterTest.cpp       |  4 +--
- .../unittests/Runtime/CommandTest.cpp         |  4 +--
+ .../unittests/Runtime/ArrayConstructor.cpp    |  8 +++----
+ .../unittests/Runtime/BufferTest.cpp          |  4 ++--
+ .../unittests/Runtime/CMakeLists.txt          |  8 +++++++
+ .../unittests/Runtime/CUDA/Allocatable.cpp    | 11 +++++----
+ .../unittests/Runtime/CUDA/AllocatorCUF.cpp   | 14 +++++------
+ .../unittests/Runtime/CUDA/CMakeLists.txt     | 23 +++++++++++++++++++
+ .../unittests/Runtime/CharacterTest.cpp       |  4 ++--
+ .../unittests/Runtime/CommandTest.cpp         |  4 ++--
  .../unittests/Runtime/Complex.cpp             |  2 +-
- .../unittests/Runtime/CrashHandlerFixture.cpp |  4 +--
- .../unittests/Runtime/CrashHandlerFixture.h   |  8 ++---
- .../unittests/Runtime/Derived.cpp             |  4 +--
- .../unittests/Runtime/ExternalIOTest.cpp      |  4 +--
- .../unittests/Runtime/Format.cpp              |  8 ++---
- .../unittests/Runtime/Inquiry.cpp             |  4 +--
- .../unittests/Runtime/ListInputTest.cpp       |  6 ++--
- .../unittests/Runtime/LogicalFormatTest.cpp   |  4 +--
- .../unittests/Runtime/Matmul.cpp              |  6 ++--
- .../unittests/Runtime/MatmulTranspose.cpp     |  6 ++--
- .../unittests/Runtime/MiscIntrinsic.cpp       |  6 ++--
- .../unittests/Runtime/Namelist.cpp            |  6 ++--
+ .../unittests/Runtime/CrashHandlerFixture.cpp |  4 ++--
+ .../unittests/Runtime/CrashHandlerFixture.h   |  8 +++----
+ .../unittests/Runtime/Derived.cpp             |  4 ++--
+ .../unittests/Runtime/ExternalIOTest.cpp      |  4 ++--
+ .../unittests/Runtime/Format.cpp              |  8 +++----
+ .../unittests/Runtime/Inquiry.cpp             |  4 ++--
+ .../unittests/Runtime/ListInputTest.cpp       |  6 ++---
+ .../unittests/Runtime/LogicalFormatTest.cpp   |  4 ++--
+ .../unittests/Runtime/Matmul.cpp              |  6 ++---
+ .../unittests/Runtime/MatmulTranspose.cpp     |  6 ++---
+ .../unittests/Runtime/MiscIntrinsic.cpp       |  6 ++---
+ .../unittests/Runtime/Namelist.cpp            |  6 ++---
  .../unittests/Runtime/Numeric.cpp             |  2 +-
- .../unittests/Runtime/NumericalFormatTest.cpp |  4 +--
- .../unittests/Runtime/Pointer.cpp             |  4 +--
+ .../unittests/Runtime/NumericalFormatTest.cpp |  4 ++--
+ .../unittests/Runtime/Pointer.cpp             |  4 ++--
  .../unittests/Runtime/Ragged.cpp              |  2 +-
- .../unittests/Runtime/Random.cpp              |  8 ++---
- .../unittests/Runtime/Reduction.cpp           |  6 ++--
- .../unittests/Runtime/RuntimeCrashTest.cpp    |  4 +--
- .../unittests/Runtime/Stop.cpp                |  4 +--
- .../unittests/Runtime/Support.cpp             |  4 +--
- .../unittests/Runtime/TemporaryStack.cpp      |  8 ++---
+ .../unittests/Runtime/Random.cpp              |  8 +++----
+ .../unittests/Runtime/Reduction.cpp           |  6 ++---
+ .../unittests/Runtime/RuntimeCrashTest.cpp    |  4 ++--
+ .../unittests/Runtime/Stop.cpp                |  4 ++--
+ .../unittests/Runtime/Support.cpp             |  4 ++--
+ .../unittests/Runtime/TemporaryStack.cpp      |  8 +++----
  .../unittests/Runtime/Time.cpp                |  2 +-
- .../unittests/Runtime/Transformational.cpp    |  4 +--
- {flang => flang-rt}/unittests/Runtime/tools.h | 12 +++----
+ .../unittests/Runtime/Transformational.cpp    |  4 ++--
+ {flang => flang-rt}/unittests/Runtime/tools.h | 12 +++++-----
  flang/CMakeLists.txt                          |  2 +-
- .../ISO_Fortran_binding_wrapper.h             | 15 ++++----
- .../binary-floating-point.h                   |  8 ++---
- .../flang/{Decimal => Common}/decimal.h       | 11 +++---
- flang/include/flang/Evaluate/call.h           |  6 ++--
- .../include/flang/Evaluate/characteristics.h  |  6 ++--
- flang/include/flang/Evaluate/common.h         |  8 ++---
- flang/include/flang/Evaluate/constant.h       |  4 +--
- flang/include/flang/Evaluate/expression.h     |  6 ++--
+ .../ISO_Fortran_binding_wrapper.h             | 15 ++++++------
+ .../binary-floating-point.h                   |  8 +++----
+ .../flang/{Decimal => Common}/decimal.h       | 11 ++++-----
+ flang/include/flang/Evaluate/call.h           |  6 ++---
+ .../include/flang/Evaluate/characteristics.h  |  6 ++---
+ flang/include/flang/Evaluate/common.h         |  8 +++----
+ flang/include/flang/Evaluate/constant.h       |  4 ++--
+ flang/include/flang/Evaluate/expression.h     |  6 ++---
  flang/include/flang/Evaluate/formatting.h     |  2 +-
  flang/include/flang/Evaluate/intrinsics.h     |  2 +-
  flang/include/flang/Evaluate/shape.h          |  2 +-
  flang/include/flang/Evaluate/target.h         |  2 +-
- flang/include/flang/Evaluate/tools.h          |  4 +--
+ flang/include/flang/Evaluate/tools.h          |  4 ++--
  flang/include/flang/Evaluate/traverse.h       |  2 +-
- flang/include/flang/Evaluate/type.h           |  6 ++--
- flang/include/flang/Evaluate/variable.h       |  4 +--
+ flang/include/flang/Evaluate/type.h           |  6 ++---
+ flang/include/flang/Evaluate/variable.h       |  4 ++--
  .../flang/Frontend/CompilerInvocation.h       |  2 +-
  .../include/flang/Frontend/FrontendOptions.h  |  2 +-
- flang/include/flang/ISO_Fortran_binding.h     | 16 ++++++---
+ flang/include/flang/ISO_Fortran_binding.h     | 16 +++++++++----
  flang/include/flang/Lower/AbstractConverter.h |  2 +-
  flang/include/flang/Lower/Bridge.h            |  2 +-
  flang/include/flang/Lower/CallInterface.h     |  2 +-
  flang/include/flang/Lower/ConvertType.h       |  2 +-
  flang/include/flang/Lower/LoweringOptions.h   |  2 +-
- flang/include/flang/Lower/PFTBuilder.h        |  4 +--
+ flang/include/flang/Lower/PFTBuilder.h        |  4 ++--
  flang/include/flang/Lower/Support/Utils.h     |  2 +-
  flang/include/flang/Lower/SymbolMap.h         |  2 +-
  .../flang/Optimizer/Builder/FIRBuilder.h      |  2 +-
@@ -250,54 +251,54 @@ Subject: [PATCH 1/2] [Flang][NFC] Move runtime library files to flang-rt
  .../flang/Optimizer/Support/TypeCode.h        |  2 +-
  flang/include/flang/Optimizer/Support/Utils.h |  2 +-
  flang/include/flang/Parser/char-block.h       |  2 +-
- flang/include/flang/Parser/dump-parse-tree.h  |  4 +--
- flang/include/flang/Parser/message.h          |  4 +--
+ flang/include/flang/Parser/dump-parse-tree.h  |  4 ++--
+ flang/include/flang/Parser/message.h          |  4 ++--
  flang/include/flang/Parser/parse-state.h      |  2 +-
- flang/include/flang/Parser/parse-tree.h       |  4 +--
+ flang/include/flang/Parser/parse-tree.h       |  4 ++--
  flang/include/flang/Parser/parsing.h          |  2 +-
  flang/include/flang/Parser/provenance.h       |  2 +-
  flang/include/flang/Parser/source.h           |  2 +-
  flang/include/flang/Parser/user-state.h       |  2 +-
- flang/include/flang/Runtime/allocatable.h     |  5 ++-
+ flang/include/flang/Runtime/allocatable.h     |  5 +++-
  .../include/flang/Runtime/descriptor-consts.h |  2 +-
  flang/include/flang/Runtime/io-api.h          |  2 +-
- flang/include/flang/Runtime/pointer.h         |  8 +++--
- flang/include/flang/Runtime/random.h          |  5 +++
+ flang/include/flang/Runtime/pointer.h         |  8 +++++--
+ flang/include/flang/Runtime/random.h          |  5 ++++
  flang/include/flang/Runtime/support.h         |  2 +-
- flang/include/flang/Semantics/expression.h    |  4 +--
+ flang/include/flang/Semantics/expression.h    |  4 ++--
  .../flang/Semantics/runtime-type-info.h       |  2 +-
- flang/include/flang/Semantics/scope.h         |  4 +--
- flang/include/flang/Semantics/semantics.h     |  5 +--
- flang/include/flang/Semantics/symbol.h        |  4 +--
+ flang/include/flang/Semantics/scope.h         |  4 ++--
+ flang/include/flang/Semantics/semantics.h     |  5 ++--
+ flang/include/flang/Semantics/symbol.h        |  4 ++--
  flang/include/flang/Semantics/tools.h         |  2 +-
  flang/include/flang/Semantics/type.h          |  2 +-
- .../{Common => Support}/Fortran-features.h    | 10 +++---
- .../flang/{Common => Support}/Fortran.h       | 12 +++----
+ .../{Common => Support}/Fortran-features.h    | 10 ++++----
+ .../flang/{Common => Support}/Fortran.h       | 12 +++++-----
  .../flang/{Common => Support}/LangOptions.def |  0
- .../flang/{Common => Support}/LangOptions.h   | 14 ++++----
+ .../flang/{Common => Support}/LangOptions.h   | 14 +++++------
  .../{Common => Support}/MathOptionsBase.def   |  0
- .../{Common => Support}/MathOptionsBase.h     | 14 ++++----
- .../{Common => Support}/OpenMP-features.h     |  8 ++---
- .../flang/{Common => Support}/Version.h       |  8 ++---
- .../flang/{Common => Support}/default-kinds.h | 10 +++---
- .../flang/{Common => Support}/indirection.h   | 10 +++---
- .../flang/{Common => Support}/interval.h      | 10 +++---
- .../{Common => Support}/reference-counted.h   |  8 ++---
- .../flang/{Common => Support}/reference.h     |  8 ++---
- .../static-multimap-view.h                    |  8 ++---
- .../flang/{Common => Support}/template.h      | 10 +++---
- .../flang/{Common => Support}/unwrap.h        | 12 +++----
- .../flang/Testing}/fp-testing.h               | 14 ++++++--
- .../flang/Testing}/testing.h                  | 14 ++++++--
- flang/include/flang/Tools/CrossToolHelpers.h  |  4 +--
- flang/lib/Common/CMakeLists.txt               | 16 ++++-----
- .../big-radix-floating-point.h                | 12 +++----
- .../{Decimal => Common}/binary-to-decimal.cpp |  4 +--
- .../{Decimal => Common}/decimal-to-binary.cpp |  6 ++--
- flang/lib/Decimal/CMakeLists.txt              | 20 +++++------
+ .../{Common => Support}/MathOptionsBase.h     | 14 +++++------
+ .../{Common => Support}/OpenMP-features.h     |  8 +++----
+ .../flang/{Common => Support}/Version.h       |  8 +++----
+ .../flang/{Common => Support}/default-kinds.h | 10 ++++----
+ .../flang/{Common => Support}/indirection.h   | 10 ++++----
+ .../flang/{Common => Support}/interval.h      | 10 ++++----
+ .../{Common => Support}/reference-counted.h   |  8 +++----
+ .../flang/{Common => Support}/reference.h     |  8 +++----
+ .../static-multimap-view.h                    |  8 +++----
+ .../flang/{Common => Support}/template.h      | 10 ++++----
+ .../flang/{Common => Support}/unwrap.h        | 12 +++++-----
+ .../flang/Testing}/fp-testing.h               | 14 ++++++++---
+ .../flang/Testing}/testing.h                  | 14 ++++++++---
+ flang/include/flang/Tools/CrossToolHelpers.h  |  4 ++--
+ flang/lib/Common/CMakeLists.txt               | 16 ++++++-------
+ .../big-radix-floating-point.h                | 12 +++++-----
+ .../{Decimal => Common}/binary-to-decimal.cpp |  4 ++--
+ .../{Decimal => Common}/decimal-to-binary.cpp |  6 ++---
+ flang/lib/Decimal/CMakeLists.txt              | 20 ++++++++--------
  flang/lib/Evaluate/call.cpp                   |  2 +-
  flang/lib/Evaluate/characteristics.cpp        |  2 +-
- flang/lib/Evaluate/fold-implementation.h      |  6 ++--
+ flang/lib/Evaluate/fold-implementation.h      |  6 ++---
  flang/lib/Evaluate/formatting.cpp             |  2 +-
  flang/lib/Evaluate/intrinsics-library.cpp     |  2 +-
  flang/lib/Evaluate/intrinsics.cpp             |  2 +-
@@ -305,11 +306,11 @@ Subject: [PATCH 1/2] [Flang][NFC] Move runtime library files to flang-rt
  flang/lib/Evaluate/shape.cpp                  |  2 +-
  flang/lib/Evaluate/target.cpp                 |  2 +-
  flang/lib/Frontend/CompilerInstance.cpp       |  2 +-
- flang/lib/Frontend/CompilerInvocation.cpp     |  6 ++--
+ flang/lib/Frontend/CompilerInvocation.cpp     |  6 ++---
  flang/lib/Frontend/FrontendActions.cpp        |  2 +-
  flang/lib/Lower/Bridge.cpp                    |  2 +-
  flang/lib/Lower/CallInterface.cpp             |  2 +-
- flang/lib/Lower/ConvertExpr.cpp               |  4 +--
+ flang/lib/Lower/ConvertExpr.cpp               |  4 ++--
  flang/lib/Lower/Mangler.cpp                   |  2 +-
  flang/lib/Optimizer/Builder/CMakeLists.txt    |  2 +-
  flang/lib/Optimizer/Builder/IntrinsicCall.cpp |  2 +-
@@ -325,12 +326,12 @@ Subject: [PATCH 1/2] [Flang][NFC] Move runtime library files to flang-rt
  .../Transforms/SimplifyIntrinsics.cpp         |  2 +-
  .../lib/Optimizer/Transforms/StackReclaim.cpp |  2 +-
  flang/lib/Optimizer/Transforms/VScaleAttr.cpp |  2 +-
- flang/lib/Parser/basic-parsers.h              |  4 +--
+ flang/lib/Parser/basic-parsers.h              |  4 ++--
  flang/lib/Parser/parse-tree.cpp               |  2 +-
  flang/lib/Parser/prescan.h                    |  2 +-
- flang/lib/Parser/unparse.cpp                  |  4 +--
+ flang/lib/Parser/unparse.cpp                  |  4 ++--
  flang/lib/Semantics/assignment.h              |  2 +-
- flang/lib/Semantics/check-case.cpp            |  4 +--
+ flang/lib/Semantics/check-case.cpp            |  4 ++--
  flang/lib/Semantics/check-coarray.cpp         |  2 +-
  flang/lib/Semantics/check-cuda.cpp            |  2 +-
  flang/lib/Semantics/check-data.h              |  2 +-
@@ -339,32 +340,31 @@ Subject: [PATCH 1/2] [Flang][NFC] Move runtime library files to flang-rt
  flang/lib/Semantics/check-select-rank.cpp     |  2 +-
  flang/lib/Semantics/check-select-type.cpp     |  2 +-
  flang/lib/Semantics/check-stop.cpp            |  2 +-
- flang/lib/Semantics/data-to-inits.h           |  4 +--
+ flang/lib/Semantics/data-to-inits.h           |  4 ++--
  flang/lib/Semantics/expression.cpp            |  2 +-
  flang/lib/Semantics/pointer-assignment.cpp    |  2 +-
  flang/lib/Semantics/resolve-labels.cpp        |  2 +-
- flang/lib/Semantics/resolve-names-utils.cpp   |  6 ++--
- flang/lib/Semantics/resolve-names.cpp         |  6 ++--
+ flang/lib/Semantics/resolve-names-utils.cpp   |  6 ++---
+ flang/lib/Semantics/resolve-names.cpp         |  6 ++---
  flang/lib/Semantics/rewrite-parse-tree.cpp    |  2 +-
  flang/lib/Semantics/semantics.cpp             |  2 +-
- flang/lib/Semantics/tools.cpp                 |  4 +--
- .../{Common => Support}/Fortran-features.cpp  |  6 ++--
- flang/lib/{Common => Support}/Fortran.cpp     |  6 ++--
- flang/lib/{Common => Support}/LangOptions.cpp |  6 ++--
+ flang/lib/Semantics/tools.cpp                 |  4 ++--
+ .../{Common => Support}/Fortran-features.cpp  |  6 ++---
+ flang/lib/{Common => Support}/Fortran.cpp     |  6 ++---
+ flang/lib/{Common => Support}/LangOptions.cpp |  6 ++---
  .../lib/{Common => Support}/OpenMP-utils.cpp  |  2 +-
- flang/lib/{Common => Support}/Version.cpp     |  4 +--
- .../lib/{Common => Support}/default-kinds.cpp |  4 +--
+ flang/lib/{Common => Support}/Version.cpp     |  4 ++--
+ .../lib/{Common => Support}/default-kinds.cpp |  4 ++--
  flang/lib/{Common => Support}/idioms.cpp      |  2 +-
- .../Evaluate => lib/Testing}/fp-testing.cpp   | 12 +++++--
- .../Evaluate => lib/Testing}/testing.cpp      | 10 +++++-
- flang/runtime/CUDA/memmove-function.cpp       | 35 -------------------
- flang/runtime/config.h.cmake                  | 16 ---------
- flang/tools/bbc/bbc.cpp                       | 10 +++---
- flang/tools/f18-parse-demo/f18-parse-demo.cpp |  4 +--
- flang/unittests/CMakeLists.txt                |  4 ++-
+ .../Evaluate => lib/Testing}/fp-testing.cpp   | 12 ++++++++--
+ .../Evaluate => lib/Testing}/testing.cpp      | 10 +++++++-
+ flang/runtime/config.h.cmake                  | 16 -------------
+ flang/tools/bbc/bbc.cpp                       | 10 ++++----
+ flang/tools/f18-parse-demo/f18-parse-demo.cpp |  4 ++--
+ flang/unittests/CMakeLists.txt                |  4 +++-
  flang/unittests/Decimal/quick-sanity-test.cpp |  2 +-
  flang/unittests/Decimal/thorough-test.cpp     |  2 +-
- flang/unittests/Evaluate/CMakeLists.txt       | 20 +++--------
+ flang/unittests/Evaluate/CMakeLists.txt       | 20 ++++------------
  .../Evaluate/bit-population-count.cpp         |  2 +-
  flang/unittests/Evaluate/expression.cpp       |  2 +-
  flang/unittests/Evaluate/folding.cpp          |  2 +-
@@ -372,9 +372,9 @@ Subject: [PATCH 1/2] [Flang][NFC] Move runtime library files to flang-rt
  flang/unittests/Evaluate/intrinsics.cpp       |  2 +-
  .../Evaluate/leading-zero-bit-count.cpp       |  2 +-
  flang/unittests/Evaluate/logical.cpp          |  2 +-
- flang/unittests/Evaluate/real.cpp             |  4 +--
+ flang/unittests/Evaluate/real.cpp             |  4 ++--
  flang/unittests/Evaluate/uint128.cpp          |  2 +-
- 370 files changed, 990 insertions(+), 888 deletions(-)
+ 370 files changed, 990 insertions(+), 853 deletions(-)
  create mode 100644 flang-rt/.clang-format
  create mode 100644 flang-rt/cmake/config.h.cmake.in
  rename {flang/include/flang/Runtime => flang-rt/include/flang-rt}/CUDA/allocator.h (78%)
@@ -383,13 +383,6 @@ Subject: [PATCH 1/2] [Flang][NFC] Move runtime library files to flang-rt
  rename {flang/include/flang/Runtime => flang-rt/include/flang-rt}/descriptor.h (98%)
  rename {flang/include/flang/Runtime => flang-rt/include/flang-rt}/memory.h (96%)
  rename {flang/include/flang/Runtime => flang-rt/include/flang-rt}/type-code.h (91%)
- rename {flang/runtime/CUDA => flang-rt/lib/CufRuntime}/CMakeLists.txt (93%)
- rename {flang/runtime/CUDA => flang-rt/lib/CufRuntime}/allocatable.cpp (94%)
- rename {flang/runtime/CUDA => flang-rt/lib/CufRuntime}/allocator.cpp (82%)
- rename {flang/runtime/CUDA => flang-rt/lib/CufRuntime}/descriptor.cpp (90%)
- rename {flang/runtime/CUDA => flang-rt/lib/CufRuntime}/kernel.cpp (97%)
- rename {flang/runtime/CUDA => flang-rt/lib/CufRuntime}/memory.cpp (97%)
- rename {flang/runtime/CUDA => flang-rt/lib/CufRuntime}/registration.cpp (92%)
  rename {flang/runtime/Float128Math => flang-rt/lib/FortranFloat128Math}/CMakeLists.txt (98%)
  rename {flang/runtime/Float128Math => flang-rt/lib/FortranFloat128Math}/acos.cpp (87%)
  rename {flang/runtime/Float128Math => flang-rt/lib/FortranFloat128Math}/acosh.cpp (87%)
@@ -445,6 +438,14 @@ Subject: [PATCH 1/2] [Flang][NFC] Move runtime library files to flang-rt
  rename {flang/runtime/Float128Math => flang-rt/lib/FortranFloat128Math}/y1.cpp (87%)
  rename {flang/runtime/Float128Math => flang-rt/lib/FortranFloat128Math}/yn.cpp (87%)
  rename {flang/runtime => flang-rt/lib/flang_rt}/CMakeLists.txt (96%)
+ rename {flang/runtime => flang-rt/lib/flang_rt}/CUDA/CMakeLists.txt (93%)
+ rename {flang/runtime => flang-rt/lib/flang_rt}/CUDA/allocatable.cpp (94%)
+ rename {flang/runtime => flang-rt/lib/flang_rt}/CUDA/allocator.cpp (82%)
+ rename {flang/runtime => flang-rt/lib/flang_rt}/CUDA/descriptor.cpp (90%)
+ rename {flang/runtime => flang-rt/lib/flang_rt}/CUDA/kernel.cpp (97%)
+ rename {flang/runtime => flang-rt/lib/flang_rt}/CUDA/memmove-function.cpp (93%)
+ rename {flang/runtime => flang-rt/lib/flang_rt}/CUDA/memory.cpp (97%)
+ rename {flang/runtime => flang-rt/lib/flang_rt}/CUDA/registration.cpp (92%)
  rename {flang/runtime => flang-rt/lib/flang_rt}/ISO_Fortran_binding.cpp (97%)
  rename {flang/runtime => flang-rt/lib/flang_rt}/ISO_Fortran_util.h (90%)
  rename {flang/runtime => flang-rt/lib/flang_rt}/allocatable.cpp (97%)
@@ -618,7 +619,6 @@ Subject: [PATCH 1/2] [Flang][NFC] Move runtime library files to flang-rt
  rename flang/lib/{Common => Support}/idioms.cpp (89%)
  rename flang/{unittests/Evaluate => lib/Testing}/fp-testing.cpp (87%)
  rename flang/{unittests/Evaluate => lib/Testing}/testing.cpp (88%)
- delete mode 100644 flang/runtime/CUDA/memmove-function.cpp
  delete mode 100644 flang/runtime/config.h.cmake
 
 diff --git a/flang-rt/.clang-format b/flang-rt/.clang-format
@@ -889,178 +889,6 @@ index dd3a9f2690ee..1d057481261a 100644
  } // namespace Fortran::runtime
 -#endif // FORTRAN_RUNTIME_TYPE_CODE_H_
 +#endif /* FLANG_RT_TYPE_CODE_H_ */
-diff --git a/flang/runtime/CUDA/CMakeLists.txt b/flang-rt/lib/CufRuntime/CMakeLists.txt
-similarity index 93%
-rename from flang/runtime/CUDA/CMakeLists.txt
-rename to flang-rt/lib/CufRuntime/CMakeLists.txt
-index 3a88824826de..6cc70a7d14a5 100644
---- a/flang/runtime/CUDA/CMakeLists.txt
-+++ b/flang-rt/lib/CufRuntime/CMakeLists.txt
-@@ -1,4 +1,4 @@
--#===-- runtime/CUDA/CMakeLists.txt -----------------------------------------===#
-+#===-- lib/CufRuntime/CMakeLists.txt ---------------------------------------===#
- #
- # Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
- # See https://llvm.org/LICENSE.txt for license information.
-diff --git a/flang/runtime/CUDA/allocatable.cpp b/flang-rt/lib/CufRuntime/allocatable.cpp
-similarity index 94%
-rename from flang/runtime/CUDA/allocatable.cpp
-rename to flang-rt/lib/CufRuntime/allocatable.cpp
-index 9be54e890690..bff1c67d1b76 100644
---- a/flang/runtime/CUDA/allocatable.cpp
-+++ b/flang-rt/lib/CufRuntime/allocatable.cpp
-@@ -1,4 +1,4 @@
--//===-- runtime/CUDA/allocatable.cpp --------------------------------------===//
-+//===-- lib/CufRuntime/allocatable.cpp --------------------------*- C++ -*-===//
- //
- // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
- // See https://llvm.org/LICENSE.txt for license information.
-@@ -7,9 +7,10 @@
- //===----------------------------------------------------------------------===//
- 
- #include "flang/Runtime/CUDA/allocatable.h"
--#include "../assign-impl.h"
--#include "../stat.h"
--#include "../terminator.h"
-+#include "flang-rt/descriptor.h"
-+#include "../flang_rt/assign-impl.h"
-+#include "../flang_rt/stat.h"
-+#include "../flang_rt/terminator.h"
- #include "flang/Runtime/CUDA/common.h"
- #include "flang/Runtime/CUDA/descriptor.h"
- #include "flang/Runtime/CUDA/memmove-function.h"
-diff --git a/flang/runtime/CUDA/allocator.cpp b/flang-rt/lib/CufRuntime/allocator.cpp
-similarity index 82%
-rename from flang/runtime/CUDA/allocator.cpp
-rename to flang-rt/lib/CufRuntime/allocator.cpp
-index 85b3daf65a8b..143dc10f5ba5 100644
---- a/flang/runtime/CUDA/allocator.cpp
-+++ b/flang-rt/lib/CufRuntime/allocator.cpp
-@@ -1,4 +1,4 @@
--//===-- runtime/CUDA/allocator.cpp ----------------------------------------===//
-+//===-- lib/CufRuntime/allocator.cpp ----------------------------*- C++ -*-===//
- //
- // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
- // See https://llvm.org/LICENSE.txt for license information.
-@@ -6,15 +6,15 @@
- //
- //===----------------------------------------------------------------------===//
- 
--#include "flang/Runtime/CUDA/allocator.h"
--#include "../derived.h"
--#include "../stat.h"
--#include "../terminator.h"
--#include "../type-info.h"
--#include "flang/Common/Fortran.h"
--#include "flang/ISO_Fortran_binding_wrapper.h"
-+#include "flang-rt/CUDA/allocator.h"
-+#include "flang-rt/allocator-registry.h"
-+#include "../flang_rt/derived.h"
-+#include "../flang_rt/stat.h"
-+#include "../flang_rt/terminator.h"
-+#include "../flang_rt/type-info.h"
-+#include "flang/Common/ISO_Fortran_binding_wrapper.h"
- #include "flang/Runtime/CUDA/common.h"
--#include "flang/Runtime/allocator-registry.h"
-+#include "flang/Support/Fortran.h"
- 
- #include "cuda_runtime.h"
- 
-diff --git a/flang/runtime/CUDA/descriptor.cpp b/flang-rt/lib/CufRuntime/descriptor.cpp
-similarity index 90%
-rename from flang/runtime/CUDA/descriptor.cpp
-rename to flang-rt/lib/CufRuntime/descriptor.cpp
-index 947eeb66aa3d..1f72088d2527 100644
---- a/flang/runtime/CUDA/descriptor.cpp
-+++ b/flang-rt/lib/CufRuntime/descriptor.cpp
-@@ -1,4 +1,4 @@
--//===-- runtime/CUDA/descriptor.cpp ---------------------------------------===//
-+//===-- lib/CufRuntime/descriptor.cpp ---------------------------*- C++ -*-===//
- //
- // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
- // See https://llvm.org/LICENSE.txt for license information.
-@@ -7,10 +7,10 @@
- //===----------------------------------------------------------------------===//
- 
- #include "flang/Runtime/CUDA/descriptor.h"
--#include "../terminator.h"
--#include "flang/Runtime/CUDA/allocator.h"
-+#include "flang-rt/CUDA/allocator.h"
-+#include "flang-rt/descriptor.h"
-+#include "../flang_rt/terminator.h"
- #include "flang/Runtime/CUDA/common.h"
--#include "flang/Runtime/descriptor.h"
- 
- #include "cuda_runtime.h"
- 
-diff --git a/flang/runtime/CUDA/kernel.cpp b/flang-rt/lib/CufRuntime/kernel.cpp
-similarity index 97%
-rename from flang/runtime/CUDA/kernel.cpp
-rename to flang-rt/lib/CufRuntime/kernel.cpp
-index bdc04ccb1767..f87c6dd1158c 100644
---- a/flang/runtime/CUDA/kernel.cpp
-+++ b/flang-rt/lib/CufRuntime/kernel.cpp
-@@ -1,4 +1,4 @@
--//===-- runtime/CUDA/kernel.cpp -------------------------------------------===//
-+//===-- lib/CufRuntime/kernel.cpp -------------------------------*- C++ -*-===//
- //
- // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
- // See https://llvm.org/LICENSE.txt for license information.
-@@ -7,7 +7,7 @@
- //===----------------------------------------------------------------------===//
- 
- #include "flang/Runtime/CUDA/kernel.h"
--#include "../terminator.h"
-+#include "../flang_rt/terminator.h"
- #include "flang/Runtime/CUDA/common.h"
- 
- #include "cuda_runtime.h"
-diff --git a/flang/runtime/CUDA/memory.cpp b/flang-rt/lib/CufRuntime/memory.cpp
-similarity index 97%
-rename from flang/runtime/CUDA/memory.cpp
-rename to flang-rt/lib/CufRuntime/memory.cpp
-index 0bbb493d2db9..04d49fc3e4f8 100644
---- a/flang/runtime/CUDA/memory.cpp
-+++ b/flang-rt/lib/CufRuntime/memory.cpp
-@@ -1,4 +1,4 @@
--//===-- runtime/CUDA/memory.cpp -------------------------------------------===//
-+//===-- lib/CufRuntime/memory.cpp -------------------------------*- C++ -*-===//
- //
- // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
- // See https://llvm.org/LICENSE.txt for license information.
-@@ -7,8 +7,8 @@
- //===----------------------------------------------------------------------===//
- 
- #include "flang/Runtime/CUDA/memory.h"
--#include "../assign-impl.h"
--#include "../terminator.h"
-+#include "../flang_rt/assign-impl.h"
-+#include "../flang_rt/terminator.h"
- #include "flang/Runtime/CUDA/common.h"
- #include "flang/Runtime/CUDA/descriptor.h"
- #include "flang/Runtime/CUDA/memmove-function.h"
-diff --git a/flang/runtime/CUDA/registration.cpp b/flang-rt/lib/CufRuntime/registration.cpp
-similarity index 92%
-rename from flang/runtime/CUDA/registration.cpp
-rename to flang-rt/lib/CufRuntime/registration.cpp
-index b7b6ef389bff..8253288f886c 100644
---- a/flang/runtime/CUDA/registration.cpp
-+++ b/flang-rt/lib/CufRuntime/registration.cpp
-@@ -1,4 +1,4 @@
--//===-- runtime/CUDA/registration.cpp -------------------------------------===//
-+//===-- lib/CufRuntime/registration.cpp -------------------------*- C++ -*-===//
- //
- // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
- // See https://llvm.org/LICENSE.txt for license information.
-@@ -7,7 +7,7 @@
- //===----------------------------------------------------------------------===//
- 
- #include "flang/Runtime/CUDA/registration.h"
--#include "../terminator.h"
-+#include "../flang_rt/terminator.h"
- #include "flang/Runtime/CUDA/common.h"
- 
- #include "cuda_runtime.h"
 diff --git a/flang/runtime/Float128Math/CMakeLists.txt b/flang-rt/lib/FortranFloat128Math/CMakeLists.txt
 similarity index 98%
 rename from flang/runtime/Float128Math/CMakeLists.txt
@@ -1826,7 +1654,7 @@ diff --git a/flang/runtime/CMakeLists.txt b/flang-rt/lib/flang_rt/CMakeLists.txt
 similarity index 96%
 rename from flang/runtime/CMakeLists.txt
 rename to flang-rt/lib/flang_rt/CMakeLists.txt
-index fbfaae9a8806..2f8af14ee99c 100644
+index fbfaae9a8806..6806465e3ae2 100644
 --- a/flang/runtime/CMakeLists.txt
 +++ b/flang-rt/lib/flang_rt/CMakeLists.txt
 @@ -1,4 +1,4 @@
@@ -1871,13 +1699,191 @@ index fbfaae9a8806..2f8af14ee99c 100644
  
  set(sources
    ISO_Fortran_binding.cpp
-@@ -322,5 +324,5 @@ if (TARGET flang AND TARGET module_files)
- endif()
+diff --git a/flang/runtime/CUDA/CMakeLists.txt b/flang-rt/lib/flang_rt/CUDA/CMakeLists.txt
+similarity index 93%
+rename from flang/runtime/CUDA/CMakeLists.txt
+rename to flang-rt/lib/flang_rt/CUDA/CMakeLists.txt
+index 3a88824826de..1cd119b86fcb 100644
+--- a/flang/runtime/CUDA/CMakeLists.txt
++++ b/flang-rt/lib/flang_rt/CUDA/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-#===-- runtime/CUDA/CMakeLists.txt -----------------------------------------===#
++#===-- lib/flang_rt/CUDA/CMakeLists.txt ------------------------------------===#
+ #
+ # Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+ # See https://llvm.org/LICENSE.txt for license information.
+diff --git a/flang/runtime/CUDA/allocatable.cpp b/flang-rt/lib/flang_rt/CUDA/allocatable.cpp
+similarity index 94%
+rename from flang/runtime/CUDA/allocatable.cpp
+rename to flang-rt/lib/flang_rt/CUDA/allocatable.cpp
+index 9be54e890690..9bacc9392bda 100644
+--- a/flang/runtime/CUDA/allocatable.cpp
++++ b/flang-rt/lib/flang_rt/CUDA/allocatable.cpp
+@@ -1,4 +1,4 @@
+-//===-- runtime/CUDA/allocatable.cpp --------------------------------------===//
++//===-- lib/flang_rt/CUDA/allocatable.cpp -----------------------*- C++ -*-===//
+ //
+ // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+ // See https://llvm.org/LICENSE.txt for license information.
+@@ -7,9 +7,10 @@
+ //===----------------------------------------------------------------------===//
  
- if (FLANG_CUF_RUNTIME)
--  add_subdirectory(CUDA)
-+  add_subdirectory(../CufRuntime CUDA)
- endif()
+ #include "flang/Runtime/CUDA/allocatable.h"
+-#include "../assign-impl.h"
+-#include "../stat.h"
+-#include "../terminator.h"
++#include "flang-rt/descriptor.h"
++#include "../flang_rt/assign-impl.h"
++#include "../flang_rt/stat.h"
++#include "../flang_rt/terminator.h"
+ #include "flang/Runtime/CUDA/common.h"
+ #include "flang/Runtime/CUDA/descriptor.h"
+ #include "flang/Runtime/CUDA/memmove-function.h"
+diff --git a/flang/runtime/CUDA/allocator.cpp b/flang-rt/lib/flang_rt/CUDA/allocator.cpp
+similarity index 82%
+rename from flang/runtime/CUDA/allocator.cpp
+rename to flang-rt/lib/flang_rt/CUDA/allocator.cpp
+index 85b3daf65a8b..2e962a5ccc72 100644
+--- a/flang/runtime/CUDA/allocator.cpp
++++ b/flang-rt/lib/flang_rt/CUDA/allocator.cpp
+@@ -1,4 +1,4 @@
+-//===-- runtime/CUDA/allocator.cpp ----------------------------------------===//
++//===-- lib/flang_rt/CUDA/allocator.cpp -------------------------*- C++ -*-===//
+ //
+ // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+ // See https://llvm.org/LICENSE.txt for license information.
+@@ -6,15 +6,15 @@
+ //
+ //===----------------------------------------------------------------------===//
+ 
+-#include "flang/Runtime/CUDA/allocator.h"
+-#include "../derived.h"
+-#include "../stat.h"
+-#include "../terminator.h"
+-#include "../type-info.h"
+-#include "flang/Common/Fortran.h"
+-#include "flang/ISO_Fortran_binding_wrapper.h"
++#include "flang-rt/CUDA/allocator.h"
++#include "flang-rt/allocator-registry.h"
++#include "../flang_rt/derived.h"
++#include "../flang_rt/stat.h"
++#include "../flang_rt/terminator.h"
++#include "../flang_rt/type-info.h"
++#include "flang/Common/ISO_Fortran_binding_wrapper.h"
+ #include "flang/Runtime/CUDA/common.h"
+-#include "flang/Runtime/allocator-registry.h"
++#include "flang/Support/Fortran.h"
+ 
+ #include "cuda_runtime.h"
+ 
+diff --git a/flang/runtime/CUDA/descriptor.cpp b/flang-rt/lib/flang_rt/CUDA/descriptor.cpp
+similarity index 90%
+rename from flang/runtime/CUDA/descriptor.cpp
+rename to flang-rt/lib/flang_rt/CUDA/descriptor.cpp
+index 947eeb66aa3d..5e4e5f45744d 100644
+--- a/flang/runtime/CUDA/descriptor.cpp
++++ b/flang-rt/lib/flang_rt/CUDA/descriptor.cpp
+@@ -1,4 +1,4 @@
+-//===-- runtime/CUDA/descriptor.cpp ---------------------------------------===//
++//===-- lib/flang_rt/CUDA/descriptor.cpp ------------------------*- C++ -*-===//
+ //
+ // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+ // See https://llvm.org/LICENSE.txt for license information.
+@@ -7,10 +7,10 @@
+ //===----------------------------------------------------------------------===//
+ 
+ #include "flang/Runtime/CUDA/descriptor.h"
+-#include "../terminator.h"
+-#include "flang/Runtime/CUDA/allocator.h"
++#include "flang-rt/CUDA/allocator.h"
++#include "flang-rt/descriptor.h"
++#include "../flang_rt/terminator.h"
+ #include "flang/Runtime/CUDA/common.h"
+-#include "flang/Runtime/descriptor.h"
+ 
+ #include "cuda_runtime.h"
+ 
+diff --git a/flang/runtime/CUDA/kernel.cpp b/flang-rt/lib/flang_rt/CUDA/kernel.cpp
+similarity index 97%
+rename from flang/runtime/CUDA/kernel.cpp
+rename to flang-rt/lib/flang_rt/CUDA/kernel.cpp
+index bdc04ccb1767..897406211f9a 100644
+--- a/flang/runtime/CUDA/kernel.cpp
++++ b/flang-rt/lib/flang_rt/CUDA/kernel.cpp
+@@ -1,4 +1,4 @@
+-//===-- runtime/CUDA/kernel.cpp -------------------------------------------===//
++//===-- lib/flang_rt/CUDA/kernel.cpp ----------------------------*- C++ -*-===//
+ //
+ // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+ // See https://llvm.org/LICENSE.txt for license information.
+@@ -7,7 +7,7 @@
+ //===----------------------------------------------------------------------===//
+ 
+ #include "flang/Runtime/CUDA/kernel.h"
+-#include "../terminator.h"
++#include "../flang_rt/terminator.h"
+ #include "flang/Runtime/CUDA/common.h"
+ 
+ #include "cuda_runtime.h"
+diff --git a/flang/runtime/CUDA/memmove-function.cpp b/flang-rt/lib/flang_rt/CUDA/memmove-function.cpp
+similarity index 93%
+rename from flang/runtime/CUDA/memmove-function.cpp
+rename to flang-rt/lib/flang_rt/CUDA/memmove-function.cpp
+index 3ba9fa7e0f7f..6a0e8ed3f9ec 100644
+--- a/flang/runtime/CUDA/memmove-function.cpp
++++ b/flang-rt/lib/flang_rt/CUDA/memmove-function.cpp
+@@ -1,4 +1,4 @@
+-//===-- runtime/CUDA/memmove-function.cpp ---------------------------------===//
++//===-- lib/flang_rt/CUDA/memmove-function.cpp ------------------*- C++ -*-===//
+ //
+ // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+ // See https://llvm.org/LICENSE.txt for license information.
+diff --git a/flang/runtime/CUDA/memory.cpp b/flang-rt/lib/flang_rt/CUDA/memory.cpp
+similarity index 97%
+rename from flang/runtime/CUDA/memory.cpp
+rename to flang-rt/lib/flang_rt/CUDA/memory.cpp
+index 0bbb493d2db9..89d36f9165a1 100644
+--- a/flang/runtime/CUDA/memory.cpp
++++ b/flang-rt/lib/flang_rt/CUDA/memory.cpp
+@@ -1,4 +1,4 @@
+-//===-- runtime/CUDA/memory.cpp -------------------------------------------===//
++//===-- lib/flang_rt/CUDA/memory.cpp ----------------------------*- C++ -*-===//
+ //
+ // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+ // See https://llvm.org/LICENSE.txt for license information.
+@@ -7,8 +7,8 @@
+ //===----------------------------------------------------------------------===//
+ 
+ #include "flang/Runtime/CUDA/memory.h"
+-#include "../assign-impl.h"
+-#include "../terminator.h"
++#include "../flang_rt/assign-impl.h"
++#include "../flang_rt/terminator.h"
+ #include "flang/Runtime/CUDA/common.h"
+ #include "flang/Runtime/CUDA/descriptor.h"
+ #include "flang/Runtime/CUDA/memmove-function.h"
+diff --git a/flang/runtime/CUDA/registration.cpp b/flang-rt/lib/flang_rt/CUDA/registration.cpp
+similarity index 92%
+rename from flang/runtime/CUDA/registration.cpp
+rename to flang-rt/lib/flang_rt/CUDA/registration.cpp
+index b7b6ef389bff..efb311881177 100644
+--- a/flang/runtime/CUDA/registration.cpp
++++ b/flang-rt/lib/flang_rt/CUDA/registration.cpp
+@@ -1,4 +1,4 @@
+-//===-- runtime/CUDA/registration.cpp -------------------------------------===//
++//===-- lib/flang_rt/CUDA/registration.cpp ----------------------*- C++ -*-===//
+ //
+ // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+ // See https://llvm.org/LICENSE.txt for license information.
+@@ -7,7 +7,7 @@
+ //===----------------------------------------------------------------------===//
+ 
+ #include "flang/Runtime/CUDA/registration.h"
+-#include "../terminator.h"
++#include "../flang_rt/terminator.h"
+ #include "flang/Runtime/CUDA/common.h"
+ 
+ #include "cuda_runtime.h"
 diff --git a/flang/runtime/ISO_Fortran_binding.cpp b/flang-rt/lib/flang_rt/ISO_Fortran_binding.cpp
 similarity index 97%
 rename from flang/runtime/ISO_Fortran_binding.cpp
@@ -6006,7 +6012,7 @@ index 38f4f7b82e1e..4541b31e566f 100644
  #include <cstddef>
  #include <cstring>
 diff --git a/flang/include/flang/Parser/dump-parse-tree.h b/flang/include/flang/Parser/dump-parse-tree.h
-index 7821d40a644a..124fc670567f 100644
+index 3331520922bc..7e0333a09239 100644
 --- a/flang/include/flang/Parser/dump-parse-tree.h
 +++ b/flang/include/flang/Parser/dump-parse-tree.h
 @@ -14,9 +14,9 @@
@@ -6056,7 +6062,7 @@ index 76cbb3470dc0..36d70b81b792 100644
  #include <cstring>
  #include <list>
 diff --git a/flang/include/flang/Parser/parse-tree.h b/flang/include/flang/Parser/parse-tree.h
-index 2ef593b3e50d..d8f3c84467ff 100644
+index 941d70d38762..2ae1bb4e7b80 100644
 --- a/flang/include/flang/Parser/parse-tree.h
 +++ b/flang/include/flang/Parser/parse-tree.h
 @@ -22,9 +22,9 @@
@@ -7336,7 +7342,7 @@ index 603cb039d20b..51139a6d3725 100644
  
  #include "mlir/IR/Dialect.h"
 diff --git a/flang/lib/Lower/Bridge.cpp b/flang/lib/Lower/Bridge.cpp
-index c7e2635230e9..d0c4f7ca9c8b 100644
+index c7bf42481554..9cc6acb0a752 100644
 --- a/flang/lib/Lower/Bridge.cpp
 +++ b/flang/lib/Lower/Bridge.cpp
 @@ -12,7 +12,6 @@
@@ -7347,7 +7353,7 @@ index c7e2635230e9..d0c4f7ca9c8b 100644
  #include "flang/Lower/Allocatable.h"
  #include "flang/Lower/CallInterface.h"
  #include "flang/Lower/Coarray.h"
-@@ -61,6 +60,7 @@
+@@ -62,6 +61,7 @@
  #include "flang/Semantics/runtime-type-info.h"
  #include "flang/Semantics/symbol.h"
  #include "flang/Semantics/tools.h"
@@ -7482,7 +7488,7 @@ index cba7fa641285..260966f82783 100644
  #include "flang/Optimizer/Dialect/FIRDialect.h"
  #include "flang/Optimizer/Dialect/Support/KindMapping.h"
 diff --git a/flang/lib/Optimizer/Transforms/AddDebugInfo.cpp b/flang/lib/Optimizer/Transforms/AddDebugInfo.cpp
-index 3a437c7a0f01..af17c87d7981 100644
+index a8e9d198ccb9..79e2b360018c 100644
 --- a/flang/lib/Optimizer/Transforms/AddDebugInfo.cpp
 +++ b/flang/lib/Optimizer/Transforms/AddDebugInfo.cpp
 @@ -12,7 +12,6 @@
@@ -7713,7 +7719,7 @@ index 08041f93b14b..e2440ad6fbc4 100644
  #include <optional>
  #include <string>
 diff --git a/flang/lib/Parser/unparse.cpp b/flang/lib/Parser/unparse.cpp
-index 0a6af7435b4a..6b14df7f6c02 100644
+index 58820476c51b..9e3026e1fa8d 100644
 --- a/flang/lib/Parser/unparse.cpp
 +++ b/flang/lib/Parser/unparse.cpp
 @@ -10,13 +10,13 @@
@@ -7787,7 +7793,7 @@ index 6cf61a6b923d..ac1f38801cee 100644
  namespace Fortran::semantics {
  
 diff --git a/flang/lib/Semantics/check-cuda.cpp b/flang/lib/Semantics/check-cuda.cpp
-index d497ac20e701..31e0f2bf73e1 100644
+index d8a563922764..d079f5b6aa53 100644
 --- a/flang/lib/Semantics/check-cuda.cpp
 +++ b/flang/lib/Semantics/check-cuda.cpp
 @@ -7,7 +7,6 @@
@@ -8295,47 +8301,6 @@ index b2f73bf1b265..37f9d88f4886 100644
  #include "llvm/Support/raw_ostream.h"
  #include <cstdarg>
  #include <cstdio>
-diff --git a/flang/runtime/CUDA/memmove-function.cpp b/flang/runtime/CUDA/memmove-function.cpp
-deleted file mode 100644
-index 3ba9fa7e0f7f..000000000000
---- a/flang/runtime/CUDA/memmove-function.cpp
-+++ /dev/null
-@@ -1,35 +0,0 @@
--//===-- runtime/CUDA/memmove-function.cpp ---------------------------------===//
--//
--// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
--// See https://llvm.org/LICENSE.txt for license information.
--// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
--//
--//===----------------------------------------------------------------------===//
--
--#include "flang/Runtime/CUDA/memmove-function.h"
--#include "../terminator.h"
--#include "flang/Runtime/CUDA/common.h"
--
--#include "cuda_runtime.h"
--
--namespace Fortran::runtime::cuda {
--
--void *MemmoveHostToDevice(void *dst, const void *src, std::size_t count) {
--  // TODO: Use cudaMemcpyAsync when we have support for stream.
--  CUDA_REPORT_IF_ERROR(cudaMemcpy(dst, src, count, cudaMemcpyHostToDevice));
--  return dst;
--}
--
--void *MemmoveDeviceToHost(void *dst, const void *src, std::size_t count) {
--  // TODO: Use cudaMemcpyAsync when we have support for stream.
--  CUDA_REPORT_IF_ERROR(cudaMemcpy(dst, src, count, cudaMemcpyDeviceToHost));
--  return dst;
--}
--
--void *MemmoveDeviceToDevice(void *dst, const void *src, std::size_t count) {
--  // TODO: Use cudaMemcpyAsync when we have support for stream.
--  CUDA_REPORT_IF_ERROR(cudaMemcpy(dst, src, count, cudaMemcpyDeviceToDevice));
--  return dst;
--}
--
--} // namespace Fortran::runtime::cuda
 diff --git a/flang/runtime/config.h.cmake b/flang/runtime/config.h.cmake
 deleted file mode 100644
 index a2271be77b8c..000000000000

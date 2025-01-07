@@ -1,4 +1,4 @@
-From d22e55e3b1a706375f9409989d0d8df76fc90526 Mon Sep 17 00:00:00 2001
+From 48b1d738b493358de88d514fc435c8513968eef5 Mon Sep 17 00:00:00 2001
 From: Michael Kruse <llvm-project@meinersbur.de>
 Date: Fri, 27 Sep 2024 09:18:49 +0200
 Subject: [PATCH 2/2] [Flang] LLVM_ENABLE_RUNTIMES=flang-rt
@@ -15,10 +15,16 @@ mechanism.
  .../cmake/modules/AddFlangRTOffload.cmake     |  84 ++--
  flang-rt/cmake/modules/GetToolchainDirs.cmake | 127 ++++++
  flang-rt/lib/CMakeLists.txt                   |  18 +
- flang-rt/lib/CufRuntime/CMakeLists.txt        |  15 +-
  .../lib/FortranFloat128Math/CMakeLists.txt    |  35 +-
  flang-rt/lib/Testing/CMakeLists.txt           |  20 +
  flang-rt/lib/flang_rt/CMakeLists.txt          | 383 ++++++------------
+ flang-rt/lib/flang_rt/CUDA/CMakeLists.txt     |  15 +-
+ flang-rt/lib/flang_rt/CUDA/allocatable.cpp    |   6 +-
+ flang-rt/lib/flang_rt/CUDA/allocator.cpp      |   8 +-
+ flang-rt/lib/flang_rt/CUDA/descriptor.cpp     |   2 +-
+ flang-rt/lib/flang_rt/CUDA/kernel.cpp         |   2 +-
+ flang-rt/lib/flang_rt/CUDA/memory.cpp         |   4 +-
+ flang-rt/lib/flang_rt/CUDA/registration.cpp   |   2 +-
  flang-rt/lib/flang_rt/allocator-registry.cpp  |   4 +-
  flang-rt/lib/flang_rt/environment.cpp         |   4 +-
  flang-rt/lib/flang_rt/io-api-minimal.cpp      |   2 +-
@@ -87,7 +93,7 @@ mechanism.
  flang/unittests/Evaluate/CMakeLists.txt       |  17 +-
  flang/unittests/Frontend/CMakeLists.txt       |   1 +
  runtimes/CMakeLists.txt                       |   2 +-
- 81 files changed, 1981 insertions(+), 1108 deletions(-)
+ 87 files changed, 1993 insertions(+), 1120 deletions(-)
  create mode 100644 flang-rt/.clang-tidy
  create mode 100644 flang-rt/CMakeLists.txt
  create mode 100644 flang-rt/CODE_OWNERS.TXT
@@ -1271,7 +1277,7 @@ index 000000000000..1f251790f22a
 +endfunction()
 diff --git a/flang-rt/lib/CMakeLists.txt b/flang-rt/lib/CMakeLists.txt
 new file mode 100644
-index 000000000000..5d48043a7459
+index 000000000000..8e2e0fbbbc24
 --- /dev/null
 +++ b/flang-rt/lib/CMakeLists.txt
 @@ -0,0 +1,18 @@
@@ -1287,55 +1293,12 @@ index 000000000000..5d48043a7459
 +add_subdirectory(flang_rt)
 +
 +if (FLANG_RT_ENABLE_CUF)
-+  add_subdirectory(CufRuntime)
++  add_subdirectory(flang_rt/CUDA)
 +endif()
 +
 +if (FLANG_RT_INCLUDE_TESTS)
 +  add_subdirectory(Testing)
 +endif ()
-diff --git a/flang-rt/lib/CufRuntime/CMakeLists.txt b/flang-rt/lib/CufRuntime/CMakeLists.txt
-index 6cc70a7d14a5..17256062d678 100644
---- a/flang-rt/lib/CufRuntime/CMakeLists.txt
-+++ b/flang-rt/lib/CufRuntime/CMakeLists.txt
-@@ -6,22 +6,20 @@
- #
- #===------------------------------------------------------------------------===#
- 
--include_directories(${CUDAToolkit_INCLUDE_DIRS})
--
- # libCufRuntime depends on a certain version of CUDA. To be able to have
- # multiple build of this library with different CUDA version, the version is
- # added to the library name.
- set(CUFRT_LIBNAME CufRuntime_cuda_${CUDAToolkit_VERSION_MAJOR})
- 
--add_flang_library(${CUFRT_LIBNAME}
--  allocator.cpp
-+add_flangrt_library(${CUFRT_LIBNAME}
-   allocatable.cpp
-+  allocator.cpp
-   descriptor.cpp
-   kernel.cpp
--  memmove-function.cpp
-   memory.cpp
-   registration.cpp
- )
-+target_include_directories(${CUFRT_LIBNAME} PRIVATE ${CUDAToolkit_INCLUDE_DIRS})
- 
- if (BUILD_SHARED_LIBS)
-   set(CUDA_RT_TARGET CUDA::cudart)
-@@ -31,6 +29,11 @@ endif()
- 
- target_link_libraries(${CUFRT_LIBNAME}
-   PRIVATE
--  FortranRuntime
-+  flang_rt
-   ${CUDA_RT_TARGET}
- )
-+
-+# Phony build target that does not include the CUDA version.
-+add_custom_target(CufRuntime)
-+add_dependencies(CufRuntime ${CUFRT_LIBNAME})
-+
 diff --git a/flang-rt/lib/FortranFloat128Math/CMakeLists.txt b/flang-rt/lib/FortranFloat128Math/CMakeLists.txt
 index 5a72ce079f3e..c0b2ee32248f 100644
 --- a/flang-rt/lib/FortranFloat128Math/CMakeLists.txt
@@ -1433,7 +1396,7 @@ index 000000000000..19c20ad44c02
 +      ${public_headers}
 +  )
 diff --git a/flang-rt/lib/flang_rt/CMakeLists.txt b/flang-rt/lib/flang_rt/CMakeLists.txt
-index 2f8af14ee99c..ff45e26961a4 100644
+index 6806465e3ae2..ff45e26961a4 100644
 --- a/flang-rt/lib/flang_rt/CMakeLists.txt
 +++ b/flang-rt/lib/flang_rt/CMakeLists.txt
 @@ -6,113 +6,15 @@
@@ -1838,7 +1801,7 @@ index 2f8af14ee99c..ff45e26961a4 100644
 +      )
  
 -if (FLANG_CUF_RUNTIME)
--  add_subdirectory(../CufRuntime CUDA)
+-  add_subdirectory(CUDA)
 +    enable_cuda_compilation(${name} "${supported_sources}")
 +    enable_omp_offload_compilation(${name} "${supported_sources}")
 +    add_dependencies(flang_rt ${name})
@@ -1882,6 +1845,139 @@ index 2f8af14ee99c..ff45e26961a4 100644
 +    endif ()
 +  endif ()
  endif()
+diff --git a/flang-rt/lib/flang_rt/CUDA/CMakeLists.txt b/flang-rt/lib/flang_rt/CUDA/CMakeLists.txt
+index 1cd119b86fcb..2c94ffb2df8a 100644
+--- a/flang-rt/lib/flang_rt/CUDA/CMakeLists.txt
++++ b/flang-rt/lib/flang_rt/CUDA/CMakeLists.txt
+@@ -6,22 +6,20 @@
+ #
+ #===------------------------------------------------------------------------===#
+ 
+-include_directories(${CUDAToolkit_INCLUDE_DIRS})
+-
+ # libCufRuntime depends on a certain version of CUDA. To be able to have
+ # multiple build of this library with different CUDA version, the version is
+ # added to the library name.
+ set(CUFRT_LIBNAME CufRuntime_cuda_${CUDAToolkit_VERSION_MAJOR})
+ 
+-add_flang_library(${CUFRT_LIBNAME}
+-  allocator.cpp
++add_flangrt_library(${CUFRT_LIBNAME}
+   allocatable.cpp
++  allocator.cpp
+   descriptor.cpp
+   kernel.cpp
+-  memmove-function.cpp
+   memory.cpp
+   registration.cpp
+ )
++target_include_directories(${CUFRT_LIBNAME} PRIVATE ${CUDAToolkit_INCLUDE_DIRS})
+ 
+ if (BUILD_SHARED_LIBS)
+   set(CUDA_RT_TARGET CUDA::cudart)
+@@ -31,6 +29,11 @@ endif()
+ 
+ target_link_libraries(${CUFRT_LIBNAME}
+   PRIVATE
+-  FortranRuntime
++  flang_rt
+   ${CUDA_RT_TARGET}
+ )
++
++# Phony build target that does not include the CUDA version.
++add_custom_target(CufRuntime)
++add_dependencies(CufRuntime ${CUFRT_LIBNAME})
++
+diff --git a/flang-rt/lib/flang_rt/CUDA/allocatable.cpp b/flang-rt/lib/flang_rt/CUDA/allocatable.cpp
+index 9bacc9392bda..00b87769d3ea 100644
+--- a/flang-rt/lib/flang_rt/CUDA/allocatable.cpp
++++ b/flang-rt/lib/flang_rt/CUDA/allocatable.cpp
+@@ -8,9 +8,9 @@
+ 
+ #include "flang/Runtime/CUDA/allocatable.h"
+ #include "flang-rt/descriptor.h"
+-#include "../flang_rt/assign-impl.h"
+-#include "../flang_rt/stat.h"
+-#include "../flang_rt/terminator.h"
++#include "../assign-impl.h"
++#include "../stat.h"
++#include "../terminator.h"
+ #include "flang/Runtime/CUDA/common.h"
+ #include "flang/Runtime/CUDA/descriptor.h"
+ #include "flang/Runtime/CUDA/memmove-function.h"
+diff --git a/flang-rt/lib/flang_rt/CUDA/allocator.cpp b/flang-rt/lib/flang_rt/CUDA/allocator.cpp
+index 2e962a5ccc72..cf7682ae2c6c 100644
+--- a/flang-rt/lib/flang_rt/CUDA/allocator.cpp
++++ b/flang-rt/lib/flang_rt/CUDA/allocator.cpp
+@@ -8,10 +8,10 @@
+ 
+ #include "flang-rt/CUDA/allocator.h"
+ #include "flang-rt/allocator-registry.h"
+-#include "../flang_rt/derived.h"
+-#include "../flang_rt/stat.h"
+-#include "../flang_rt/terminator.h"
+-#include "../flang_rt/type-info.h"
++#include "../derived.h"
++#include "../stat.h"
++#include "../terminator.h"
++#include "../type-info.h"
+ #include "flang/Common/ISO_Fortran_binding_wrapper.h"
+ #include "flang/Runtime/CUDA/common.h"
+ #include "flang/Support/Fortran.h"
+diff --git a/flang-rt/lib/flang_rt/CUDA/descriptor.cpp b/flang-rt/lib/flang_rt/CUDA/descriptor.cpp
+index 5e4e5f45744d..602817b4c6d4 100644
+--- a/flang-rt/lib/flang_rt/CUDA/descriptor.cpp
++++ b/flang-rt/lib/flang_rt/CUDA/descriptor.cpp
+@@ -9,7 +9,7 @@
+ #include "flang/Runtime/CUDA/descriptor.h"
+ #include "flang-rt/CUDA/allocator.h"
+ #include "flang-rt/descriptor.h"
+-#include "../flang_rt/terminator.h"
++#include "../terminator.h"
+ #include "flang/Runtime/CUDA/common.h"
+ 
+ #include "cuda_runtime.h"
+diff --git a/flang-rt/lib/flang_rt/CUDA/kernel.cpp b/flang-rt/lib/flang_rt/CUDA/kernel.cpp
+index 897406211f9a..362001082fc8 100644
+--- a/flang-rt/lib/flang_rt/CUDA/kernel.cpp
++++ b/flang-rt/lib/flang_rt/CUDA/kernel.cpp
+@@ -7,7 +7,7 @@
+ //===----------------------------------------------------------------------===//
+ 
+ #include "flang/Runtime/CUDA/kernel.h"
+-#include "../flang_rt/terminator.h"
++#include "../terminator.h"
+ #include "flang/Runtime/CUDA/common.h"
+ 
+ #include "cuda_runtime.h"
+diff --git a/flang-rt/lib/flang_rt/CUDA/memory.cpp b/flang-rt/lib/flang_rt/CUDA/memory.cpp
+index 89d36f9165a1..87d5dc296c38 100644
+--- a/flang-rt/lib/flang_rt/CUDA/memory.cpp
++++ b/flang-rt/lib/flang_rt/CUDA/memory.cpp
+@@ -7,8 +7,8 @@
+ //===----------------------------------------------------------------------===//
+ 
+ #include "flang/Runtime/CUDA/memory.h"
+-#include "../flang_rt/assign-impl.h"
+-#include "../flang_rt/terminator.h"
++#include "../assign-impl.h"
++#include "../terminator.h"
+ #include "flang/Runtime/CUDA/common.h"
+ #include "flang/Runtime/CUDA/descriptor.h"
+ #include "flang/Runtime/CUDA/memmove-function.h"
+diff --git a/flang-rt/lib/flang_rt/CUDA/registration.cpp b/flang-rt/lib/flang_rt/CUDA/registration.cpp
+index efb311881177..2936f5adfbbc 100644
+--- a/flang-rt/lib/flang_rt/CUDA/registration.cpp
++++ b/flang-rt/lib/flang_rt/CUDA/registration.cpp
+@@ -7,7 +7,7 @@
+ //===----------------------------------------------------------------------===//
+ 
+ #include "flang/Runtime/CUDA/registration.h"
+-#include "../flang_rt/terminator.h"
++#include "../terminator.h"
+ #include "flang/Runtime/CUDA/common.h"
+ 
+ #include "cuda_runtime.h"
 diff --git a/flang-rt/lib/flang_rt/allocator-registry.cpp b/flang-rt/lib/flang_rt/allocator-registry.cpp
 index b53f70bf6044..c6e799d7cba0 100644
 --- a/flang-rt/lib/flang_rt/allocator-registry.cpp
@@ -3414,7 +3510,7 @@ index 260966f82783..8e5cf7f25150 100644
 +}
 \ No newline at end of file
 diff --git a/flang/lib/Optimizer/OpenMP/CMakeLists.txt b/flang/lib/Optimizer/OpenMP/CMakeLists.txt
-index 4f23b2b970fa..3c0f4a663bbb 100644
+index 026889cca238..a54062fecff5 100644
 --- a/flang/lib/Optimizer/OpenMP/CMakeLists.txt
 +++ b/flang/lib/Optimizer/OpenMP/CMakeLists.txt
 @@ -22,6 +22,7 @@ add_flang_library(FlangOpenMPTransforms
@@ -3422,9 +3518,9 @@ index 4f23b2b970fa..3c0f4a663bbb 100644
    FIRSupport
    FortranCommon
 +  FortranSupport
+   FortranEvaluate
    MLIRFuncDialect
    MLIROpenMPDialect
-   HLFIRDialect
 diff --git a/flang/lib/Optimizer/Passes/CMakeLists.txt b/flang/lib/Optimizer/Passes/CMakeLists.txt
 index 40abbdfbdd65..029588dc7f7b 100644
 --- a/flang/lib/Optimizer/Passes/CMakeLists.txt
