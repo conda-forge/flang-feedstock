@@ -23,7 +23,7 @@ cmake -G Ninja \
     -DLLVM_LIT_ARGS=-v \
     -DLLVM_CMAKE_DIR=$PREFIX/lib/cmake/llvm \
     -DLLVM_DIR=$PREFIX/lib/cmake/llvm \
-    -DLLVM_ENABLE_RUNTIMES="flang-rt" \
+    -DLLVM_ENABLE_RUNTIMES="flang-rt;compiler-rt" \
     -DFLANG_RT_INCLUDE_TESTS=OFF \
     ../runtimes
 
