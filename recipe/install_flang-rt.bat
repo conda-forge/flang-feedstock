@@ -18,7 +18,7 @@ cmake -G "Ninja" ^
     -DLLVM_LIT_ARGS=-v ^
     -DLLVM_CMAKE_DIR=%LIBRARY_LIB%/cmake/llvm ^
     -DLLVM_DIR=%LIBRARY_LIB%/cmake/llvm ^
-    -DLLVM_ENABLE_RUNTIMES="flang-rt;compiler-rt" ^
+    -DLLVM_ENABLE_RUNTIMES="flang-rt" ^
     -DFLANG_RT_INCLUDE_TESTS=OFF ^
     ..\runtimes
 if %ERRORLEVEL% neq 0 exit 1
