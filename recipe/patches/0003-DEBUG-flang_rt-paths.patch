@@ -1,0 +1,26 @@
+From daad28046eeefe2aa1a5d15da0749e5f1511f3a7 Mon Sep 17 00:00:00 2001
+From: "H. Vetinari" <h.vetinari@gmx.com>
+Date: Fri, 10 Jan 2025 13:23:00 +0100
+Subject: [PATCH 3/3] DEBUG: flang_rt paths
+
+---
+ flang-rt/CMakeLists.txt | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/flang-rt/CMakeLists.txt b/flang-rt/CMakeLists.txt
+index 51dbe6b6cc09..9869632cc77d 100644
+--- a/flang-rt/CMakeLists.txt
++++ b/flang-rt/CMakeLists.txt
+@@ -114,6 +114,12 @@ else ()
+   extend_path(FLANG_RT_OUTPUT_RESOURCE_LIB_DIR "${FLANG_RT_OUTPUT_RESOURCE_DIR}" "lib${LLVM_LIBDIR_SUFFIX}")
+ endif ()
+ extend_path(FLANG_RT_INSTALL_RESOURCE_LIB_PATH "${FLANG_RT_INSTALL_RESOURCE_PATH}" "${toolchain_lib_subdir}")
++message("LLVM_TREE_AVAILABLE: ${LLVM_TREE_AVAILABLE}")
++message("toolchain_lib_subdir: ${toolchain_lib_subdir}")
++message("FLANG_RT_OUTPUT_RESOURCE_DIR: ${FLANG_RT_OUTPUT_RESOURCE_DIR}")
++message("FLANG_RT_INSTALL_RESOURCE_PATH: ${FLANG_RT_INSTALL_RESOURCE_PATH}")
++message("FLANG_RT_OUTPUT_RESOURCE_LIB_DIR: ${FLANG_RT_OUTPUT_RESOURCE_LIB_DIR}")
++message("FLANG_RT_INSTALL_RESOURCE_LIB_PATH: ${FLANG_RT_INSTALL_RESOURCE_LIB_PATH}")
+ cmake_path(NORMAL_PATH FLANG_RT_OUTPUT_RESOURCE_DIR)
+ cmake_path(NORMAL_PATH FLANG_RT_INSTALL_RESOURCE_PATH)
+ cmake_path(NORMAL_PATH FLANG_RT_OUTPUT_RESOURCE_LIB_DIR)
