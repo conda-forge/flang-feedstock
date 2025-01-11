@@ -1,4 +1,4 @@
-From 1f44601098cea5306e8e5690673c94a1b5655f83 Mon Sep 17 00:00:00 2001
+From 03e9b51a7a1654be707889fde9526a0179991242 Mon Sep 17 00:00:00 2001
 From: Michael Kruse <llvm-project@meinersbur.de>
 Date: Fri, 27 Sep 2024 09:18:49 +0200
 Subject: [PATCH 2/3] [Flang] LLVM_ENABLE_RUNTIMES=flang-rt
@@ -7,49 +7,50 @@ Extract Flang's runtime library to use the LLVM_ENABLE_RUNTIME
 mechanism.
 ---
  flang-rt/.clang-tidy                          |   2 +
- flang-rt/CMakeLists.txt                       | 232 +++++++++++++++++
- flang-rt/CODE_OWNERS.TXT                      |  14 ++
- flang-rt/LICENSE.TXT                          | 234 ++++++++++++++++++
- flang-rt/README.md                            | 188 ++++++++++++++
- flang-rt/cmake/modules/AddFlangRT.cmake       | 174 +++++++++++++
- .../cmake/modules/AddFlangRTOffload.cmake     | 118 +++++++++
- flang-rt/cmake/modules/GetToolchainDirs.cmake | 125 ++++++++++
+ flang-rt/CMakeLists.txt                       | 249 ++++++++++++++++++
+ flang-rt/CODE_OWNERS.TXT                      |  14 +
+ flang-rt/LICENSE.TXT                          | 234 ++++++++++++++++
+ flang-rt/README.md                            | 188 +++++++++++++
+ flang-rt/cmake/modules/AddFlangRT.cmake       | 186 +++++++++++++
+ .../cmake/modules/AddFlangRTOffload.cmake     | 101 +++++++
+ flang-rt/cmake/modules/GetToolchainDirs.cmake | 125 +++++++++
  flang-rt/lib/CMakeLists.txt                   |  18 ++
  .../lib/FortranFloat128Math/CMakeLists.txt    | 136 ++++++++++
  flang-rt/lib/Testing/CMakeLists.txt           |  20 ++
- flang-rt/lib/flang_rt/CMakeLists.txt          | 213 ++++++++++++++++
- flang-rt/lib/flang_rt/CUDA/CMakeLists.txt     |  34 +++
+ flang-rt/lib/flang_rt/CMakeLists.txt          | 213 +++++++++++++++
+ flang-rt/lib/flang_rt/CUDA/CMakeLists.txt     |  33 +++
  flang-rt/lib/flang_rt/allocator-registry.cpp  |   4 +-
  flang-rt/lib/flang_rt/environment.cpp         |   4 +-
  flang-rt/lib/flang_rt/io-api-minimal.cpp      |   2 +-
  flang-rt/lib/flang_rt/unit.cpp                |   4 +-
  flang-rt/lib/flang_rt/utf.cpp                 |   4 +-
  flang-rt/test/CMakeLists.txt                  |  59 +++++
- flang-rt/test/Driver/ctofortran.f90           |  28 +--
+ flang-rt/test/Driver/ctofortran.f90           |  28 +-
  flang-rt/test/Driver/exec.f90                 |   6 +-
  flang-rt/test/NonGtestUnit/lit.cfg.py         |  22 ++
- flang-rt/test/NonGtestUnit/lit.site.cfg.py.in |  14 ++
+ flang-rt/test/NonGtestUnit/lit.site.cfg.py.in |  14 +
  flang-rt/test/Runtime/no-cpp-dep.c            |   4 +-
  flang-rt/test/Unit/lit.cfg.py                 |  21 ++
  flang-rt/test/Unit/lit.site.cfg.py.in         |  15 ++
  flang-rt/test/lit.cfg.py                      | 104 ++++++++
  flang-rt/test/lit.site.cfg.py.in              |  19 ++
- flang-rt/unittests/CMakeLists.txt             | 111 +++++++++
+ flang-rt/unittests/CMakeLists.txt             | 111 ++++++++
  flang-rt/unittests/Evaluate/CMakeLists.txt    |  21 ++
  flang-rt/unittests/Runtime/CMakeLists.txt     |  48 ++++
  .../unittests/Runtime/CUDA/Allocatable.cpp    |   3 +-
  .../unittests/Runtime/CUDA/AllocatorCUF.cpp   |   3 +-
  .../unittests/Runtime/CUDA/CMakeLists.txt     |  18 ++
  flang/CMakeLists.txt                          |  53 ++--
- flang/cmake/modules/FlangCommon.cmake         |  43 ++++
+ flang/cmake/modules/FlangCommon.cmake         |  43 +++
  flang/docs/GettingStarted.md                  | 108 ++++----
  flang/docs/ReleaseNotes.md                    |   8 +-
+ .../include/flang/Runtime/descriptor-consts.h |   2 +
  flang/module/iso_fortran_env_impl.f90         |   2 +-
  flang/test/lit.cfg.py                         |  23 --
  flang/test/lit.site.cfg.py.in                 |   3 -
  flang/unittests/Evaluate/CMakeLists.txt       |   1 -
  runtimes/CMakeLists.txt                       |   2 +-
- 43 files changed, 2115 insertions(+), 150 deletions(-)
+ 44 files changed, 2128 insertions(+), 150 deletions(-)
  create mode 100644 flang-rt/.clang-tidy
  create mode 100644 flang-rt/CMakeLists.txt
  create mode 100644 flang-rt/CODE_OWNERS.TXT
@@ -86,10 +87,10 @@ index 000000000000..ee3a0ab2201b
 +InheritParentConfig: true
 diff --git a/flang-rt/CMakeLists.txt b/flang-rt/CMakeLists.txt
 new file mode 100644
-index 000000000000..51dbe6b6cc09
+index 000000000000..08cea28a6f9a
 --- /dev/null
 +++ b/flang-rt/CMakeLists.txt
-@@ -0,0 +1,232 @@
+@@ -0,0 +1,249 @@
 +#===-- CMakeLists.txt ------------------------------------------------------===#
 +#
 +# Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -239,6 +240,23 @@ index 000000000000..51dbe6b6cc09
 +  set(FLANG_RT_DEVICE_ARCHITECTURES "all" CACHE STRING
 +      "List of OpenMP device architectures to be used to compile the Fortran runtime (e.g. 'gfx1103;sm_90')"
 +    )
++
++  if (FLANG_RT_DEVICE_ARCHITECTURES STREQUAL "all")
++    # TODO: support auto detection on the build system.
++    set(all_amdgpu_architectures
++      "gfx700;gfx701;gfx801;gfx803;gfx900;gfx902;gfx906"
++      "gfx908;gfx90a;gfx90c;gfx940;gfx1010;gfx1030"
++      "gfx1031;gfx1032;gfx1033;gfx1034;gfx1035;gfx1036"
++      "gfx1100;gfx1101;gfx1102;gfx1103;gfx1150;gfx1151"
++      "gfx1152;gfx1153")
++    set(all_nvptx_architectures
++      "sm_35;sm_37;sm_50;sm_52;sm_53;sm_60;sm_61;sm_62"
++      "sm_70;sm_72;sm_75;sm_80;sm_86;sm_89;sm_90")
++    set(all_gpu_architectures
++      "${all_amdgpu_architectures};${all_nvptx_architectures}")
++      set(FLANG_RT_DEVICE_ARCHITECTURES ${all_gpu_architectures})
++  endif()
++  list(REMOVE_DUPLICATES FLANG_RT_DEVICE_ARCHITECTURES)
 +else ()
 +  message(FATAL_ERROR "Invalid value '${FLANG_RT_EXPERIMENTAL_OFFLOAD_SUPPORT}' for FLANG_RT_EXPERIMENTAL_OFFLOAD_SUPPORT; must be empty, 'CUDA', or 'OpenMP'")
 +endif ()
@@ -778,10 +796,10 @@ index 000000000000..76993f27f8e4
 +   `LIBOMPTARGET_DEVICE_ARCHITECTURES` from liboffload.
 diff --git a/flang-rt/cmake/modules/AddFlangRT.cmake b/flang-rt/cmake/modules/AddFlangRT.cmake
 new file mode 100644
-index 000000000000..1f8b51114338
+index 000000000000..aa8adedf6175
 --- /dev/null
 +++ b/flang-rt/cmake/modules/AddFlangRT.cmake
-@@ -0,0 +1,174 @@
+@@ -0,0 +1,186 @@
 +#===-- cmake/modules/AddFlangRT.cmake --------------------------------------===#
 +#
 +# Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -811,10 +829,14 @@ index 000000000000..1f8b51114338
 +#     Library requires include path and linking to LLVM's Support component
 +#   ADDITIONAL_HEADERS
 +#     May specify header files for IDE generators.
++#   INCLUDE_DIRECTORIES
++#     Additional include_directories for all added targets
++#   TARGET_PROPERTIES
++#     Set target properties of all added targets
 +# )
 +function (add_flangrt_library name)
 +  set(options STATIC SHARED OBJECT INSTALL_WITH_TOOLCHAIN EXCLUDE_FROM_ALL LINK_TO_LLVM)
-+  set(multiValueArgs ADDITIONAL_HEADERS)
++  set(multiValueArgs ADDITIONAL_HEADERS INCLUDE_DIRECTORIES TARGET_PROPERTIES)
 +  cmake_parse_arguments(ARG
 +    "${options}"
 +    ""
@@ -936,6 +958,10 @@ index 000000000000..1f8b51114338
 +    target_include_directories(${name} PUBLIC ${LLVM_INCLUDE_DIRS})
 +  endif ()
 +
++  if (ARG_INCLUDE_DIRECTORIES)
++    target_include_directories(${name} ${ARG_INCLUDE_DIRECTORIES})
++  endif ()
++
 +  # If this is part of the toolchain, put it into the compiler's resource
 +  # directory. Otherwise it is part of testing and is not installed at all.
 +  # TODO: Consider multi-configuration builds (MSVC_IDE, "Ninja Multi-Config")
@@ -950,6 +976,10 @@ index 000000000000..1f8b51114338
 +      )
 +  endif ()
 +
++  if (ARG_TARGET_PROPERTIES)
++    set_target_properties(${name} PROPERTIES ${ARG_TARGET_PROPERTIES})
++  endif ()
++
 +  # flang-rt should build all the Flang-RT targets that are built in an
 +  # 'all' build.
 +  if (NOT ARG_EXCLUDE_FROM_ALL)
@@ -958,10 +988,10 @@ index 000000000000..1f8b51114338
 +endfunction (add_flangrt_library)
 diff --git a/flang-rt/cmake/modules/AddFlangRTOffload.cmake b/flang-rt/cmake/modules/AddFlangRTOffload.cmake
 new file mode 100644
-index 000000000000..c167ac73dec5
+index 000000000000..c1a7e8ffe4df
 --- /dev/null
 +++ b/flang-rt/cmake/modules/AddFlangRTOffload.cmake
-@@ -0,0 +1,118 @@
+@@ -0,0 +1,101 @@
 +#===-- cmake/modules/AddFortranRTOffload.txt -------------------------------===#
 +#
 +# Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -974,9 +1004,10 @@ index 000000000000..c167ac73dec5
 +  if (FLANG_RT_EXPERIMENTAL_OFFLOAD_SUPPORT STREQUAL "CUDA")
 +    enable_language(CUDA)
 +
-+    # TODO: figure out how to make target property CUDA_SEPARABLE_COMPILATION
-+    # work, and avoid setting CMAKE_CUDA_SEPARABLE_COMPILATION.
-+    set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
++    set_target_properties(${name}
++        PROPERTIES
++          CUDA_SEPARABLE_COMPILATION ON
++      )
 +
 +    # Treat all supported sources as CUDA files.
 +    set_source_files_properties(${files} PROPERTIES LANGUAGE CUDA)
@@ -1018,8 +1049,10 @@ index 000000000000..c167ac73dec5
 +    # When using libcudacxx headers files, we have to use them
 +    # for all files of Flang-RT.
 +    if (EXISTS "${FLANG_RT_LIBCUDACXX_PATH}/include")
-+      target_include_directories(obj.${name}PTX AFTER PRIVATE "${FLANG_RT_LIBCUDACXX_PATH}/include")
-+      target_compile_definitions(obj.${name}PTX PRIVATE RT_USE_LIBCUDACXX=1)
++      foreach (tgt IN ITEMS "${name}" "obj.${name}PTX")
++        target_include_directories(${tgt} AFTER PRIVATE "${FLANG_RT_LIBCUDACXX_PATH}/include")
++        target_compile_definitions(${tgt} PRIVATE RT_USE_LIBCUDACXX=1)
++      endforeach ()
 +    endif ()
 +  endif()
 +endmacro()
@@ -1030,26 +1063,6 @@ index 000000000000..c167ac73dec5
 +
 +    if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" AND
 +        "${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
-+
-+      set(all_amdgpu_architectures
-+        "gfx700;gfx701;gfx801;gfx803;gfx900;gfx902;gfx906"
-+        "gfx908;gfx90a;gfx90c;gfx940;gfx1010;gfx1030"
-+        "gfx1031;gfx1032;gfx1033;gfx1034;gfx1035;gfx1036"
-+        "gfx1100;gfx1101;gfx1102;gfx1103;gfx1150;gfx1151"
-+        "gfx1152;gfx1153"
-+        )
-+      set(all_nvptx_architectures
-+        "sm_35;sm_37;sm_50;sm_52;sm_53;sm_60;sm_61;sm_62"
-+        "sm_70;sm_72;sm_75;sm_80;sm_86;sm_89;sm_90"
-+        )
-+      set(all_gpu_architectures
-+        "${all_amdgpu_architectures};${all_nvptx_architectures}"
-+        )
-+      # TODO: support auto detection on the build system.
-+      if (FLANG_RT_DEVICE_ARCHITECTURES STREQUAL "all")
-+        set(FLANG_RT_DEVICE_ARCHITECTURES ${all_gpu_architectures})
-+      endif()
-+      list(REMOVE_DUPLICATES FLANG_RT_DEVICE_ARCHITECTURES)
 +
 +      string(REPLACE ";" "," compile_for_architectures
 +        "${FLANG_RT_DEVICE_ARCHITECTURES}"
@@ -1405,7 +1418,7 @@ index 000000000000..19c20ad44c02
 +  )
 diff --git a/flang-rt/lib/flang_rt/CMakeLists.txt b/flang-rt/lib/flang_rt/CMakeLists.txt
 new file mode 100644
-index 000000000000..0a4919e6ed29
+index 000000000000..4db1a1cbb874
 --- /dev/null
 +++ b/flang-rt/lib/flang_rt/CMakeLists.txt
 @@ -0,0 +1,213 @@
@@ -1545,8 +1558,8 @@ index 000000000000..0a4919e6ed29
 +    ADDITIONAL_HEADERS ${public_headers} ${private_headers}
 +  )
 +
-+  enable_cuda_compilation(flang_rt.static "${supported_sources}")
-+  enable_omp_offload_compilation(flang_rt.static "${supported_sources}")
++  enable_cuda_compilation(flang_rt "${supported_sources}")
++  enable_omp_offload_compilation(flang_rt "${supported_sources}")
 +
 +  # For unittests that depend on flang_rt. Should link to the static version
 +  # of the library.
@@ -1624,10 +1637,10 @@ index 000000000000..0a4919e6ed29
 +endif()
 diff --git a/flang-rt/lib/flang_rt/CUDA/CMakeLists.txt b/flang-rt/lib/flang_rt/CUDA/CMakeLists.txt
 new file mode 100644
-index 000000000000..c92f6afe034e
+index 000000000000..3c741ac93d64
 --- /dev/null
 +++ b/flang-rt/lib/flang_rt/CUDA/CMakeLists.txt
-@@ -0,0 +1,34 @@
+@@ -0,0 +1,33 @@
 +#===-- lib/flang_rt/CUDA/CMakeLists.txt ------------------------------------===#
 +#
 +# Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -1645,17 +1658,16 @@ index 000000000000..c92f6afe034e
 +  memmove-function.cpp
 +  memory.cpp
 +  registration.cpp
-+)
 +
-+# libCufRuntime depends on a certain version of CUDA. To be able to have
-+# multiple build of this library with different CUDA version, the version is
-+# added to the library name.
-+set_target_properties(CufRuntime
-+  PROPERTIES
++  # libCufRuntime depends on a certain version of CUDA. To be able to have
++  # multiple build of this library with different CUDA version, the version is
++  # added to the library name.
++  TARGET_PROPERTIES
 +    OUTPUT_NAME "CufRuntime_cuda_${CUDAToolkit_VERSION_MAJOR}"
-+)
 +
-+target_include_directories(CufRuntime PRIVATE ${CUDAToolkit_INCLUDE_DIRS})
++  INCLUDE_DIRECTORIES
++    PRIVATE ${CUDAToolkit_INCLUDE_DIRS}
++)
 +
 +target_link_libraries(CufRuntime
 +  PUBLIC
@@ -2765,6 +2777,26 @@ index a163b4f4ed67..2633b27f0093 100644
  
  ## New Issues Found
  
+diff --git a/flang/include/flang/Runtime/descriptor-consts.h b/flang/include/flang/Runtime/descriptor-consts.h
+index abcdbc4a1200..ca69164fc69b 100644
+--- a/flang/include/flang/Runtime/descriptor-consts.h
++++ b/flang/include/flang/Runtime/descriptor-consts.h
+@@ -11,6 +11,7 @@
+ 
+ #include "flang/Common/ISO_Fortran_binding_wrapper.h"
+ #include "flang/Common/api-attrs.h"
++#include "flang/Common/Fortran-consts.h"
+ #include <cstddef>
+ #include <cstdint>
+ 
+@@ -29,6 +30,7 @@ class DerivedType;
+ namespace Fortran::runtime {
+ class Descriptor;
+ using SubscriptValue = ISO::CFI_index_t;
++using common::TypeCategory;
+ 
+ /// Returns size in bytes of the descriptor (not the data)
+ /// This must be at least as large as the largest descriptor of any target
 diff --git a/flang/module/iso_fortran_env_impl.f90 b/flang/module/iso_fortran_env_impl.f90
 index 5408e7de3700..3ee00acfde4d 100644
 --- a/flang/module/iso_fortran_env_impl.f90

@@ -1,4 +1,4 @@
-From daad28046eeefe2aa1a5d15da0749e5f1511f3a7 Mon Sep 17 00:00:00 2001
+From 27fd41a355e4cde8d80326863ef29edd3aeefdd0 Mon Sep 17 00:00:00 2001
 From: "H. Vetinari" <h.vetinari@gmx.com>
 Date: Fri, 10 Jan 2025 13:23:00 +0100
 Subject: [PATCH 3/3] DEBUG: flang_rt paths
@@ -8,7 +8,7 @@ Subject: [PATCH 3/3] DEBUG: flang_rt paths
  1 file changed, 6 insertions(+)
 
 diff --git a/flang-rt/CMakeLists.txt b/flang-rt/CMakeLists.txt
-index 51dbe6b6cc09..9869632cc77d 100644
+index 08cea28a6f9a..8753ee7bc7b2 100644
 --- a/flang-rt/CMakeLists.txt
 +++ b/flang-rt/CMakeLists.txt
 @@ -114,6 +114,12 @@ else ()
