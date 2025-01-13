@@ -1,4 +1,4 @@
-From 03e9b51a7a1654be707889fde9526a0179991242 Mon Sep 17 00:00:00 2001
+From 1cc0563401f4829b351f27c9584db23585eea805 Mon Sep 17 00:00:00 2001
 From: Michael Kruse <llvm-project@meinersbur.de>
 Date: Fri, 27 Sep 2024 09:18:49 +0200
 Subject: [PATCH 2/3] [Flang] LLVM_ENABLE_RUNTIMES=flang-rt
@@ -37,20 +37,17 @@ mechanism.
  flang-rt/unittests/CMakeLists.txt             | 111 ++++++++
  flang-rt/unittests/Evaluate/CMakeLists.txt    |  21 ++
  flang-rt/unittests/Runtime/CMakeLists.txt     |  48 ++++
- .../unittests/Runtime/CUDA/Allocatable.cpp    |   3 +-
- .../unittests/Runtime/CUDA/AllocatorCUF.cpp   |   3 +-
  .../unittests/Runtime/CUDA/CMakeLists.txt     |  18 ++
  flang/CMakeLists.txt                          |  53 ++--
  flang/cmake/modules/FlangCommon.cmake         |  43 +++
  flang/docs/GettingStarted.md                  | 108 ++++----
  flang/docs/ReleaseNotes.md                    |   8 +-
- .../include/flang/Runtime/descriptor-consts.h |   2 +
  flang/module/iso_fortran_env_impl.f90         |   2 +-
- flang/test/lit.cfg.py                         |  23 --
+ flang/test/lit.cfg.py                         |  22 --
  flang/test/lit.site.cfg.py.in                 |   3 -
  flang/unittests/Evaluate/CMakeLists.txt       |   1 -
  runtimes/CMakeLists.txt                       |   2 +-
- 44 files changed, 2128 insertions(+), 150 deletions(-)
+ 41 files changed, 2124 insertions(+), 145 deletions(-)
  create mode 100644 flang-rt/.clang-tidy
  create mode 100644 flang-rt/CMakeLists.txt
  create mode 100644 flang-rt/CODE_OWNERS.TXT
@@ -1675,7 +1672,7 @@ index 000000000000..3c741ac93d64
 +  CUDA::cudart_static
 +)
 diff --git a/flang-rt/lib/flang_rt/allocator-registry.cpp b/flang-rt/lib/flang_rt/allocator-registry.cpp
-index b53f70bf6044..c6e799d7cba0 100644
+index 11847de68724..cdf2450d414a 100644
 --- a/flang-rt/lib/flang_rt/allocator-registry.cpp
 +++ b/flang-rt/lib/flang_rt/allocator-registry.cpp
 @@ -11,11 +11,11 @@
@@ -1693,7 +1690,7 @@ index b53f70bf6044..c6e799d7cba0 100644
  RT_OFFLOAD_API_GROUP_BEGIN
  RT_API_ATTRS void AllocatorRegistry::Register(int pos, Allocator_t allocator) {
 diff --git a/flang-rt/lib/flang_rt/environment.cpp b/flang-rt/lib/flang_rt/environment.cpp
-index 9ff65f1e60dd..3360b5d92f2a 100644
+index b8d96b933f5b..6c2e4dce4faa 100644
 --- a/flang-rt/lib/flang_rt/environment.cpp
 +++ b/flang-rt/lib/flang_rt/environment.cpp
 @@ -23,11 +23,11 @@ extern char **environ;
@@ -1711,7 +1708,7 @@ index 9ff65f1e60dd..3360b5d92f2a 100644
  static void SetEnvironmentDefaults(const EnvironmentDefaultList *envDefaults) {
    if (!envDefaults) {
 diff --git a/flang-rt/lib/flang_rt/io-api-minimal.cpp b/flang-rt/lib/flang_rt/io-api-minimal.cpp
-index 3d895470fee2..8d5b12c11353 100644
+index c3234c78c10c..cd5cf6bd3e69 100644
 --- a/flang-rt/lib/flang_rt/io-api-minimal.cpp
 +++ b/flang-rt/lib/flang_rt/io-api-minimal.cpp
 @@ -150,7 +150,7 @@ bool IODEF(OutputLogical)(Cookie cookie, bool truth) {
@@ -1724,7 +1721,7 @@ index 3d895470fee2..8d5b12c11353 100644
    va_start(list, format);
    std::vfprintf(stderr, format, list);
 diff --git a/flang-rt/lib/flang_rt/unit.cpp b/flang-rt/lib/flang_rt/unit.cpp
-index d65ae8962541..06faf60d6d62 100644
+index f05c4b5236dd..c1a1ec9ebab9 100644
 --- a/flang-rt/lib/flang_rt/unit.cpp
 +++ b/flang-rt/lib/flang_rt/unit.cpp
 @@ -19,13 +19,13 @@
@@ -1744,7 +1741,7 @@ index d65ae8962541..06faf60d6d62 100644
  RT_OFFLOAD_API_GROUP_BEGIN
  
 diff --git a/flang-rt/lib/flang_rt/utf.cpp b/flang-rt/lib/flang_rt/utf.cpp
-index 46400668745c..e4e4926ea312 100644
+index dd74889c025c..48305ce7502a 100644
 --- a/flang-rt/lib/flang_rt/utf.cpp
 +++ b/flang-rt/lib/flang_rt/utf.cpp
 @@ -10,7 +10,7 @@
@@ -2335,38 +2332,6 @@ index 000000000000..32f12b14caca
 +if (FLANG_RT_ENABLE_CUF)
 +  add_subdirectory(CUDA)
 +endif ()
-diff --git a/flang-rt/unittests/Runtime/CUDA/Allocatable.cpp b/flang-rt/unittests/Runtime/CUDA/Allocatable.cpp
-index 5c1a09c92756..3b5befee8357 100644
---- a/flang-rt/unittests/Runtime/CUDA/Allocatable.cpp
-+++ b/flang-rt/unittests/Runtime/CUDA/Allocatable.cpp
-@@ -12,10 +12,9 @@
- #include "flang-rt/CUDA/allocator.h"
- #include "flang-rt/allocator-registry.h"
- #include "flang-rt/descriptor.h"
-+#include "flang-rt/memory.h"
- #include "flang/Runtime/CUDA/common.h"
- #include "flang/Runtime/CUDA/descriptor.h"
--#include "flang/Runtime/descriptor.h"
--#include "flang/Runtime/memory.h"
- #include "flang/Support/Fortran.h"
- 
- #include "cuda_runtime.h"
-diff --git a/flang-rt/unittests/Runtime/CUDA/AllocatorCUF.cpp b/flang-rt/unittests/Runtime/CUDA/AllocatorCUF.cpp
-index ed2d8d4a4725..fc908eb32bbf 100644
---- a/flang-rt/unittests/Runtime/CUDA/AllocatorCUF.cpp
-+++ b/flang-rt/unittests/Runtime/CUDA/AllocatorCUF.cpp
-@@ -12,10 +12,9 @@
- #include "flang-rt/CUDA/allocator.h"
- #include "flang-rt/allocator-registry.h"
- #include "flang-rt/descriptor.h"
-+#include "flang-rt/memory.h"
- #include "flang/Runtime/CUDA/descriptor.h"
- #include "flang/Runtime/allocatable.h"
--#include "flang/Runtime/descriptor.h"
--#include "flang/Runtime/memory.h"
- #include "flang/Support/Fortran.h"
- 
- using namespace Fortran::runtime;
 diff --git a/flang-rt/unittests/Runtime/CUDA/CMakeLists.txt b/flang-rt/unittests/Runtime/CUDA/CMakeLists.txt
 new file mode 100644
 index 000000000000..37b117234208
@@ -2777,26 +2742,6 @@ index a163b4f4ed67..2633b27f0093 100644
  
  ## New Issues Found
  
-diff --git a/flang/include/flang/Runtime/descriptor-consts.h b/flang/include/flang/Runtime/descriptor-consts.h
-index abcdbc4a1200..ca69164fc69b 100644
---- a/flang/include/flang/Runtime/descriptor-consts.h
-+++ b/flang/include/flang/Runtime/descriptor-consts.h
-@@ -11,6 +11,7 @@
- 
- #include "flang/Common/ISO_Fortran_binding_wrapper.h"
- #include "flang/Common/api-attrs.h"
-+#include "flang/Common/Fortran-consts.h"
- #include <cstddef>
- #include <cstdint>
- 
-@@ -29,6 +30,7 @@ class DerivedType;
- namespace Fortran::runtime {
- class Descriptor;
- using SubscriptValue = ISO::CFI_index_t;
-+using common::TypeCategory;
- 
- /// Returns size in bytes of the descriptor (not the data)
- /// This must be at least as large as the largest descriptor of any target
 diff --git a/flang/module/iso_fortran_env_impl.f90 b/flang/module/iso_fortran_env_impl.f90
 index 5408e7de3700..3ee00acfde4d 100644
 --- a/flang/module/iso_fortran_env_impl.f90
@@ -2811,15 +2756,15 @@ index 5408e7de3700..3ee00acfde4d 100644
  module iso_fortran_env_impl
    implicit none
 diff --git a/flang/test/lit.cfg.py b/flang/test/lit.cfg.py
-index 259ee5310e5b..aa27fdc2fe41 100644
+index 08ba586e1226..39809cc81cb8 100644
 --- a/flang/test/lit.cfg.py
 +++ b/flang/test/lit.cfg.py
-@@ -163,29 +163,6 @@ else:
+@@ -163,29 +163,7 @@ else:
          ToolSubst("%not_todo_abort_cmd", command=FindTool("not"), unresolved="fatal")
      )
  
 -if config.flang_include_runtime:
--  config.available_features.add("flang-rt")
+     config.available_features.add("flang-rt")
 -
 -# Define some variables to help us test that the flang runtime doesn't depend on
 -# the C++ runtime libraries. For this we need a C compiler. If for some reason
