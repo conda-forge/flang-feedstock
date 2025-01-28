@@ -1,6 +1,6 @@
-From 989a9f587052b67a4b1a537411acc4a9d6cffb71 Mon Sep 17 00:00:00 2001
+From 32886fbd0be330ea4c39f03d06477c0cf6ab7999 Mon Sep 17 00:00:00 2001
 From: Michael Kruse <llvm-project@meinersbur.de>
-Date: Fri, 27 Sep 2024 17:20:13 +0200
+Date: Fri, 24 Jan 2025 16:47:29 +0100
 Subject: [PATCH 1/3] [Flang][NFC] Move runtime library files to flang-rt
 
 ---
@@ -94,6 +94,7 @@ Subject: [PATCH 1/3] [Flang][NFC] Move runtime library files to flang-rt
  .../lib/flang_rt}/CUDA/kernel.cpp             |   4 +-
  .../lib/flang_rt}/CUDA/memmove-function.cpp   |   4 +-
  .../lib/flang_rt}/CUDA/memory.cpp             |   6 +-
+ .../lib/flang_rt}/CUDA/pointer.cpp            |   9 +-
  .../lib/flang_rt}/CUDA/registration.cpp       |   4 +-
  .../lib/flang_rt}/ISO_Fortran_binding.cpp     |  10 +-
  .../lib/flang_rt}/ISO_Fortran_util.h          |  16 +--
@@ -277,6 +278,7 @@ Subject: [PATCH 1/3] [Flang][NFC] Move runtime library files to flang-rt
  .../{Common => Support}/MathOptionsBase.def   |   0
  .../{Common => Support}/MathOptionsBase.h     |  14 +--
  .../{Common => Support}/OpenMP-features.h     |   8 +-
+ flang/include/flang/Support/Timing.h          |   8 +-
  .../flang/{Common => Support}/Version.h       |   8 +-
  .../flang/{Common => Support}/default-kinds.h |  10 +-
  .../flang/{Common => Support}/indirection.h   |  10 +-
@@ -289,7 +291,8 @@ Subject: [PATCH 1/3] [Flang][NFC] Move runtime library files to flang-rt
  .../flang/Testing}/fp-testing.h               |  14 ++-
  .../flang/Testing}/testing.h                  |  14 ++-
  flang/include/flang/Tools/CrossToolHelpers.h  |   4 +-
- flang/lib/CMakeLists.txt                      |   6 +-
+ flang/lib/CMakeLists.txt                      |   5 +-
+ flang/lib/Common/CMakeLists.txt               |  52 ---------
  flang/lib/Decimal/CMakeLists.txt              |  92 ++--------------
  flang/lib/Evaluate/CMakeLists.txt             |   2 +-
  flang/lib/Evaluate/call.cpp                   |   2 +-
@@ -350,11 +353,12 @@ Subject: [PATCH 1/3] [Flang][NFC] Move runtime library files to flang-rt
  flang/lib/Semantics/rewrite-parse-tree.cpp    |   2 +-
  flang/lib/Semantics/semantics.cpp             |   2 +-
  flang/lib/Semantics/tools.cpp                 |   4 +-
- flang/lib/{Common => Support}/CMakeLists.txt  |  10 +-
+ flang/lib/Support/CMakeLists.txt              |  53 +++++++++
  .../{Common => Support}/Fortran-features.cpp  |   6 +-
  flang/lib/{Common => Support}/Fortran.cpp     |   6 +-
  flang/lib/{Common => Support}/LangOptions.cpp |   6 +-
  .../lib/{Common => Support}/OpenMP-utils.cpp  |   2 +-
+ flang/lib/Support/Timing.cpp                  |   2 +-
  flang/lib/{Common => Support}/Version.cpp     |   4 +-
  .../lib/{Common => Support}/default-kinds.cpp |   4 +-
  flang/lib/{Common => Support}/idioms.cpp      |   2 +-
@@ -378,8 +382,8 @@ Subject: [PATCH 1/3] [Flang][NFC] Move runtime library files to flang-rt
  flang/tools/f18-parse-demo/f18-parse-demo.cpp |   4 +-
  flang/tools/f18/CMakeLists.txt                |  10 +-
  flang/tools/tco/CMakeLists.txt                |   2 +-
- flang/unittests/CMakeLists.txt                |  16 ++-
- flang/unittests/Evaluate/CMakeLists.txt       |  65 +++++------
+ flang/unittests/CMakeLists.txt                |  23 +++-
+ flang/unittests/Evaluate/CMakeLists.txt       |  64 +++++------
  .../Evaluate/bit-population-count.cpp         |   2 +-
  flang/unittests/Evaluate/expression.cpp       |   2 +-
  flang/unittests/Evaluate/folding.cpp          |   2 +-
@@ -392,7 +396,7 @@ Subject: [PATCH 1/3] [Flang][NFC] Move runtime library files to flang-rt
  flang/unittests/Frontend/CMakeLists.txt       |   2 +-
  flang/unittests/Runtime/CMakeLists.txt        |  62 +++++------
  flang/unittests/Runtime/CUDA/CMakeLists.txt   |   8 +-
- 388 files changed, 1350 insertions(+), 1270 deletions(-)
+ 392 files changed, 1409 insertions(+), 1330 deletions(-)
  create mode 100644 flang-rt/.clang-format
  create mode 100644 flang-rt/cmake/config.h.cmake.in
  rename {flang/include/flang/Runtime => flang-rt/include/flang-rt}/CUDA/allocator.h (78%)
@@ -480,9 +484,10 @@ Subject: [PATCH 1/3] [Flang][NFC] Move runtime library files to flang-rt
  rename {flang/runtime => flang-rt/lib/flang_rt}/CUDA/allocatable.cpp (94%)
  rename {flang/runtime => flang-rt/lib/flang_rt}/CUDA/allocator.cpp (82%)
  rename {flang/runtime => flang-rt/lib/flang_rt}/CUDA/descriptor.cpp (90%)
- rename {flang/runtime => flang-rt/lib/flang_rt}/CUDA/kernel.cpp (97%)
+ rename {flang/runtime => flang-rt/lib/flang_rt}/CUDA/kernel.cpp (98%)
  rename {flang/runtime => flang-rt/lib/flang_rt}/CUDA/memmove-function.cpp (91%)
  rename {flang/runtime => flang-rt/lib/flang_rt}/CUDA/memory.cpp (97%)
+ rename {flang/runtime => flang-rt/lib/flang_rt}/CUDA/pointer.cpp (93%)
  rename {flang/runtime => flang-rt/lib/flang_rt}/CUDA/registration.cpp (93%)
  rename {flang/runtime => flang-rt/lib/flang_rt}/ISO_Fortran_binding.cpp (97%)
  rename {flang/runtime => flang-rt/lib/flang_rt}/ISO_Fortran_util.h (90%)
@@ -594,7 +599,7 @@ Subject: [PATCH 1/3] [Flang][NFC] Move runtime library files to flang-rt
  rename {flang => flang-rt}/unittests/Runtime/Reduction.cpp (99%)
  rename {flang => flang-rt}/unittests/Runtime/RuntimeCrashTest.cpp (98%)
  rename {flang => flang-rt}/unittests/Runtime/Stop.cpp (96%)
- rename {flang => flang-rt}/unittests/Runtime/Support.cpp (95%)
+ rename {flang => flang-rt}/unittests/Runtime/Support.cpp (96%)
  rename {flang => flang-rt}/unittests/Runtime/TemporaryStack.cpp (97%)
  rename {flang => flang-rt}/unittests/Runtime/Time.cpp (98%)
  rename {flang => flang-rt}/unittests/Runtime/Transformational.cpp (99%)
@@ -618,7 +623,7 @@ Subject: [PATCH 1/3] [Flang][NFC] Move runtime library files to flang-rt
  rename flang/include/flang/{Common => Support}/unwrap.h (94%)
  rename flang/{unittests/Evaluate => include/flang/Testing}/fp-testing.h (54%)
  rename flang/{unittests/Evaluate => include/flang/Testing}/testing.h (74%)
- rename flang/lib/{Common => Support}/CMakeLists.txt (80%)
+ delete mode 100644 flang/lib/Common/CMakeLists.txt
  rename flang/lib/{Common => Support}/Fortran-features.cpp (97%)
  rename flang/lib/{Common => Support}/Fortran.cpp (96%)
  rename flang/lib/{Common => Support}/LangOptions.cpp (80%)
@@ -1146,7 +1151,7 @@ diff --git a/flang/runtime/io-error.h b/flang-rt/include/flang-rt/io-error.h
 similarity index 92%
 rename from flang/runtime/io-error.h
 rename to flang-rt/include/flang-rt/io-error.h
-index 426573e2faf0..465be6e3c23f 100644
+index 39a343c8e0a5..c74c08970f94 100644
 --- a/flang/runtime/io-error.h
 +++ b/flang-rt/include/flang-rt/io-error.h
 @@ -1,4 +1,4 @@
@@ -1171,7 +1176,7 @@ index 426573e2faf0..465be6e3c23f 100644
  #include <cinttypes>
  
  namespace Fortran::runtime::io {
-@@ -78,4 +78,4 @@ private:
+@@ -80,4 +80,4 @@ private:
  };
  
  } // namespace Fortran::runtime::io
@@ -1508,7 +1513,7 @@ diff --git a/flang/runtime/tools.h b/flang-rt/include/flang-rt/tools.h
 similarity index 98%
 rename from flang/runtime/tools.h
 rename to flang-rt/include/flang-rt/tools.h
-index 3fe3283415ba..2a66c7dfbbf7 100644
+index facbd2316105..38804a1f4099 100644
 --- a/flang/runtime/tools.h
 +++ b/flang-rt/include/flang-rt/tools.h
 @@ -1,4 +1,4 @@
@@ -1538,7 +1543,7 @@ index 3fe3283415ba..2a66c7dfbbf7 100644
  #include <cstring>
  #include <functional>
  #include <map>
-@@ -553,4 +553,4 @@ RT_API_ATTRS void CreatePartialReductionResult(Descriptor &result,
+@@ -570,4 +570,4 @@ RT_API_ATTRS void CreatePartialReductionResult(Descriptor &result,
      const char *intrinsic, TypeCode);
  
  } // namespace Fortran::runtime
@@ -2516,10 +2521,10 @@ index 947eeb66aa3d..9ec79ccea22c 100644
  #include "cuda_runtime.h"
  
 diff --git a/flang/runtime/CUDA/kernel.cpp b/flang-rt/lib/flang_rt/CUDA/kernel.cpp
-similarity index 97%
+similarity index 98%
 rename from flang/runtime/CUDA/kernel.cpp
 rename to flang-rt/lib/flang_rt/CUDA/kernel.cpp
-index bdc04ccb1767..fce6e24ae0f1 100644
+index 02d89fb8423a..7f9786319d57 100644
 --- a/flang/runtime/CUDA/kernel.cpp
 +++ b/flang-rt/lib/flang_rt/CUDA/kernel.cpp
 @@ -1,4 +1,4 @@
@@ -2583,6 +2588,33 @@ index 0bbb493d2db9..3d4a74f5f9e5 100644
  #include "flang/Runtime/CUDA/common.h"
  #include "flang/Runtime/CUDA/descriptor.h"
  #include "flang/Runtime/CUDA/memmove-function.h"
+diff --git a/flang/runtime/CUDA/pointer.cpp b/flang-rt/lib/flang_rt/CUDA/pointer.cpp
+similarity index 93%
+rename from flang/runtime/CUDA/pointer.cpp
+rename to flang-rt/lib/flang_rt/CUDA/pointer.cpp
+index 3252410bd8d2..b6e803393383 100644
+--- a/flang/runtime/CUDA/pointer.cpp
++++ b/flang-rt/lib/flang_rt/CUDA/pointer.cpp
+@@ -1,4 +1,4 @@
+-//===-- runtime/CUDA/pointer.cpp ------------------------------------------===//
++//===-- lib/flang_rt/CUDA/pointer.cpp ---------------------------*- C++ -*-===//
+ //
+ // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+ // See https://llvm.org/LICENSE.txt for license information.
+@@ -7,9 +7,10 @@
+ //===----------------------------------------------------------------------===//
+ 
+ #include "flang/Runtime/CUDA/pointer.h"
+-#include "../assign-impl.h"
+-#include "../stat.h"
+-#include "../terminator.h"
++#include "flang-rt/assign-impl.h"
++#include "flang-rt/descriptor.h"
++#include "flang-rt/stat.h"
++#include "flang-rt/terminator.h"
+ #include "flang/Runtime/CUDA/descriptor.h"
+ #include "flang/Runtime/CUDA/memmove-function.h"
+ #include "flang/Runtime/pointer.h"
 diff --git a/flang/runtime/CUDA/registration.cpp b/flang-rt/lib/flang_rt/CUDA/registration.cpp
 similarity index 93%
 rename from flang/runtime/CUDA/registration.cpp
@@ -3090,7 +3122,7 @@ diff --git a/flang/runtime/derived.cpp b/flang-rt/lib/flang_rt/derived.cpp
 similarity index 98%
 rename from flang/runtime/derived.cpp
 rename to flang-rt/lib/flang_rt/derived.cpp
-index 7c164ff89045..aa7d986d4cc2 100644
+index 10813c62e5da..cace9e1074e6 100644
 --- a/flang/runtime/derived.cpp
 +++ b/flang-rt/lib/flang_rt/derived.cpp
 @@ -1,4 +1,4 @@
@@ -3263,7 +3295,7 @@ diff --git a/flang/runtime/edit-input.cpp b/flang-rt/lib/flang_rt/edit-input.cpp
 similarity index 99%
 rename from flang/runtime/edit-input.cpp
 rename to flang-rt/lib/flang_rt/edit-input.cpp
-index c714a85a336e..d65c843ead96 100644
+index 317f0b676bd2..7121f6e42dea 100644
 --- a/flang/runtime/edit-input.cpp
 +++ b/flang-rt/lib/flang_rt/edit-input.cpp
 @@ -1,4 +1,4 @@
@@ -3445,7 +3477,7 @@ diff --git a/flang/runtime/exceptions.cpp b/flang-rt/lib/flang_rt/exceptions.cpp
 similarity index 96%
 rename from flang/runtime/exceptions.cpp
 rename to flang-rt/lib/flang_rt/exceptions.cpp
-index 2fa2baa2ec84..3ce842edb71a 100644
+index f541b8e844ad..c6ddc5d05ccf 100644
 --- a/flang/runtime/exceptions.cpp
 +++ b/flang-rt/lib/flang_rt/exceptions.cpp
 @@ -1,4 +1,4 @@
@@ -3574,7 +3606,7 @@ diff --git a/flang/runtime/file.cpp b/flang-rt/lib/flang_rt/file.cpp
 similarity index 98%
 rename from flang/runtime/file.cpp
 rename to flang-rt/lib/flang_rt/file.cpp
-index ec772903242b..36df7b3ded7c 100644
+index 9e077b8cea44..c9fcf0f97b71 100644
 --- a/flang/runtime/file.cpp
 +++ b/flang-rt/lib/flang_rt/file.cpp
 @@ -1,4 +1,4 @@
@@ -3763,7 +3795,7 @@ diff --git a/flang/runtime/io-api.cpp b/flang-rt/lib/flang_rt/io-api.cpp
 similarity index 99%
 rename from flang/runtime/io-api.cpp
 rename to flang-rt/lib/flang_rt/io-api.cpp
-index 39ac8c9eb6de..6984f236841f 100644
+index 7023f61ba34d..ce1330ff323d 100644
 --- a/flang/runtime/io-api.cpp
 +++ b/flang-rt/lib/flang_rt/io-api.cpp
 @@ -1,4 +1,4 @@
@@ -3800,7 +3832,7 @@ diff --git a/flang/runtime/io-error.cpp b/flang-rt/lib/flang_rt/io-error.cpp
 similarity index 97%
 rename from flang/runtime/io-error.cpp
 rename to flang-rt/lib/flang_rt/io-error.cpp
-index 7a90966f8104..68104147de81 100644
+index 37909e8e6dad..b356642c95f8 100644
 --- a/flang/runtime/io-error.cpp
 +++ b/flang-rt/lib/flang_rt/io-error.cpp
 @@ -1,4 +1,4 @@
@@ -4335,7 +4367,7 @@ diff --git a/flang/runtime/stop.cpp b/flang-rt/lib/flang_rt/stop.cpp
 similarity index 96%
 rename from flang/runtime/stop.cpp
 rename to flang-rt/lib/flang_rt/stop.cpp
-index a7be8a082e02..68141383246c 100644
+index f8c180e0aaff..91f8e4a8f6bc 100644
 --- a/flang/runtime/stop.cpp
 +++ b/flang-rt/lib/flang_rt/stop.cpp
 @@ -1,4 +1,4 @@
@@ -5289,7 +5321,7 @@ diff --git a/flang/unittests/Runtime/LogicalFormatTest.cpp b/flang-rt/unittests/
 similarity index 95%
 rename from flang/unittests/Runtime/LogicalFormatTest.cpp
 rename to flang-rt/unittests/Runtime/LogicalFormatTest.cpp
-index c4fbfc81f06a..9260dd77fe6c 100644
+index 26c9374be133..07f62ee02fc6 100644
 --- a/flang/unittests/Runtime/LogicalFormatTest.cpp
 +++ b/flang-rt/unittests/Runtime/LogicalFormatTest.cpp
 @@ -1,4 +1,4 @@
@@ -5599,10 +5631,10 @@ index b13602eaee5e..102fecd1afb2 100644
  #include <gtest/gtest.h>
  
 diff --git a/flang/unittests/Runtime/Support.cpp b/flang-rt/unittests/Runtime/Support.cpp
-similarity index 95%
+similarity index 96%
 rename from flang/unittests/Runtime/Support.cpp
 rename to flang-rt/unittests/Runtime/Support.cpp
-index 9d1a417fdbf4..8cfaa858ce7a 100644
+index 8c8de73b5b97..0159bd74aa60 100644
 --- a/flang/unittests/Runtime/Support.cpp
 +++ b/flang-rt/unittests/Runtime/Support.cpp
 @@ -1,4 +1,4 @@
@@ -5732,7 +5764,7 @@ index 0347edace5c0..ff39d7ccb2a2 100644
 -#endif // FORTRAN_UNITTESTS_RUNTIME_TOOLS_H_
 +#endif /* FLANG_RT_UNITTESTS_RUNTIME_TOOLS_H_ */
 diff --git a/flang/CMakeLists.txt b/flang/CMakeLists.txt
-index 68947eaa9c9b..c811a3a4eeac 100644
+index b619553ef830..0044779da011 100644
 --- a/flang/CMakeLists.txt
 +++ b/flang/CMakeLists.txt
 @@ -23,6 +23,7 @@ if (LLVM_ENABLE_EH)
@@ -5743,7 +5775,7 @@ index 68947eaa9c9b..c811a3a4eeac 100644
  
  if (CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR AND NOT MSVC_IDE)
    message(FATAL_ERROR "In-source builds are not allowed. \
-@@ -233,6 +234,8 @@ else()
+@@ -247,6 +248,8 @@ else()
    include_directories(SYSTEM ${MLIR_TABLEGEN_OUTPUT_DIR})
  endif()
  
@@ -5752,7 +5784,7 @@ index 68947eaa9c9b..c811a3a4eeac 100644
  set(FLANG_TOOLS_INSTALL_DIR "${CMAKE_INSTALL_BINDIR}" CACHE PATH
      "Path for binary subdirectory (defaults to '${CMAKE_INSTALL_BINDIR}')")
  mark_as_advanced(FLANG_TOOLS_INSTALL_DIR)
-@@ -285,7 +288,7 @@ set(FLANG_DEFAULT_LINKER "" CACHE STRING
+@@ -299,7 +302,7 @@ set(FLANG_DEFAULT_LINKER "" CACHE STRING
    "Default linker to use (linker name or absolute path, empty for platform default)")
  
  set(FLANG_DEFAULT_RTLIB "" CACHE STRING
@@ -5761,7 +5793,7 @@ index 68947eaa9c9b..c811a3a4eeac 100644
  
  if (NOT(FLANG_DEFAULT_RTLIB STREQUAL ""))
    message(WARNING "Resetting Flang's default runtime library to use platform default.")
-@@ -473,7 +476,9 @@ if (FLANG_CUF_RUNTIME)
+@@ -487,7 +490,9 @@ if (FLANG_CUF_RUNTIME)
    find_package(CUDAToolkit REQUIRED)
  endif()
  
@@ -5832,7 +5864,7 @@ index 1c85a6754b15..ffde50b6f481 100644
  
  The result of the build is a "device-only" library, i.e. the host
 diff --git a/flang/docs/OpenACC-descriptor-management.md b/flang/docs/OpenACC-descriptor-management.md
-index 0b5103000d8e..215643086fb7 100644
+index 52d00ae4daef..6c147a56894c 100644
 --- a/flang/docs/OpenACC-descriptor-management.md
 +++ b/flang/docs/OpenACC-descriptor-management.md
 @@ -427,7 +427,7 @@ The implementation's behavior may be described as (OpenACC 2.7.2):
@@ -5941,7 +5973,7 @@ index d1c9c756a44a..1214bac75a4b 100644
        return value_[--size_];
      }
 diff --git a/flang/include/flang/Evaluate/call.h b/flang/include/flang/Evaluate/call.h
-index 7531d8a81e80..080f78c4e80f 100644
+index 63277438128e..4d8ca28cf329 100644
 --- a/flang/include/flang/Evaluate/call.h
 +++ b/flang/include/flang/Evaluate/call.h
 @@ -13,11 +13,11 @@
@@ -5960,7 +5992,7 @@ index 7531d8a81e80..080f78c4e80f 100644
  #include <vector>
  
 diff --git a/flang/include/flang/Evaluate/characteristics.h b/flang/include/flang/Evaluate/characteristics.h
-index 11533a7259b0..e40155fb287b 100644
+index 357fc3e59524..ccd584b5ee6a 100644
 --- a/flang/include/flang/Evaluate/characteristics.h
 +++ b/flang/include/flang/Evaluate/characteristics.h
 @@ -18,13 +18,13 @@
@@ -6006,7 +6038,7 @@ index 915e95169c7f..91d38748f5a5 100644
  #include <map>
  #include <set>
 diff --git a/flang/include/flang/Evaluate/constant.h b/flang/include/flang/Evaluate/constant.h
-index d9866a08889f..a171b1002640 100644
+index 61a814446bbf..63e8ed4119cd 100644
 --- a/flang/include/flang/Evaluate/constant.h
 +++ b/flang/include/flang/Evaluate/constant.h
 @@ -11,8 +11,8 @@
@@ -6021,7 +6053,7 @@ index d9866a08889f..a171b1002640 100644
  #include <vector>
  
 diff --git a/flang/include/flang/Evaluate/expression.h b/flang/include/flang/Evaluate/expression.h
-index 9ea037a2f7c4..2798f77b8987 100644
+index 04f4406fc8a2..ec71550d2a50 100644
 --- a/flang/include/flang/Evaluate/expression.h
 +++ b/flang/include/flang/Evaluate/expression.h
 @@ -21,11 +21,11 @@
@@ -6068,7 +6100,7 @@ index 15afb772ae76..dbe1ba7fe7ec 100644
  #include <optional>
  #include <string>
 diff --git a/flang/include/flang/Evaluate/shape.h b/flang/include/flang/Evaluate/shape.h
-index e33044c0d34e..8e8d89ffd8d1 100644
+index 3e42ec691158..18dca71379e0 100644
 --- a/flang/include/flang/Evaluate/shape.h
 +++ b/flang/include/flang/Evaluate/shape.h
 @@ -15,8 +15,8 @@
@@ -6082,7 +6114,7 @@ index e33044c0d34e..8e8d89ffd8d1 100644
  #include <variant>
  
 diff --git a/flang/include/flang/Evaluate/target.h b/flang/include/flang/Evaluate/target.h
-index 154561ce868e..c8b96619287b 100644
+index e07f916b875e..f4595dfe4e43 100644
 --- a/flang/include/flang/Evaluate/target.h
 +++ b/flang/include/flang/Evaluate/target.h
 @@ -12,11 +12,11 @@
@@ -6099,7 +6131,7 @@ index 154561ce868e..c8b96619287b 100644
  
  namespace Fortran::evaluate {
 diff --git a/flang/include/flang/Evaluate/tools.h b/flang/include/flang/Evaluate/tools.h
-index f586c59d46e5..c309314a7193 100644
+index 669efb41b034..fbe905168d25 100644
 --- a/flang/include/flang/Evaluate/tools.h
 +++ b/flang/include/flang/Evaluate/tools.h
 @@ -11,8 +11,6 @@
@@ -6121,7 +6153,7 @@ index f586c59d46e5..c309314a7193 100644
  #include <optional>
  #include <set>
 diff --git a/flang/include/flang/Evaluate/traverse.h b/flang/include/flang/Evaluate/traverse.h
-index 90b93f6afd35..e40b839aa6e1 100644
+index dd38d64bff63..58f188a40924 100644
 --- a/flang/include/flang/Evaluate/traverse.h
 +++ b/flang/include/flang/Evaluate/traverse.h
 @@ -38,9 +38,9 @@
@@ -6155,7 +6187,7 @@ index 1f9296ac4fea..ab7e4723152d 100644
  #include <optional>
  #include <string>
 diff --git a/flang/include/flang/Evaluate/variable.h b/flang/include/flang/Evaluate/variable.h
-index 9565826dbfae..161625b68871 100644
+index 9b597d29813d..bb4150613c81 100644
 --- a/flang/include/flang/Evaluate/variable.h
 +++ b/flang/include/flang/Evaluate/variable.h
 @@ -21,9 +21,9 @@
@@ -6171,7 +6203,7 @@ index 9565826dbfae..161625b68871 100644
  #include <variant>
  #include <vector>
 diff --git a/flang/include/flang/Frontend/CompilerInvocation.h b/flang/include/flang/Frontend/CompilerInvocation.h
-index 50d908d08320..60a43c67e848 100644
+index 7d3f0bdf2e51..b3b7297f6f7f 100644
 --- a/flang/include/flang/Frontend/CompilerInvocation.h
 +++ b/flang/include/flang/Frontend/CompilerInvocation.h
 @@ -13,7 +13,6 @@
@@ -6182,10 +6214,10 @@ index 50d908d08320..60a43c67e848 100644
  #include "flang/Frontend/CodeGenOptions.h"
  #include "flang/Frontend/FrontendOptions.h"
  #include "flang/Frontend/PreprocessorOptions.h"
-@@ -21,6 +20,7 @@
- #include "flang/Lower/LoweringOptions.h"
+@@ -22,6 +21,7 @@
  #include "flang/Parser/parsing.h"
  #include "flang/Semantics/semantics.h"
+ #include "mlir/Support/Timing.h"
 +#include "flang/Support/LangOptions.h"
  #include "clang/Basic/Diagnostic.h"
  #include "clang/Basic/DiagnosticOptions.h"
@@ -6220,7 +6252,7 @@ index 945f8fef89f0..f5b8d0d2ea61 100644
  #define FORTRAN_ISO_NAMESPACE_
  #endif
 diff --git a/flang/include/flang/Lower/AbstractConverter.h b/flang/include/flang/Lower/AbstractConverter.h
-index 607aff41f645..4a21b571ce10 100644
+index c24f43737df5..3d2b805da6f4 100644
 --- a/flang/include/flang/Lower/AbstractConverter.h
 +++ b/flang/include/flang/Lower/AbstractConverter.h
 @@ -13,12 +13,12 @@
@@ -6354,7 +6386,7 @@ index c03f9afd4080..fb64db407708 100644
  #include "llvm/ADT/ArrayRef.h"
  #include "llvm/ADT/DenseMap.h"
 diff --git a/flang/include/flang/Optimizer/Builder/FIRBuilder.h b/flang/include/flang/Optimizer/Builder/FIRBuilder.h
-index 6ee4370c99dc..0aa2354e8bb0 100644
+index ea658fb16a36..805667bfe502 100644
 --- a/flang/include/flang/Optimizer/Builder/FIRBuilder.h
 +++ b/flang/include/flang/Optimizer/Builder/FIRBuilder.h
 @@ -16,12 +16,12 @@
@@ -6386,7 +6418,7 @@ index 5ae32f70a11a..8374b18b8a17 100644
  
  namespace fir {
 diff --git a/flang/include/flang/Optimizer/Builder/Runtime/RTBuilder.h b/flang/include/flang/Optimizer/Builder/Runtime/RTBuilder.h
-index 09b49b95fefe..8d19df8f97e9 100644
+index eaa1de76154d..be07e8d2a939 100644
 --- a/flang/include/flang/Optimizer/Builder/Runtime/RTBuilder.h
 +++ b/flang/include/flang/Optimizer/Builder/Runtime/RTBuilder.h
 @@ -17,12 +17,12 @@
@@ -6475,7 +6507,7 @@ index 38f4f7b82e1e..4541b31e566f 100644
  #include <cstddef>
  #include <cstring>
 diff --git a/flang/include/flang/Parser/dump-parse-tree.h b/flang/include/flang/Parser/dump-parse-tree.h
-index 3331520922bc..7e0333a09239 100644
+index a501ae658a38..42d622c4d497 100644
 --- a/flang/include/flang/Parser/dump-parse-tree.h
 +++ b/flang/include/flang/Parser/dump-parse-tree.h
 @@ -14,9 +14,9 @@
@@ -6525,7 +6557,7 @@ index 76cbb3470dc0..36d70b81b792 100644
  #include <cstring>
  #include <list>
 diff --git a/flang/include/flang/Parser/parse-tree.h b/flang/include/flang/Parser/parse-tree.h
-index 941d70d38762..2ae1bb4e7b80 100644
+index 78962db8a84d..158c27a8be2f 100644
 --- a/flang/include/flang/Parser/parse-tree.h
 +++ b/flang/include/flang/Parser/parse-tree.h
 @@ -22,9 +22,9 @@
@@ -6610,17 +6642,17 @@ index 58061d986209..714d85ec073c 100644
  
  namespace Fortran::runtime {
 diff --git a/flang/include/flang/Runtime/descriptor-consts.h b/flang/include/flang/Runtime/descriptor-consts.h
-index 3b2537579d58..ca69164fc69b 100644
+index 3b2537579d58..acd7bc5ddbde 100644
 --- a/flang/include/flang/Runtime/descriptor-consts.h
 +++ b/flang/include/flang/Runtime/descriptor-consts.h
 @@ -9,8 +9,9 @@
  #ifndef FORTRAN_RUNTIME_DESCRIPTOR_CONSTS_H_
  #define FORTRAN_RUNTIME_DESCRIPTOR_CONSTS_H_
  
++#include "flang/Common/Fortran-consts.h"
 +#include "flang/Common/ISO_Fortran_binding_wrapper.h"
  #include "flang/Common/api-attrs.h"
 -#include "flang/ISO_Fortran_binding_wrapper.h"
-+#include "flang/Common/Fortran-consts.h"
  #include <cstddef>
  #include <cstdint>
  
@@ -6752,7 +6784,7 @@ index c981d86fbd94..c03a0bad24a6 100644
  #include <set>
  #include <string>
 diff --git a/flang/include/flang/Semantics/symbol.h b/flang/include/flang/Semantics/symbol.h
-index 2f97efddf7f7..1cd48041a04a 100644
+index bc6abccac1bb..dfe323acbd49 100644
 --- a/flang/include/flang/Semantics/symbol.h
 +++ b/flang/include/flang/Semantics/symbol.h
 @@ -10,11 +10,11 @@
@@ -6770,7 +6802,7 @@ index 2f97efddf7f7..1cd48041a04a 100644
  
  #include <array>
 diff --git a/flang/include/flang/Semantics/tools.h b/flang/include/flang/Semantics/tools.h
-index 96d4dbb2acaa..a21f603ce66d 100644
+index 07103f98ff04..012223ef9a09 100644
 --- a/flang/include/flang/Semantics/tools.h
 +++ b/flang/include/flang/Semantics/tools.h
 @@ -12,7 +12,6 @@
@@ -7018,6 +7050,33 @@ index 480c8b4c1013..85c901e7fdb8 100644
  } // namespace Fortran::common
 -#endif // FORTRAN_COMMON_OPENMP_FEATURES_H_
 +#endif /* FORTRAN_SUPPORT_OPENMP_FEATURES_H_ */
+diff --git a/flang/include/flang/Support/Timing.h b/flang/include/flang/Support/Timing.h
+index 75ba2a8d85f3..5d66831d6c1c 100644
+--- a/flang/include/flang/Support/Timing.h
++++ b/flang/include/flang/Support/Timing.h
+@@ -1,4 +1,4 @@
+-//===- Timing.h - Execution time measurement facilities ---------*- C++ -*-===//
++//===-- include/flang/Support/Timing.h --------------------------*- C++ -*-===//
+ //
+ // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+ // See https://llvm.org/LICENSE.txt for license information.
+@@ -10,8 +10,8 @@
+ //
+ //===----------------------------------------------------------------------===//
+ 
+-#ifndef FORTRAN_SUPPORT_TIMING_H
+-#define FORTRAN_SUPPORT_TIMING_H
++#ifndef FORTRAN_SUPPORT_TIMING_H_
++#define FORTRAN_SUPPORT_TIMING_H_
+ 
+ #include "mlir/Support/Timing.h"
+ 
+@@ -24,4 +24,4 @@ std::unique_ptr<mlir::OutputStrategy> createTimingFormatterText(
+ 
+ } // namespace Fortran::support
+ 
+-#endif // FORTRAN_SUPPORT_TIMING_H
++#endif /* FORTRAN_SUPPORT_TIMING_H_ */
 diff --git a/flang/include/flang/Common/Version.h b/flang/include/flang/Support/Version.h
 similarity index 90%
 rename from flang/include/flang/Common/Version.h
@@ -7393,16 +7452,15 @@ index 0286f2aa1451..d9401e753fb7 100644
  
  #include "mlir/Dialect/OpenMP/OpenMPDialect.h"
 diff --git a/flang/lib/CMakeLists.txt b/flang/lib/CMakeLists.txt
-index f41d4df1f07e..581cb0296d5c 100644
+index 2182e845b6a7..8b201d9a758a 100644
 --- a/flang/lib/CMakeLists.txt
 +++ b/flang/lib/CMakeLists.txt
-@@ -1,4 +1,4 @@
+@@ -1,4 +1,3 @@
 -add_subdirectory(Common)
-+add_subdirectory(Support)
  add_subdirectory(Evaluate)
  add_subdirectory(Decimal)
  add_subdirectory(Lower)
-@@ -8,3 +8,7 @@ add_subdirectory(Frontend)
+@@ -9,3 +8,7 @@ add_subdirectory(Frontend)
  add_subdirectory(FrontendTool)
  
  add_subdirectory(Optimizer)
@@ -7410,6 +7468,64 @@ index f41d4df1f07e..581cb0296d5c 100644
 +if (FLANG_INCLUDE_TESTS)
 +  add_subdirectory(Testing)
 +endif ()
+diff --git a/flang/lib/Common/CMakeLists.txt b/flang/lib/Common/CMakeLists.txt
+deleted file mode 100644
+index 4b5df0a49f40..000000000000
+--- a/flang/lib/Common/CMakeLists.txt
++++ /dev/null
+@@ -1,52 +0,0 @@
+-find_first_existing_vc_file("${LLVM_MAIN_SRC_DIR}" llvm_vc)
+-find_first_existing_vc_file("${FLANG_SOURCE_DIR}" flang_vc)
+-
+-# The VC revision include that we want to generate.
+-set(version_inc "${CMAKE_CURRENT_BINARY_DIR}/VCSVersion.inc")
+-
+-set(generate_vcs_version_script "${LLVM_CMAKE_DIR}/GenerateVersionFromVCS.cmake")
+-
+-if(llvm_vc AND LLVM_APPEND_VC_REV)
+-  set(llvm_source_dir ${LLVM_MAIN_SRC_DIR})
+-endif()
+-if(flang_vc AND LLVM_APPEND_VC_REV)
+-  set(flang_source_dir ${FLANG_SOURCE_DIR})
+-endif()
+-
+-# Create custom target to generate the VC revision include.
+-add_custom_command(OUTPUT "${version_inc}"
+-  DEPENDS "${llvm_vc}" "${flang_vc}" "${generate_vcs_version_script}"
+-  COMMAND ${CMAKE_COMMAND} "-DNAMES=\"LLVM;FLANG\""
+-                           "-DLLVM_SOURCE_DIR=${llvm_source_dir}"
+-                           "-DFLANG_SOURCE_DIR=${flang_source_dir}"
+-                           "-DHEADER_FILE=${version_inc}"
+-                           "-DLLVM_FORCE_VC_REVISION=${LLVM_FORCE_VC_REVISION}"
+-                           "-DLLVM_FORCE_VC_REPOSITORY=${LLVM_FORCE_VC_REPOSITORY}"
+-                           -P "${generate_vcs_version_script}")
+-
+-# Mark the generated header as being generated.
+-set_source_files_properties("${version_inc}"
+-  PROPERTIES GENERATED TRUE
+-             HEADER_FILE_ONLY TRUE)
+-
+-if(FLANG_VENDOR)
+-  set_source_files_properties(Version.cpp
+-    PROPERTIES COMPILE_DEFINITIONS "FLANG_VENDOR=\"${FLANG_VENDOR} \"")
+-endif()
+-
+-add_flang_library(FortranCommon
+-  Fortran.cpp
+-  Fortran-features.cpp
+-  default-kinds.cpp
+-  idioms.cpp
+-  LangOptions.cpp
+-  OpenMP-utils.cpp
+-  Version.cpp
+-  ${version_inc}
+-
+-  LINK_COMPONENTS
+-  Support
+-
+-  MLIR_LIBS
+-  MLIRIR
+-)
 diff --git a/flang/lib/Decimal/CMakeLists.txt b/flang/lib/Decimal/CMakeLists.txt
 index 880b190f1c58..477d44e0565e 100644
 --- a/flang/lib/Decimal/CMakeLists.txt
@@ -7543,7 +7659,7 @@ index c5b50e806d24..f77df92a7597 100644
  namespace Fortran::evaluate {
  
 diff --git a/flang/lib/Evaluate/characteristics.cpp b/flang/lib/Evaluate/characteristics.cpp
-index 324d6b8dde73..6a55012dcebd 100644
+index 3912d1c4b477..49d11f41ea4c 100644
 --- a/flang/lib/Evaluate/characteristics.cpp
 +++ b/flang/lib/Evaluate/characteristics.cpp
 @@ -7,7 +7,6 @@
@@ -7563,7 +7679,7 @@ index 324d6b8dde73..6a55012dcebd 100644
  #include <initializer_list>
  
 diff --git a/flang/lib/Evaluate/fold-implementation.h b/flang/lib/Evaluate/fold-implementation.h
-index c82995c38f79..4a5a27a76860 100644
+index 31d043f490fd..723bb8d97f68 100644
 --- a/flang/lib/Evaluate/fold-implementation.h
 +++ b/flang/lib/Evaluate/fold-implementation.h
 @@ -12,9 +12,6 @@
@@ -7621,7 +7737,7 @@ index c1b270f518c0..fa2c931b21f0 100644
  #include <cmath>
  #include <complex>
 diff --git a/flang/lib/Evaluate/intrinsics.cpp b/flang/lib/Evaluate/intrinsics.cpp
-index 28805efb177e..be9abb3a0cc3 100644
+index f234241cfe14..2881d9942af7 100644
 --- a/flang/lib/Evaluate/intrinsics.cpp
 +++ b/flang/lib/Evaluate/intrinsics.cpp
 @@ -7,7 +7,6 @@
@@ -7641,7 +7757,7 @@ index 28805efb177e..be9abb3a0cc3 100644
  #include <algorithm>
  #include <cmath>
 diff --git a/flang/lib/Evaluate/shape.cpp b/flang/lib/Evaluate/shape.cpp
-index c62d0cb0ff29..d77dd312eba9 100644
+index 58b824d9b8e6..ab7c357fa78a 100644
 --- a/flang/lib/Evaluate/shape.cpp
 +++ b/flang/lib/Evaluate/shape.cpp
 @@ -8,7 +8,6 @@
@@ -7661,7 +7777,7 @@ index c62d0cb0ff29..d77dd312eba9 100644
  
  using namespace std::placeholders; // _1, _2, &c. for std::bind()
 diff --git a/flang/lib/Evaluate/target.cpp b/flang/lib/Evaluate/target.cpp
-index 409e28c767e1..beff35c2417a 100644
+index 94dc35ecd590..f87cce8b3200 100644
 --- a/flang/lib/Evaluate/target.cpp
 +++ b/flang/lib/Evaluate/target.cpp
 @@ -7,9 +7,9 @@
@@ -7676,7 +7792,7 @@ index 409e28c767e1..beff35c2417a 100644
  namespace Fortran::evaluate {
  
 diff --git a/flang/lib/Frontend/CMakeLists.txt b/flang/lib/Frontend/CMakeLists.txt
-index e954800c3b88..acbed3a4b0cd 100644
+index d063ed36d00b..81eef2d468d8 100644
 --- a/flang/lib/Frontend/CMakeLists.txt
 +++ b/flang/lib/Frontend/CMakeLists.txt
 @@ -27,7 +27,7 @@ add_flang_library(flangFrontend
@@ -7686,10 +7802,10 @@ index e954800c3b88..acbed3a4b0cd 100644
 -  FortranCommon
 +  FortranSupport
    FortranLower
+   FortranSupport
    FIRDialect
-   FIRDialectSupport
 diff --git a/flang/lib/Frontend/CompilerInstance.cpp b/flang/lib/Frontend/CompilerInstance.cpp
-index 35c2ae3c73e6..fe242cdb3586 100644
+index 298790bae665..7888bab5ffb4 100644
 --- a/flang/lib/Frontend/CompilerInstance.cpp
 +++ b/flang/lib/Frontend/CompilerInstance.cpp
 @@ -11,12 +11,12 @@
@@ -7703,11 +7819,11 @@ index 35c2ae3c73e6..fe242cdb3586 100644
  #include "flang/Parser/provenance.h"
  #include "flang/Semantics/semantics.h"
 +#include "flang/Support/Fortran-features.h"
+ #include "flang/Support/Timing.h"
+ #include "mlir/Support/RawOstreamExtras.h"
  #include "clang/Basic/DiagnosticFrontend.h"
- #include "llvm/ADT/StringExtras.h"
- #include "llvm/MC/TargetRegistry.h"
 diff --git a/flang/lib/Frontend/CompilerInvocation.cpp b/flang/lib/Frontend/CompilerInvocation.cpp
-index 79386c92d552..22676f343701 100644
+index 68b5950d3a51..aa4df9822a51 100644
 --- a/flang/lib/Frontend/CompilerInvocation.cpp
 +++ b/flang/lib/Frontend/CompilerInvocation.cpp
 @@ -11,13 +11,13 @@
@@ -7728,7 +7844,7 @@ index 79386c92d552..22676f343701 100644
  #include "flang/Version.inc"
  #include "clang/Basic/AllDiagnostics.h"
 diff --git a/flang/lib/Frontend/FrontendActions.cpp b/flang/lib/Frontend/FrontendActions.cpp
-index 603cb039d20b..51139a6d3725 100644
+index b0545a7ac2f9..b7674bd093f6 100644
 --- a/flang/lib/Frontend/FrontendActions.cpp
 +++ b/flang/lib/Frontend/FrontendActions.cpp
 @@ -11,7 +11,6 @@
@@ -7748,7 +7864,7 @@ index 603cb039d20b..51139a6d3725 100644
  
  #include "mlir/IR/Dialect.h"
 diff --git a/flang/lib/Lower/Bridge.cpp b/flang/lib/Lower/Bridge.cpp
-index c7bf42481554..9cc6acb0a752 100644
+index d92dc0cf9abd..8eca2d9de4bf 100644
 --- a/flang/lib/Lower/Bridge.cpp
 +++ b/flang/lib/Lower/Bridge.cpp
 @@ -12,7 +12,6 @@
@@ -7768,13 +7884,13 @@ index c7bf42481554..9cc6acb0a752 100644
  #include "mlir/IR/Matchers.h"
  #include "mlir/IR/PatternMatch.h"
 diff --git a/flang/lib/Lower/CMakeLists.txt b/flang/lib/Lower/CMakeLists.txt
-index ba6622d8504a..cb37857ab1de 100644
+index f611010765cb..0bc708a16363 100644
 --- a/flang/lib/Lower/CMakeLists.txt
 +++ b/flang/lib/Lower/CMakeLists.txt
-@@ -56,7 +56,7 @@ add_flang_library(FortranLower
+@@ -55,7 +55,7 @@ add_flang_library(FortranLower
+   FIRSupport
+   FIRTransforms
    HLFIRDialect
-   ${dialect_libs}
-   ${extension_libs}
 -  FortranCommon
 +  FortranSupport
    FortranParser
@@ -7841,7 +7957,7 @@ index 1165417ef89a..aa40b1219652 100644
  #include "llvm/ADT/SmallVector.h"
  #include "llvm/ADT/StringRef.h"
 diff --git a/flang/lib/Optimizer/Builder/IntrinsicCall.cpp b/flang/lib/Optimizer/Builder/IntrinsicCall.cpp
-index 9a3777994a9d..9781e842a56a 100644
+index db9918c26516..1808aef17699 100644
 --- a/flang/lib/Optimizer/Builder/IntrinsicCall.cpp
 +++ b/flang/lib/Optimizer/Builder/IntrinsicCall.cpp
 @@ -14,7 +14,6 @@
@@ -7859,8 +7975,8 @@ index 9a3777994a9d..9781e842a56a 100644
 +#include "flang/Support/static-multimap-view.h"
  #include "mlir/Dialect/Complex/IR/Complex.h"
  #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
- #include "mlir/Dialect/Math/IR/Math.h"
-@@ -778,7 +778,7 @@ prettyPrintIntrinsicName(fir::FirOpBuilder &builder, mlir::Location loc,
+ #include "mlir/Dialect/LLVMIR/LLVMTypes.h"
+@@ -788,7 +788,7 @@ prettyPrintIntrinsicName(fir::FirOpBuilder &builder, mlir::Location loc,
  // Generate a call to the Fortran runtime library providing
  // support for 128-bit float math.
  // On 'HAS_LDBL128' targets the implementation
@@ -7870,7 +7986,7 @@ index 9a3777994a9d..9781e842a56a 100644
  // has to be built with FLANG_RUNTIME_F128_MATH_LIB to guarantee
  // proper linking actions in the driver.
 diff --git a/flang/lib/Optimizer/CodeGen/TypeConverter.cpp b/flang/lib/Optimizer/CodeGen/TypeConverter.cpp
-index c23203efcd3d..c9544c592999 100644
+index 0eace903720f..89f498433806 100644
 --- a/flang/lib/Optimizer/CodeGen/TypeConverter.cpp
 +++ b/flang/lib/Optimizer/CodeGen/TypeConverter.cpp
 @@ -13,7 +13,6 @@
@@ -7890,7 +8006,7 @@ index c23203efcd3d..c9544c592999 100644
  #include "llvm/ADT/ScopeExit.h"
  #include "llvm/Support/Debug.h"
 diff --git a/flang/lib/Optimizer/Dialect/FIRType.cpp b/flang/lib/Optimizer/Dialect/FIRType.cpp
-index cba7fa641285..260966f82783 100644
+index 0b57a10a6c49..67d918cc0f41 100644
 --- a/flang/lib/Optimizer/Dialect/FIRType.cpp
 +++ b/flang/lib/Optimizer/Dialect/FIRType.cpp
 @@ -11,7 +11,7 @@
@@ -7903,7 +8019,7 @@ index cba7fa641285..260966f82783 100644
  #include "flang/Optimizer/Dialect/FIRDialect.h"
  #include "flang/Optimizer/Dialect/Support/KindMapping.h"
 diff --git a/flang/lib/Optimizer/OpenMP/CMakeLists.txt b/flang/lib/Optimizer/OpenMP/CMakeLists.txt
-index 026889cca238..74b7bd3e4fb1 100644
+index c8509ccc7fea..86ae93f3207c 100644
 --- a/flang/lib/Optimizer/OpenMP/CMakeLists.txt
 +++ b/flang/lib/Optimizer/OpenMP/CMakeLists.txt
 @@ -21,7 +21,7 @@ add_flang_library(FlangOpenMPTransforms
@@ -7912,14 +8028,14 @@ index 026889cca238..74b7bd3e4fb1 100644
    FIRSupport
 -  FortranCommon
 +  FortranSupport
-   FortranEvaluate
-   MLIRFuncDialect
-   MLIROpenMPDialect
+   HLFIRDialect
+ 
+   MLIR_LIBS
 diff --git a/flang/lib/Optimizer/Passes/CMakeLists.txt b/flang/lib/Optimizer/Passes/CMakeLists.txt
-index 40abbdfbdd65..393e64e4240c 100644
+index eb25beba309b..1c19a5765aff 100644
 --- a/flang/lib/Optimizer/Passes/CMakeLists.txt
 +++ b/flang/lib/Optimizer/Passes/CMakeLists.txt
-@@ -5,16 +5,13 @@ add_flang_library(flangPasses
+@@ -5,14 +5,11 @@ add_flang_library(flangPasses
    CommandLineOpts.cpp
    Pipelines.cpp
  
@@ -7930,13 +8046,11 @@ index 40abbdfbdd65..393e64e4240c 100644
    FIRCodeGen
    FIRTransforms
    FlangOpenMPTransforms
-   ${dialect_libs}
-   ${extension_libs}
 -  FortranCommon
 +  FortranSupport
    HLFIRTransforms
-   MLIRPass
-   MLIRReconcileUnrealizedCasts
+ 
+   LINK_COMPONENTS
 diff --git a/flang/lib/Optimizer/Transforms/AddDebugInfo.cpp b/flang/lib/Optimizer/Transforms/AddDebugInfo.cpp
 index a8e9d198ccb9..79e2b360018c 100644
 --- a/flang/lib/Optimizer/Transforms/AddDebugInfo.cpp
@@ -7978,7 +8092,7 @@ index eb59045a5fde..d0bd67a23641 100644
  #include "mlir/Pass/Pass.h"
  #include "mlir/Transforms/DialectConversion.h"
 diff --git a/flang/lib/Optimizer/Transforms/CMakeLists.txt b/flang/lib/Optimizer/Transforms/CMakeLists.txt
-index d20d3bc4108c..713fcb49c585 100644
+index 9c550f983434..50994fbb2170 100644
 --- a/flang/lib/Optimizer/Transforms/CMakeLists.txt
 +++ b/flang/lib/Optimizer/Transforms/CMakeLists.txt
 @@ -46,7 +46,7 @@ add_flang_library(FIRTransforms
@@ -7988,10 +8102,10 @@ index d20d3bc4108c..713fcb49c585 100644
 -  FortranCommon
 +  FortranSupport
    HLFIRDialect
-   MLIRAffineUtils
-   MLIRFuncDialect
+ 
+   MLIR_LIBS
 diff --git a/flang/lib/Optimizer/Transforms/CUFDeviceGlobal.cpp b/flang/lib/Optimizer/Transforms/CUFDeviceGlobal.cpp
-index 2e6c272fa908..d4c9e002f739 100644
+index 7486dde0e281..3f13a182ad0c 100644
 --- a/flang/lib/Optimizer/Transforms/CUFDeviceGlobal.cpp
 +++ b/flang/lib/Optimizer/Transforms/CUFDeviceGlobal.cpp
 @@ -6,7 +6,6 @@
@@ -8011,7 +8125,7 @@ index 2e6c272fa908..d4c9e002f739 100644
  #include "mlir/IR/SymbolTable.h"
  #include "mlir/Pass/Pass.h"
 diff --git a/flang/lib/Optimizer/Transforms/CUFGPUToLLVMConversion.cpp b/flang/lib/Optimizer/Transforms/CUFGPUToLLVMConversion.cpp
-index 60aa401e1cc8..5a3d38722ecd 100644
+index c469b5a95b04..9a46323c1111 100644
 --- a/flang/lib/Optimizer/Transforms/CUFGPUToLLVMConversion.cpp
 +++ b/flang/lib/Optimizer/Transforms/CUFGPUToLLVMConversion.cpp
 @@ -7,10 +7,10 @@
@@ -8027,7 +8141,7 @@ index 60aa401e1cc8..5a3d38722ecd 100644
  #include "mlir/Dialect/GPU/IR/GPUDialect.h"
  #include "mlir/Pass/Pass.h"
 diff --git a/flang/lib/Optimizer/Transforms/CUFOpConversion.cpp b/flang/lib/Optimizer/Transforms/CUFOpConversion.cpp
-index 8c525fc6daff..ea2cd7e0b12d 100644
+index cc525d703ae5..d748e717adeb 100644
 --- a/flang/lib/Optimizer/Transforms/CUFOpConversion.cpp
 +++ b/flang/lib/Optimizer/Transforms/CUFOpConversion.cpp
 @@ -7,7 +7,6 @@
@@ -8038,9 +8152,9 @@ index 8c525fc6daff..ea2cd7e0b12d 100644
  #include "flang/Optimizer/Builder/CUFCommon.h"
  #include "flang/Optimizer/Builder/Runtime/RTBuilder.h"
  #include "flang/Optimizer/CodeGen/TypeConverter.h"
-@@ -21,6 +20,7 @@
- #include "flang/Runtime/CUDA/descriptor.h"
+@@ -22,6 +21,7 @@
  #include "flang/Runtime/CUDA/memory.h"
+ #include "flang/Runtime/CUDA/pointer.h"
  #include "flang/Runtime/allocatable.h"
 +#include "flang/Support/Fortran.h"
  #include "mlir/Conversion/LLVMCommon/Pattern.h"
@@ -8141,7 +8255,7 @@ index d364671d7a32..76fe3d7ce6ba 100644
    LINK_COMPONENTS
    Support
 diff --git a/flang/lib/Parser/basic-parsers.h b/flang/lib/Parser/basic-parsers.h
-index 515b5993d673..be0f4fc44374 100644
+index 1a8c14e7048f..d739102b8464 100644
 --- a/flang/lib/Parser/basic-parsers.h
 +++ b/flang/lib/Parser/basic-parsers.h
 @@ -22,14 +22,14 @@
@@ -8194,7 +8308,7 @@ index 08041f93b14b..e2440ad6fbc4 100644
  #include <optional>
  #include <string>
 diff --git a/flang/lib/Parser/unparse.cpp b/flang/lib/Parser/unparse.cpp
-index 58820476c51b..9e3026e1fa8d 100644
+index 5b1ff07382c4..d5d9252cf4c7 100644
 --- a/flang/lib/Parser/unparse.cpp
 +++ b/flang/lib/Parser/unparse.cpp
 @@ -10,13 +10,13 @@
@@ -8281,7 +8395,7 @@ index 6cf61a6b923d..ac1f38801cee 100644
  namespace Fortran::semantics {
  
 diff --git a/flang/lib/Semantics/check-cuda.cpp b/flang/lib/Semantics/check-cuda.cpp
-index d8a563922764..d079f5b6aa53 100644
+index c85a84ea5527..32dcaad52e33 100644
 --- a/flang/lib/Semantics/check-cuda.cpp
 +++ b/flang/lib/Semantics/check-cuda.cpp
 @@ -7,7 +7,6 @@
@@ -8424,7 +8538,7 @@ index d8cc4601de26..e99a02cc79db 100644
  #include <map>
  
 diff --git a/flang/lib/Semantics/expression.cpp b/flang/lib/Semantics/expression.cpp
-index c2eb17c1ac8e..4e45521687af 100644
+index 3ec6f385ceb8..1dd603412f42 100644
 --- a/flang/lib/Semantics/expression.cpp
 +++ b/flang/lib/Semantics/expression.cpp
 @@ -11,7 +11,6 @@
@@ -8444,7 +8558,7 @@ index c2eb17c1ac8e..4e45521687af 100644
  #include <algorithm>
  #include <functional>
 diff --git a/flang/lib/Semantics/pointer-assignment.cpp b/flang/lib/Semantics/pointer-assignment.cpp
-index 2450ce39215e..2698d26aeaef 100644
+index 7f4548c7327e..49684ffd5f80 100644
 --- a/flang/lib/Semantics/pointer-assignment.cpp
 +++ b/flang/lib/Semantics/pointer-assignment.cpp
 @@ -10,7 +10,6 @@
@@ -8504,7 +8618,7 @@ index a838d49c0610..065090ed03b6 100644
  #include <variant>
  
 diff --git a/flang/lib/Semantics/resolve-names.cpp b/flang/lib/Semantics/resolve-names.cpp
-index 122c0a2ebb64..2b8ee8928fae 100644
+index aee035733315..d0e0a3784f2a 100644
 --- a/flang/lib/Semantics/resolve-names.cpp
 +++ b/flang/lib/Semantics/resolve-names.cpp
 @@ -13,9 +13,6 @@
@@ -8566,7 +8680,7 @@ index 58dc1f218b56..10a01039ea0a 100644
  #include "llvm/TargetParser/Host.h"
  #include "llvm/TargetParser/Triple.h"
 diff --git a/flang/lib/Semantics/tools.cpp b/flang/lib/Semantics/tools.cpp
-index 9e180605c1b3..7a3b93f10a3e 100644
+index 052d71be4347..64e4c9d7e194 100644
 --- a/flang/lib/Semantics/tools.cpp
 +++ b/flang/lib/Semantics/tools.cpp
 @@ -7,8 +7,6 @@
@@ -8587,14 +8701,11 @@ index 9e180605c1b3..7a3b93f10a3e 100644
  #include "llvm/Support/raw_ostream.h"
  #include <algorithm>
  #include <set>
-diff --git a/flang/lib/Common/CMakeLists.txt b/flang/lib/Support/CMakeLists.txt
-similarity index 80%
-rename from flang/lib/Common/CMakeLists.txt
-rename to flang/lib/Support/CMakeLists.txt
-index de6bea396f3c..8e0f09589528 100644
---- a/flang/lib/Common/CMakeLists.txt
+diff --git a/flang/lib/Support/CMakeLists.txt b/flang/lib/Support/CMakeLists.txt
+index 12183f590316..4ee381589a20 100644
+--- a/flang/lib/Support/CMakeLists.txt
 +++ b/flang/lib/Support/CMakeLists.txt
-@@ -1,3 +1,11 @@
+@@ -1,9 +1,62 @@
 +#===-- lib/Support/CMakeLists.txt ------------------------------------------===#
 +#
 +# Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -8603,18 +8714,60 @@ index de6bea396f3c..8e0f09589528 100644
 +#
 +#===------------------------------------------------------------------------===#
 +
- find_first_existing_vc_file("${LLVM_MAIN_SRC_DIR}" llvm_vc)
- find_first_existing_vc_file("${FLANG_SOURCE_DIR}" flang_vc)
++find_first_existing_vc_file("${LLVM_MAIN_SRC_DIR}" llvm_vc)
++find_first_existing_vc_file("${FLANG_SOURCE_DIR}" flang_vc)
++
++# The VC revision include that we want to generate.
++set(version_inc "${CMAKE_CURRENT_BINARY_DIR}/VCSVersion.inc")
++
++set(generate_vcs_version_script "${LLVM_CMAKE_DIR}/GenerateVersionFromVCS.cmake")
++
++if(llvm_vc AND LLVM_APPEND_VC_REV)
++  set(llvm_source_dir ${LLVM_MAIN_SRC_DIR})
++endif()
++if(flang_vc AND LLVM_APPEND_VC_REV)
++  set(flang_source_dir ${FLANG_SOURCE_DIR})
++endif()
++
++# Create custom target to generate the VC revision include.
++add_custom_command(OUTPUT "${version_inc}"
++  DEPENDS "${llvm_vc}" "${flang_vc}" "${generate_vcs_version_script}"
++  COMMAND ${CMAKE_COMMAND} "-DNAMES=\"LLVM;FLANG\""
++                           "-DLLVM_SOURCE_DIR=${llvm_source_dir}"
++                           "-DFLANG_SOURCE_DIR=${flang_source_dir}"
++                           "-DHEADER_FILE=${version_inc}"
++                           "-DLLVM_FORCE_VC_REVISION=${LLVM_FORCE_VC_REVISION}"
++                           "-DLLVM_FORCE_VC_REPOSITORY=${LLVM_FORCE_VC_REPOSITORY}"
++                           -P "${generate_vcs_version_script}")
++
++# Mark the generated header as being generated.
++set_source_files_properties("${version_inc}"
++  PROPERTIES GENERATED TRUE
++             HEADER_FILE_ONLY TRUE)
++
++if(FLANG_VENDOR)
++  set_source_files_properties(Version.cpp
++    PROPERTIES COMPILE_DEFINITIONS "FLANG_VENDOR=\"${FLANG_VENDOR} \"")
++endif()
++
+ add_flang_library(FortranSupport
++  default-kinds.cpp
++  Fortran.cpp
++  Fortran-features.cpp
++  idioms.cpp
++  LangOptions.cpp
++  OpenMP-utils.cpp
+   Timing.cpp
++  Version.cpp
++  ${version_inc}
  
-@@ -34,7 +42,7 @@ if(FLANG_VENDOR)
-     PROPERTIES COMPILE_DEFINITIONS "FLANG_VENDOR=\"${FLANG_VENDOR} \"")
- endif()
+   LINK_COMPONENTS
+   Support
  
--add_flang_library(FortranCommon
-+add_flang_library(FortranSupport
-   Fortran.cpp
-   Fortran-features.cpp
-   default-kinds.cpp
+   MLIR_LIBS
++  MLIRIR
+   MLIRSupport
+ )
 diff --git a/flang/lib/Common/Fortran-features.cpp b/flang/lib/Support/Fortran-features.cpp
 similarity index 97%
 rename from flang/lib/Common/Fortran-features.cpp
@@ -8644,7 +8797,7 @@ diff --git a/flang/lib/Common/Fortran.cpp b/flang/lib/Support/Fortran.cpp
 similarity index 96%
 rename from flang/lib/Common/Fortran.cpp
 rename to flang/lib/Support/Fortran.cpp
-index 367a51f884e8..09c0d96115d4 100644
+index eec83419f9eb..746b7c974072 100644
 --- a/flang/lib/Common/Fortran.cpp
 +++ b/flang/lib/Support/Fortran.cpp
 @@ -1,4 +1,4 @@
@@ -8699,12 +8852,22 @@ diff --git a/flang/lib/Common/OpenMP-utils.cpp b/flang/lib/Support/OpenMP-utils.
 similarity index 95%
 rename from flang/lib/Common/OpenMP-utils.cpp
 rename to flang/lib/Support/OpenMP-utils.cpp
-index f5115f475d6a..5164de9acb4f 100644
+index 47e89fe6dd1e..b3cab763aca3 100644
 --- a/flang/lib/Common/OpenMP-utils.cpp
 +++ b/flang/lib/Support/OpenMP-utils.cpp
 @@ -1,4 +1,4 @@
 -//===-- include/flang/Common/OpenMP-utils.cpp ------------------*- C++ -*-====//
 +//===-- lib/Support/OpenMP-utils.cpp ----------------------------*- C++ -*-===//
+ //
+ // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+ // See https://llvm.org/LICENSE.txt for license information.
+diff --git a/flang/lib/Support/Timing.cpp b/flang/lib/Support/Timing.cpp
+index ee8309a950ee..41cb2be82690 100644
+--- a/flang/lib/Support/Timing.cpp
++++ b/flang/lib/Support/Timing.cpp
+@@ -1,4 +1,4 @@
+-//===- Timing.cpp - Execution time measurement facilities -----------------===//
++//===-- lib/Support/Timing.cpp ----------------------------------*- C++ -*-===//
  //
  // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
  // See https://llvm.org/LICENSE.txt for license information.
@@ -8998,7 +9161,7 @@ index fbfaae9a8806..2bdcfca4cba8 100644
 +add_custom_target(FortranRuntime)
 +add_dependencies(FortranRuntime flang_rt)
 diff --git a/flang/runtime/CUDA/CMakeLists.txt b/flang/runtime/CUDA/CMakeLists.txt
-index 3a88824826de..86a76658042e 100644
+index 23e01da72ede..ada2c99d3f68 100644
 --- a/flang/runtime/CUDA/CMakeLists.txt
 +++ b/flang/runtime/CUDA/CMakeLists.txt
 @@ -13,7 +13,7 @@ include_directories(${CUDAToolkit_INCLUDE_DIRS})
@@ -9010,8 +9173,8 @@ index 3a88824826de..86a76658042e 100644
    allocator.cpp
    allocatable.cpp
    descriptor.cpp
-@@ -22,6 +22,11 @@ add_flang_library(${CUFRT_LIBNAME}
-   memory.cpp
+@@ -23,6 +23,11 @@ add_flang_library(${CUFRT_LIBNAME}
+   pointer.cpp
    registration.cpp
  )
 +runtime_source_files(sources SUBDIR "CUDA")
@@ -9022,7 +9185,7 @@ index 3a88824826de..86a76658042e 100644
  
  if (BUILD_SHARED_LIBS)
    set(CUDA_RT_TARGET CUDA::cudart)
-@@ -31,6 +36,6 @@ endif()
+@@ -32,6 +37,6 @@ endif()
  
  target_link_libraries(${CUFRT_LIBNAME}
    PRIVATE
@@ -9356,10 +9519,10 @@ index d1a0ac763cf8..697ba3fa7976 100644
  import lit.llvm
  lit.llvm.initialize(lit_config, config)
 diff --git a/flang/tools/bbc/CMakeLists.txt b/flang/tools/bbc/CMakeLists.txt
-index 9abdcf17b6eb..3ffa5a49fb49 100644
+index 85aeb85e0c53..f950f03920d3 100644
 --- a/flang/tools/bbc/CMakeLists.txt
 +++ b/flang/tools/bbc/CMakeLists.txt
-@@ -32,7 +32,7 @@ target_link_libraries(bbc PRIVATE
+@@ -36,7 +36,7 @@ mlir_target_link_libraries(bbc PRIVATE
    ${extension_libs}
    MLIRAffineToStandard
    MLIRSCFToControlFlow
@@ -9369,7 +9532,7 @@ index 9abdcf17b6eb..3ffa5a49fb49 100644
    FortranEvaluate
    FortranSemantics
 diff --git a/flang/tools/bbc/bbc.cpp b/flang/tools/bbc/bbc.cpp
-index 7efc460be867..4499e44711bd 100644
+index dafbcd856389..3b19a1c2a78d 100644
 --- a/flang/tools/bbc/bbc.cpp
 +++ b/flang/tools/bbc/bbc.cpp
 @@ -14,11 +14,6 @@
@@ -9431,7 +9594,7 @@ index 3025dbd4dca4..a50c88dc8406 100644
  #include "llvm/Support/FileSystem.h"
  #include "llvm/Support/Program.h"
 diff --git a/flang/tools/f18/CMakeLists.txt b/flang/tools/f18/CMakeLists.txt
-index 4362fcf05376..776d59c1ae33 100644
+index cc2bc5b8eb5c..a849e95df31c 100644
 --- a/flang/tools/f18/CMakeLists.txt
 +++ b/flang/tools/f18/CMakeLists.txt
 @@ -5,7 +5,7 @@ set(LLVM_LINK_COMPONENTS
@@ -9443,7 +9606,7 @@ index 4362fcf05376..776d59c1ae33 100644
  # library.
  set(MODULES_WITH_IMPLEMENTATION
    "iso_fortran_env_impl"
-@@ -101,11 +101,11 @@ if (NOT CMAKE_CROSSCOMPILING)
+@@ -105,11 +105,11 @@ if (NOT CMAKE_CROSSCOMPILING)
      endif()
  
      # Some modules have an implementation part that needs to be added to the
@@ -9457,7 +9620,7 @@ index 4362fcf05376..776d59c1ae33 100644
        set(object_output "${CMAKE_CURRENT_BINARY_DIR}/${filename}${CMAKE_CXX_OUTPUT_EXTENSION}")
        set(compile_with -c -o ${object_output})
        set(include_in_link TRUE)
-@@ -123,14 +123,14 @@ if (NOT CMAKE_CROSSCOMPILING)
+@@ -127,14 +127,14 @@ if (NOT CMAKE_CROSSCOMPILING)
      install(FILES ${base}.mod DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/flang")
  
      # If a module has been compiled into an object file, add the file to
@@ -9475,23 +9638,25 @@ index 4362fcf05376..776d59c1ae33 100644
    set(FORTRAN_MODULE_OBJECTS ${module_objects} CACHE INTERNAL "" FORCE)
  
 diff --git a/flang/tools/tco/CMakeLists.txt b/flang/tools/tco/CMakeLists.txt
-index aac80437ee11..aeb4a2e2c05d 100644
+index 220f908d2f10..c277cdbf167b 100644
 --- a/flang/tools/tco/CMakeLists.txt
 +++ b/flang/tools/tco/CMakeLists.txt
-@@ -19,7 +19,7 @@ target_link_libraries(tco PRIVATE
-   HLFIRTransforms
+@@ -20,7 +20,7 @@ target_link_libraries(tco PRIVATE
    flangPasses
+   FIROpenACCSupport
    FlangOpenMPTransforms
 -  FortranCommon
 +  FortranSupport
-   ${dialect_libs}
-   ${extension_libs}
-   MLIRIR
+ )
+ 
+ mlir_target_link_libraries(tco PRIVATE
 diff --git a/flang/unittests/CMakeLists.txt b/flang/unittests/CMakeLists.txt
-index 945067fed4f8..66bd5db2d913 100644
+index 945067fed4f8..b946d39fad54 100644
 --- a/flang/unittests/CMakeLists.txt
 +++ b/flang/unittests/CMakeLists.txt
-@@ -1,6 +1,6 @@
+@@ -1,6 +1,8 @@
++include(AddFlangOffloadRuntime)
++
  if (FLANG_EXPERIMENTAL_CUDA_RUNTIME)
    # If Fortran runtime is built as CUDA library, the linking
 -  # of targets that link FortranRuntime must be done
@@ -9499,16 +9664,22 @@ index 945067fed4f8..66bd5db2d913 100644
    # with CUDA_RESOLVE_DEVICE_SYMBOLS.
    # CUDA language must be enabled for CUDA_RESOLVE_DEVICE_SYMBOLS
    # to take effect.
-@@ -10,6 +10,8 @@ endif()
+@@ -10,7 +12,14 @@ endif()
  add_custom_target(FlangUnitTests)
  set_target_properties(FlangUnitTests PROPERTIES FOLDER "Flang/Tests")
  
 +include_directories("${FLANG_RT_SOURCE_DIR}/include")
 +
  function(add_flang_unittest_offload_properties target)
++  # Do not apply runtime properties if not even compiling the runtime.
++  if (NOT FLANG_INCLUDE_RUNTIME)
++    return ()
++  endif ()
++
    # Set CUDA_RESOLVE_DEVICE_SYMBOLS.
    if (FLANG_EXPERIMENTAL_CUDA_RUNTIME)
-@@ -54,7 +56,13 @@ function(add_flang_nongtest_unittest test_name)
+     set_target_properties(${target}
+@@ -54,7 +63,13 @@ function(add_flang_nongtest_unittest test_name)
        set(suffix .test)
    endif()
  
@@ -9523,7 +9694,7 @@ index 945067fed4f8..66bd5db2d913 100644
    set_target_properties(${test_name}${suffix} PROPERTIES FOLDER "Flang/Tests/Unit")
  
    if (LLVM_LINK_LLVM_DYLIB AND NOT ARG_DISABLE_LLVM_LINK_LLVM_DYLIB)
-@@ -75,5 +83,7 @@ add_subdirectory(Optimizer)
+@@ -75,5 +90,7 @@ add_subdirectory(Optimizer)
  add_subdirectory(Common)
  add_subdirectory(Decimal)
  add_subdirectory(Evaluate)
@@ -9533,10 +9704,10 @@ index 945067fed4f8..66bd5db2d913 100644
 +endif ()
  add_subdirectory(Frontend)
 diff --git a/flang/unittests/Evaluate/CMakeLists.txt b/flang/unittests/Evaluate/CMakeLists.txt
-index 52eb385f4763..1ac0d28527d1 100644
+index 52eb385f4763..9e19b2cdfbb9 100644
 --- a/flang/unittests/Evaluate/CMakeLists.txt
 +++ b/flang/unittests/Evaluate/CMakeLists.txt
-@@ -1,56 +1,43 @@
+@@ -1,56 +1,42 @@
  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 -add_library(FortranEvaluateTesting
 -  testing.cpp
@@ -9594,7 +9765,6 @@ index 52eb385f4763..1ac0d28527d1 100644
    FortranSemantics
    FortranParser
 -  FortranRuntime
-+  flang_rt
  )
  
  add_flang_nongtest_unittest(logical
@@ -9603,7 +9773,7 @@ index 52eb385f4763..1ac0d28527d1 100644
    FortranEvaluate
    FortranSemantics
  )
-@@ -62,30 +49,32 @@ add_flang_nongtest_unittest(logical
+@@ -62,30 +48,32 @@ add_flang_nongtest_unittest(logical
  set(LLVM_REQUIRES_EH ON)
  set(LLVM_REQUIRES_RTTI ON)
  add_flang_nongtest_unittest(real
@@ -9770,7 +9940,7 @@ index f05c1c96a7e8..0b749abe1c08 100644
  #include <cinttypes>
  
 diff --git a/flang/unittests/Frontend/CMakeLists.txt b/flang/unittests/Frontend/CMakeLists.txt
-index 22c568af3d12..1616431ec1a7 100644
+index 9177997f41f5..3cbc2cf14851 100644
 --- a/flang/unittests/Frontend/CMakeLists.txt
 +++ b/flang/unittests/Frontend/CMakeLists.txt
 @@ -18,7 +18,7 @@ target_link_libraries(FlangFrontendTests
@@ -9780,8 +9950,8 @@ index 22c568af3d12..1616431ec1a7 100644
 -  FortranCommon
 +  FortranSupport
    FortranEvaluate
-   MLIRIR
  )
+ 
 diff --git a/flang/unittests/Runtime/CMakeLists.txt b/flang/unittests/Runtime/CMakeLists.txt
 index 179e439917ff..2e8739140274 100644
 --- a/flang/unittests/Runtime/CMakeLists.txt

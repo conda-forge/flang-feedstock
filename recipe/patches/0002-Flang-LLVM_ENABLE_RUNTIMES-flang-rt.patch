@@ -1,15 +1,13 @@
-From 1cc0563401f4829b351f27c9584db23585eea805 Mon Sep 17 00:00:00 2001
+From 4eb43adb7f8729c777eda872b9c07d2f337ceac2 Mon Sep 17 00:00:00 2001
 From: Michael Kruse <llvm-project@meinersbur.de>
-Date: Fri, 27 Sep 2024 09:18:49 +0200
+Date: Fri, 24 Jan 2025 16:50:07 +0100
 Subject: [PATCH 2/3] [Flang] LLVM_ENABLE_RUNTIMES=flang-rt
 
-Extract Flang's runtime library to use the LLVM_ENABLE_RUNTIME
-mechanism.
 ---
  flang-rt/.clang-tidy                          |   2 +
- flang-rt/CMakeLists.txt                       | 249 ++++++++++++++++++
+ flang-rt/CMakeLists.txt                       | 248 ++++++++++++++++++
  flang-rt/CODE_OWNERS.TXT                      |  14 +
- flang-rt/LICENSE.TXT                          | 234 ++++++++++++++++
+ flang-rt/LICENSE.TXT                          | 234 +++++++++++++++++
  flang-rt/README.md                            | 188 +++++++++++++
  flang-rt/cmake/modules/AddFlangRT.cmake       | 186 +++++++++++++
  .../cmake/modules/AddFlangRTOffload.cmake     | 101 +++++++
@@ -19,20 +17,16 @@ mechanism.
  flang-rt/lib/Testing/CMakeLists.txt           |  20 ++
  flang-rt/lib/flang_rt/CMakeLists.txt          | 213 +++++++++++++++
  flang-rt/lib/flang_rt/CUDA/CMakeLists.txt     |  33 +++
- flang-rt/lib/flang_rt/allocator-registry.cpp  |   4 +-
- flang-rt/lib/flang_rt/environment.cpp         |   4 +-
  flang-rt/lib/flang_rt/io-api-minimal.cpp      |   2 +-
- flang-rt/lib/flang_rt/unit.cpp                |   4 +-
- flang-rt/lib/flang_rt/utf.cpp                 |   4 +-
  flang-rt/test/CMakeLists.txt                  |  59 +++++
- flang-rt/test/Driver/ctofortran.f90           |  28 +-
- flang-rt/test/Driver/exec.f90                 |   6 +-
+ flang-rt/test/Driver/ctofortran.f90           |  29 +-
+ flang-rt/test/Driver/exec.f90                 |   8 +-
  flang-rt/test/NonGtestUnit/lit.cfg.py         |  22 ++
  flang-rt/test/NonGtestUnit/lit.site.cfg.py.in |  14 +
- flang-rt/test/Runtime/no-cpp-dep.c            |   4 +-
+ flang-rt/test/Runtime/no-cpp-dep.c            |   5 +-
  flang-rt/test/Unit/lit.cfg.py                 |  21 ++
  flang-rt/test/Unit/lit.site.cfg.py.in         |  15 ++
- flang-rt/test/lit.cfg.py                      | 104 ++++++++
+ flang-rt/test/lit.cfg.py                      | 102 +++++++
  flang-rt/test/lit.site.cfg.py.in              |  19 ++
  flang-rt/unittests/CMakeLists.txt             | 111 ++++++++
  flang-rt/unittests/Evaluate/CMakeLists.txt    |  21 ++
@@ -43,11 +37,10 @@ mechanism.
  flang/docs/GettingStarted.md                  | 108 ++++----
  flang/docs/ReleaseNotes.md                    |   8 +-
  flang/module/iso_fortran_env_impl.f90         |   2 +-
- flang/test/lit.cfg.py                         |  22 --
+ flang/test/lit.cfg.py                         |  20 --
  flang/test/lit.site.cfg.py.in                 |   3 -
- flang/unittests/Evaluate/CMakeLists.txt       |   1 -
  runtimes/CMakeLists.txt                       |   2 +-
- 41 files changed, 2124 insertions(+), 145 deletions(-)
+ 36 files changed, 2117 insertions(+), 134 deletions(-)
  create mode 100644 flang-rt/.clang-tidy
  create mode 100644 flang-rt/CMakeLists.txt
  create mode 100644 flang-rt/CODE_OWNERS.TXT
@@ -84,10 +77,10 @@ index 000000000000..ee3a0ab2201b
 +InheritParentConfig: true
 diff --git a/flang-rt/CMakeLists.txt b/flang-rt/CMakeLists.txt
 new file mode 100644
-index 000000000000..08cea28a6f9a
+index 000000000000..655d0a55b400
 --- /dev/null
 +++ b/flang-rt/CMakeLists.txt
-@@ -0,0 +1,249 @@
+@@ -0,0 +1,248 @@
 +#===-- CMakeLists.txt ------------------------------------------------------===#
 +#
 +# Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -112,7 +105,6 @@ index 000000000000..08cea28a6f9a
 +set(FLANG_RT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 +set(FLANG_RT_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
 +set(FLANG_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../flang")
-+
 +
 +# CMake 3.24 is the first version of CMake that directly recognizes Flang.
 +# LLVM's requirement is only CMake 3.20, teach CMake 3.20-3.23 how to use Flang.
@@ -985,7 +977,7 @@ index 000000000000..aa8adedf6175
 +endfunction (add_flangrt_library)
 diff --git a/flang-rt/cmake/modules/AddFlangRTOffload.cmake b/flang-rt/cmake/modules/AddFlangRTOffload.cmake
 new file mode 100644
-index 000000000000..c1a7e8ffe4df
+index 000000000000..b055646cb060
 --- /dev/null
 +++ b/flang-rt/cmake/modules/AddFlangRTOffload.cmake
 @@ -0,0 +1,101 @@
@@ -1039,7 +1031,7 @@ index 000000000000..c1a7e8ffe4df
 +    # Apply configuration options
 +    if (FLANG_RT_CUDA_RUNTIME_PTX_WITHOUT_GLOBAL_VARS)
 +      target_compile_definitions(obj.${name}PTX
-+        PRIVATE FLANG_RT_NO_GLOBAL_VAR_DEFS
++        PRIVATE FLANG_RUNTIME_NO_GLOBAL_VAR_DEFS
 +        )
 +    endif()
 +
@@ -1671,42 +1663,6 @@ index 000000000000..3c741ac93d64
 +  flang_rt
 +  CUDA::cudart_static
 +)
-diff --git a/flang-rt/lib/flang_rt/allocator-registry.cpp b/flang-rt/lib/flang_rt/allocator-registry.cpp
-index 11847de68724..cdf2450d414a 100644
---- a/flang-rt/lib/flang_rt/allocator-registry.cpp
-+++ b/flang-rt/lib/flang_rt/allocator-registry.cpp
-@@ -11,11 +11,11 @@
- 
- namespace Fortran::runtime {
- 
--#ifndef FLANG_RUNTIME_NO_GLOBAL_VAR_DEFS
-+#ifndef FLANG_RT_NO_GLOBAL_VAR_DEFS
- RT_OFFLOAD_VAR_GROUP_BEGIN
- RT_VAR_ATTRS AllocatorRegistry allocatorRegistry;
- RT_OFFLOAD_VAR_GROUP_END
--#endif // FLANG_RUNTIME_NO_GLOBAL_VAR_DEFS
-+#endif // FLANG_RT_NO_GLOBAL_VAR_DEFS
- 
- RT_OFFLOAD_API_GROUP_BEGIN
- RT_API_ATTRS void AllocatorRegistry::Register(int pos, Allocator_t allocator) {
-diff --git a/flang-rt/lib/flang_rt/environment.cpp b/flang-rt/lib/flang_rt/environment.cpp
-index b8d96b933f5b..6c2e4dce4faa 100644
---- a/flang-rt/lib/flang_rt/environment.cpp
-+++ b/flang-rt/lib/flang_rt/environment.cpp
-@@ -23,11 +23,11 @@ extern char **environ;
- 
- namespace Fortran::runtime {
- 
--#ifndef FLANG_RUNTIME_NO_GLOBAL_VAR_DEFS
-+#ifndef FLANG_RT_NO_GLOBAL_VAR_DEFS
- RT_OFFLOAD_VAR_GROUP_BEGIN
- RT_VAR_ATTRS ExecutionEnvironment executionEnvironment;
- RT_OFFLOAD_VAR_GROUP_END
--#endif // FLANG_RUNTIME_NO_GLOBAL_VAR_DEFS
-+#endif // FLANG_RT_NO_GLOBAL_VAR_DEFS
- 
- static void SetEnvironmentDefaults(const EnvironmentDefaultList *envDefaults) {
-   if (!envDefaults) {
 diff --git a/flang-rt/lib/flang_rt/io-api-minimal.cpp b/flang-rt/lib/flang_rt/io-api-minimal.cpp
 index c3234c78c10c..cd5cf6bd3e69 100644
 --- a/flang-rt/lib/flang_rt/io-api-minimal.cpp
@@ -1720,48 +1676,6 @@ index c3234c78c10c..cd5cf6bd3e69 100644
    va_list list;
    va_start(list, format);
    std::vfprintf(stderr, format, list);
-diff --git a/flang-rt/lib/flang_rt/unit.cpp b/flang-rt/lib/flang_rt/unit.cpp
-index f05c4b5236dd..c1a1ec9ebab9 100644
---- a/flang-rt/lib/flang_rt/unit.cpp
-+++ b/flang-rt/lib/flang_rt/unit.cpp
-@@ -19,13 +19,13 @@
- 
- namespace Fortran::runtime::io {
- 
--#ifndef FLANG_RUNTIME_NO_GLOBAL_VAR_DEFS
-+#ifndef FLANG_RT_NO_GLOBAL_VAR_DEFS
- RT_OFFLOAD_VAR_GROUP_BEGIN
- RT_VAR_ATTRS ExternalFileUnit *defaultInput{nullptr}; // unit 5
- RT_VAR_ATTRS ExternalFileUnit *defaultOutput{nullptr}; // unit 6
- RT_VAR_ATTRS ExternalFileUnit *errorOutput{nullptr}; // unit 0 extension
- RT_OFFLOAD_VAR_GROUP_END
--#endif // FLANG_RUNTIME_NO_GLOBAL_VAR_DEFS
-+#endif // FLANG_RT_NO_GLOBAL_VAR_DEFS
- 
- RT_OFFLOAD_API_GROUP_BEGIN
- 
-diff --git a/flang-rt/lib/flang_rt/utf.cpp b/flang-rt/lib/flang_rt/utf.cpp
-index dd74889c025c..48305ce7502a 100644
---- a/flang-rt/lib/flang_rt/utf.cpp
-+++ b/flang-rt/lib/flang_rt/utf.cpp
-@@ -10,7 +10,7 @@
- 
- namespace Fortran::runtime {
- 
--#ifndef FLANG_RUNTIME_NO_GLOBAL_VAR_DEFS
-+#ifndef FLANG_RT_NO_GLOBAL_VAR_DEFS
- // clang-format off
- RT_OFFLOAD_VAR_GROUP_BEGIN
- const RT_CONST_VAR_ATTRS std::uint8_t UTF8FirstByteTable[256]{
-@@ -41,7 +41,7 @@ const RT_CONST_VAR_ATTRS std::uint8_t UTF8FirstByteTable[256]{
- };
- RT_OFFLOAD_VAR_GROUP_END
- // clang-format on
--#endif // FLANG_RUNTIME_NO_GLOBAL_VAR_DEFS
-+#endif // FLANG_RT_NO_GLOBAL_VAR_DEFS
- 
- RT_OFFLOAD_API_GROUP_BEGIN
- 
 diff --git a/flang-rt/test/CMakeLists.txt b/flang-rt/test/CMakeLists.txt
 new file mode 100644
 index 000000000000..5ca07b66e4f9
@@ -1828,23 +1742,24 @@ index 000000000000..5ca07b66e4f9
 +    DEPENDS flang-rt-test-depends
 +  )
 diff --git a/flang-rt/test/Driver/ctofortran.f90 b/flang-rt/test/Driver/ctofortran.f90
-index 10c7adaccc95..3656737d8ef2 100644
+index 10c7adaccc95..e385e7974cdc 100644
 --- a/flang-rt/test/Driver/ctofortran.f90
 +++ b/flang-rt/test/Driver/ctofortran.f90
-@@ -1,8 +1,9 @@
+@@ -1,8 +1,10 @@
  ! UNSUPPORTED: system-windows
 -! REQUIRES: flang-rt
++! UNSUPPORTED: offload-cuda
 +
  ! RUN: split-file %s %t
 -! RUN: chmod +x %t/runtest.sh
 -! RUN: %t/runtest.sh %t %t/ffile.f90 %t/cfile.c %flang | FileCheck %s
 +! RUN: %clang -I"%include/flang" -c %t/cfile.c -o %t/cfile.o
-+! RUN: %flang -L"%libdir" %deplibs %t/ffile.f90 %t/cfile.o -o %t/ctofortran
++! RUN: %flang -L"%libdir" %t/ffile.f90 %t/cfile.o -o %t/ctofortran
 +! RUN: env LD_LIBRARY_PATH="$LD_LIBRARY_PATH:%libdir" %t/ctofortran | FileCheck %s
  
  !--- ffile.f90
  program fmain
-@@ -66,24 +67,3 @@ void csub() {
+@@ -66,24 +68,3 @@ void csub() {
    foo(desc);
    return;
  }
@@ -1870,18 +1785,20 @@ index 10c7adaccc95..3656737d8ef2 100644
 -  echo "PASS"
 -fi
 diff --git a/flang-rt/test/Driver/exec.f90 b/flang-rt/test/Driver/exec.f90
-index 9ca91ee24011..e042c3fb684f 100644
+index 9ca91ee24011..5a81a1e4c3e4 100644
 --- a/flang-rt/test/Driver/exec.f90
 +++ b/flang-rt/test/Driver/exec.f90
-@@ -1,10 +1,8 @@
+@@ -1,10 +1,10 @@
 -! UNSUPPORTED: system-windows
  ! REQUIRES: flang-rt
++! UNSUPPORTED: offload-cuda
++
  ! Verify that flang can correctly build executables.
  
 -! RUN: %flang %s -o %t
 -! RUN: env LD_LIBRARY_PATH="$LD_LIBRARY_PATH:%llvmshlibdir" %t | FileCheck %s
 -! RUN: rm -f %t
-+! RUN: %flang -L"%libdir" %s %deplibs -o %t
++! RUN: %flang -L"%libdir" %s -o %t
 +! RUN: env LD_LIBRARY_PATH="$LD_LIBRARY_PATH:%libdir" %t | FileCheck %s
  
  ! CHECK: Hello, World!
@@ -1935,19 +1852,20 @@ index 000000000000..8244b5b62d3a
 +# Let the main config do the real work.
 +lit_config.load_config(config, os.path.join(config.flang_rt_source_dir, 'test', 'NonGtestUnit', 'lit.cfg.py'))
 diff --git a/flang-rt/test/Runtime/no-cpp-dep.c b/flang-rt/test/Runtime/no-cpp-dep.c
-index c03029f0f3c2..1fe02287dc88 100644
+index c03029f0f3c2..2a416bdb27ee 100644
 --- a/flang-rt/test/Runtime/no-cpp-dep.c
 +++ b/flang-rt/test/Runtime/no-cpp-dep.c
-@@ -3,10 +3,10 @@ This test makes sure that flang's runtime does not depend on the C++ runtime
+@@ -3,10 +3,11 @@ This test makes sure that flang's runtime does not depend on the C++ runtime
  library. It tries to link this simple file against libflang_rt.a with
  a C compiler.
  
 -REQUIRES: c-compiler, flang-rt
 +UNSUPPORTED: system-windows
++UNSUPPORTED: offload-cuda
  
  RUN: %if system-aix %{ export OBJECT_MODE=64 %}
 -RUN: %cc -std=c99 %s -I%include %libruntime -lm  \
-+RUN: %cc -std=c99 %s -I%include -L"%libdir" -lflang_rt -lm %deplibs \
++RUN: %cc -std=c99 %s -I%include -L"%libdir" -lflang_rt -lm \
  RUN: %if system-aix %{-lpthread %}
  RUN: rm a.out
  */
@@ -2001,10 +1919,10 @@ index 000000000000..ed6dea07bcdd
 +lit_config.load_config(config, os.path.join(config.flang_rt_source_dir, 'test', 'Unit', 'lit.cfg.py'))
 diff --git a/flang-rt/test/lit.cfg.py b/flang-rt/test/lit.cfg.py
 new file mode 100644
-index 000000000000..8a810f405586
+index 000000000000..08f3f1121c89
 --- /dev/null
 +++ b/flang-rt/test/lit.cfg.py
-@@ -0,0 +1,104 @@
+@@ -0,0 +1,102 @@
 +# -*- Python -*-
 +
 +import shlex
@@ -2104,11 +2022,9 @@ index 000000000000..8a810f405586
 +# Library path of libflang_rt.a (for lib search path when using non-Flang driver for linking)
 +config.substitutions.append(("%libdir", config.flang_rt_output_resource_lib_dir))
 +
-+# Additional library depedendencies the that Flang driver does not add itself.
-+deplibs = []
++# For CUDA offloading, additional steps (device linking) and libraries (cudart) are needed.
 +if config.flang_rt_experimental_offload_support == "CUDA":
-+    deplibs.append("-lcudart")
-+config.substitutions.append(("%deplibs", shjoin(deplibs)))
++    config.available_features.add("offload-cuda")
 diff --git a/flang-rt/test/lit.site.cfg.py.in b/flang-rt/test/lit.site.cfg.py.in
 new file mode 100644
 index 000000000000..662d076b1fe2
@@ -2357,7 +2273,7 @@ index 000000000000..37b117234208
 +  CufRuntime
 +)
 diff --git a/flang/CMakeLists.txt b/flang/CMakeLists.txt
-index c811a3a4eeac..7c75ff5d1c51 100644
+index 0044779da011..e0f32418f7f3 100644
 --- a/flang/CMakeLists.txt
 +++ b/flang/CMakeLists.txt
 @@ -35,17 +35,6 @@ endif()
@@ -2378,7 +2294,7 @@ index c811a3a4eeac..7c75ff5d1c51 100644
  # Check for a standalone build and configure as appropriate from
  # there.
  if (CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-@@ -234,7 +223,25 @@ else()
+@@ -248,7 +237,25 @@ else()
    include_directories(SYSTEM ${MLIR_TABLEGEN_OUTPUT_DIR})
  endif()
  
@@ -2393,19 +2309,19 @@ index c811a3a4eeac..7c75ff5d1c51 100644
 +    message(WARNING "Building Flang-RT using LLVM_ENABLE_RUNTIMES. FLANG_INCLUDE_RUNTIME=${FLANG_INCLUDE_RUNTIME} ignored.")
 +    set(FLANG_INCLUDE_RUNTIME OFF)
 +  else ()
-+     message(STATUS "Building flang_rt in-tree")
++     message(STATUS "Building Flang-RT in-tree")
 +  endif ()
 +else ()
 +  if ("flang-rt" IN_LIST LLVM_ENABLE_RUNTIMES)
-+    message(STATUS "Building Flang-RT using LLVM_ENABLE_RUNTIMES.")
++    message(STATUS "Building Flang-RT using LLVM_ENABLE_RUNTIMES")
 +  else ()
-+    message(STATUS "Not building Flang-RT. For a usable Fortran toolchain, compile a standalone Flang-RT")
++    message(STATUS "Not building Flang-RT. For a usable Fortran toolchain, either add LLVM_ENABLE_RUNTIMES=flang-rt, or compile a standalone Flang-RT.")
 +  endif ()
 +endif ()
  
  set(FLANG_TOOLS_INSTALL_DIR "${CMAKE_INSTALL_BINDIR}" CACHE PATH
      "Path for binary subdirectory (defaults to '${CMAKE_INSTALL_BINDIR}')")
-@@ -344,20 +351,6 @@ if (FLANG_REPOSITORY_STRING)
+@@ -358,20 +365,6 @@ if (FLANG_REPOSITORY_STRING)
    add_definitions(-DFLANG_REPOSITORY_STRING="${FLANG_REPOSITORY_STRING}")
  endif()
  
@@ -2426,7 +2342,7 @@ index c811a3a4eeac..7c75ff5d1c51 100644
  # Configure Flang's Version.inc file.
  configure_file(
    ${CMAKE_CURRENT_SOURCE_DIR}/include/flang/Version.inc.in
-@@ -455,6 +448,7 @@ if (APPLE)
+@@ -469,6 +462,7 @@ if (APPLE)
  endif()
  
  include(AddFlang)
@@ -2434,7 +2350,7 @@ index c811a3a4eeac..7c75ff5d1c51 100644
  
  if (FLANG_INCLUDE_TESTS)
    add_compile_definitions(FLANG_INCLUDE_TESTS=1)
-@@ -548,7 +542,12 @@ include(GetClangResourceDir)
+@@ -562,7 +556,12 @@ include(GetClangResourceDir)
  get_clang_resource_dir(HEADER_BINARY_DIR PREFIX ${LLVM_LIBRARY_OUTPUT_INTDIR}/.. SUBDIR include)
  configure_file(
    ${FLANG_SOURCE_DIR}/include/flang/ISO_Fortran_binding.h
@@ -2756,16 +2672,13 @@ index 5408e7de3700..3ee00acfde4d 100644
  module iso_fortran_env_impl
    implicit none
 diff --git a/flang/test/lit.cfg.py b/flang/test/lit.cfg.py
-index 08ba586e1226..39809cc81cb8 100644
+index 08ba586e1226..0ba80f9a03f2 100644
 --- a/flang/test/lit.cfg.py
 +++ b/flang/test/lit.cfg.py
-@@ -163,29 +163,7 @@ else:
-         ToolSubst("%not_todo_abort_cmd", command=FindTool("not"), unresolved="fatal")
-     )
- 
--if config.flang_include_runtime:
+@@ -166,26 +166,6 @@ else:
+ if config.flang_include_runtime:
      config.available_features.add("flang-rt")
--
+ 
 -# Define some variables to help us test that the flang runtime doesn't depend on
 -# the C++ runtime libraries. For this we need a C compiler. If for some reason
 -# we don't have one, we can just disable the test.
@@ -2812,18 +2725,6 @@ index 697ba3fa7976..5b66e592bcfe 100644
  config.osx_sysroot = path(r"@CMAKE_OSX_SYSROOT@")
  config.targets_to_build = "@TARGETS_TO_BUILD@"
  config.default_sysroot = "@DEFAULT_SYSROOT@"
-diff --git a/flang/unittests/Evaluate/CMakeLists.txt b/flang/unittests/Evaluate/CMakeLists.txt
-index 1ac0d28527d1..9e19b2cdfbb9 100644
---- a/flang/unittests/Evaluate/CMakeLists.txt
-+++ b/flang/unittests/Evaluate/CMakeLists.txt
-@@ -33,7 +33,6 @@ add_flang_nongtest_unittest(intrinsics
-   FortranDecimal
-   FortranSemantics
-   FortranParser
--  flang_rt
- )
- 
- add_flang_nongtest_unittest(logical
 diff --git a/runtimes/CMakeLists.txt b/runtimes/CMakeLists.txt
 index 4a6b317a03f6..7f1e2ae065d6 100644
 --- a/runtimes/CMakeLists.txt
