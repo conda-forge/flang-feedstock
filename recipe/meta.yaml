@@ -12,6 +12,7 @@ source:
     - patches/0001-Instructions-for-building-a-functional-Flang-cross-c.patch
     - patches/0002-Minimal-WASM-support-for-flang.patch
     - patches/0003-Specialize-Flang-to-target-WASM.patch
+    - patches/0004-Patches-to-build-flang-runtime-with-emcc.patch
 
 build:
   number: 0
