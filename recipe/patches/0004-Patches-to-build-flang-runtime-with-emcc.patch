@@ -1,7 +1,7 @@
 From 6254628834e8a98f06aab0c019613e3dc44575e1 Mon Sep 17 00:00:00 2001
 From: serge-sans-paille <sguelton@mozilla.com>
 Date: Fri, 9 Aug 2024 08:42:52 +0200
-Subject: [PATCH 7/7] Patches to build flang runtime with emcc
+Subject: [PATCH 4/4] Patches to build flang runtime with emcc
 
 ---
  flang/runtime/CMakeLists.txt | 46 ++++++++++++++++++------------------
