@@ -14,7 +14,7 @@ source:
     - patches/0003-Specialize-Flang-to-target-WASM.patch
 
 build:
-  number: 1
+  number: 2
   # intentionally only linux for emscripten-support currently
   skip: true  # [not linux]
 
