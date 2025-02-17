@@ -1,7 +1,7 @@
 From 50a109a4f3a37b27daf5b05503edc5a918f6a826 Mon Sep 17 00:00:00 2001
 From: serge-sans-paille <sguelton@mozilla.com>
 Date: Tue, 18 Jun 2024 22:19:09 +0200
-Subject: [PATCH 2/4] Minimal WASM support for flang
+Subject: [PATCH 2/7] Minimal WASM support for flang
 
 Original patch from https://gws.phd/posts/fortran_wasm/
 ---

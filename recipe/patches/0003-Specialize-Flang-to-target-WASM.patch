@@ -1,7 +1,7 @@
 From a15e14e27fdbb7e874f51d02e06b4c6c9349f798 Mon Sep 17 00:00:00 2001
 From: serge-sans-paille <sguelton@mozilla.com>
 Date: Wed, 10 Jul 2024 22:42:19 +0200
-Subject: [PATCH 3/4] Specialize Flang to target WASM
+Subject: [PATCH 3/7] Specialize Flang to target WASM
 
 Many values were explicitly encoded under the assumation that host and target have
 the same architecture.
