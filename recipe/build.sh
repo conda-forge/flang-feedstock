@@ -24,7 +24,8 @@ cmake -G Ninja \
     -DLLVM_LIT_ARGS=-v \
     -DLLVM_CMAKE_DIR=$PREFIX/lib/cmake/llvm \
     -DLLVM_DIR=$PREFIX/lib/cmake/llvm \
-    -DLLVM_TARGETS_TO_BUILD="X86;WebAssembly" \
+    -DLLVM_TARGETS_TO_BUILD=WebAssembly \
+    -DLLVM_DEFAULT_TARGET_TRIPLE=wasm32-unknown-emscripten \
     -DLLVM_ENABLE_PROJECTS="clang;flang;mlir" \
     -DCLANG_DIR=$PREFIX/lib/cmake/clang \
     -DFLANG_INCLUDE_TESTS=OFF \
