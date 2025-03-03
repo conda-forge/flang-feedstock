@@ -1,0 +1,46 @@
+From 98c891afa658e6dead33e96a62e3f101a7b63a64 Mon Sep 17 00:00:00 2001
+From: serge-sans-paille <serge.guelton@telecom-bretagne.eu>
+Date: Mon, 3 Mar 2025 09:40:30 +0100
+Subject: [PATCH] feat: Support of common symbols via weak symbols
+
+Signed-off-by: Julien Jerphanion <git@jjerphan.xyz>
+Co-authored-by: Julien Jerphanion <git@jjerphan.xyz>
+---
+ llvm/lib/MC/MCWasmStreamer.cpp | 14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
+
+diff --git a/llvm/lib/MC/MCWasmStreamer.cpp b/llvm/lib/MC/MCWasmStreamer.cpp
+index 90039cb6300c..29c24b15c443 100644
+--- a/llvm/lib/MC/MCWasmStreamer.cpp
++++ b/llvm/lib/MC/MCWasmStreamer.cpp
+@@ -151,7 +151,12 @@ bool MCWasmStreamer::emitSymbolAttribute(MCSymbol *S, MCSymbolAttr Attribute) {
+ 
+ void MCWasmStreamer::emitCommonSymbol(MCSymbol *S, uint64_t Size,
+                                       Align ByteAlignment) {
+-  llvm_unreachable("Common symbols are not yet implemented for Wasm");
++  auto *Symbol = cast<MCSymbolWasm>(S);
++  getAssembler().registerSymbol(*Symbol);
++  Symbol->setWeak(true);
++  Symbol->setExternal(true);
++  Symbol->setSize(Size);
++  Symbol->setAlignment(ByteAlignment);
+ }
+ 
+ void MCWasmStreamer::emitELFSize(MCSymbol *Symbol, const MCExpr *Value) {
+@@ -160,7 +165,12 @@ void MCWasmStreamer::emitELFSize(MCSymbol *Symbol, const MCExpr *Value) {
+ 
+ void MCWasmStreamer::emitLocalCommonSymbol(MCSymbol *S, uint64_t Size,
+                                            Align ByteAlignment) {
+-  llvm_unreachable("Local common symbols are not yet implemented for Wasm");
++  auto *Symbol = cast<MCSymbolWasm>(S);
++  getAssembler().registerSymbol(*Symbol);
++  Symbol->setWeak(true);
++  Symbol->setExternal(false);
++  Symbol->setSize(Size);
++  Symbol->setAlignment(ByteAlignment);
+ }
+ 
+ void MCWasmStreamer::emitIdent(StringRef IdentString) {
+-- 
+2.48.1
+
