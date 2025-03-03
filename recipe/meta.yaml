@@ -19,6 +19,7 @@ source:
     - patches/0006-Flang-Runtime-Handle-missing-definitions-in-cfenv.patch
     # hard wasm overrides for building runtime with emcc
     - patches/0007-Patches-to-build-flang-runtime-with-emcc.patch
+    - patches/feat-Support-of-common-symbols-via-weak-symbols.patch
 
 build:
   number: 2
