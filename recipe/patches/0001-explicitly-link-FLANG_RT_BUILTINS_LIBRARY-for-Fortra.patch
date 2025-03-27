@@ -1,0 +1,26 @@
+From 3eb48404d40b336311059e5475e1f10bceb2ac88 Mon Sep 17 00:00:00 2001
+From: "H. Vetinari" <h.vetinari@gmx.com>
+Date: Wed, 26 Mar 2025 22:53:41 +1100
+Subject: [PATCH] explicitly link FLANG_RT_BUILTINS_LIBRARY for FortranDecimal
+
+with inspiration from
+https://github.com/llvm/llvm-project/blob/a629b505757a1853e6083290e5d8d7b82f4f4d4a/flang-rt/cmake/modules/AddFlangRT.cmake#L277-L296
+---
+ flang/lib/Decimal/CMakeLists.txt | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/flang/lib/Decimal/CMakeLists.txt b/flang/lib/Decimal/CMakeLists.txt
+index 880b190f1c58..14dba125d66a 100644
+--- a/flang/lib/Decimal/CMakeLists.txt
++++ b/flang/lib/Decimal/CMakeLists.txt
+@@ -83,4 +83,10 @@ if (DEFINED MSVC)
+   )
+   add_dependencies(FortranDecimal FortranDecimal.static FortranDecimal.dynamic
+     FortranDecimal.static_dbg FortranDecimal.dynamic_dbg)
++
++  include(HandleCompilerRT)
++  find_compiler_rt_library(builtins FLANG_RT_BUILTINS_LIBRARY)
++  if (FLANG_RT_BUILTINS_LIBRARY)
++    target_compile_options(FortranDecimal PRIVATE "$<$<COMPILE_LANGUAGE:Fortran>:-Xflang>" "$<$<COMPILE_LANGUAGE:Fortran>:--dependent-lib=${FLANG_RT_BUILTINS_LIBRARY}>")
++  endif()
+ endif()

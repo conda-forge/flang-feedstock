@@ -7,6 +7,11 @@ package:
 source:
   url: https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-{{ version.replace(".rc", "-rc") }}.tar.gz
   sha256: edde69aa3e48a3892a8f01332ff79cfb6179151b42503c4ba77d2cd408b013bf
+  patches:
+    # when we build flang with clang (because MSVC takes too long and runs into the 6h timeout),
+    # but then want to use said flang with MSVC, we need to ensure that symbols needed by flang
+    # (which are in compiler-rt) are actually found; clang does this by default, msvc doesn't
+    - patches/0001-explicitly-link-FLANG_RT_BUILTINS_LIBRARY-for-Fortra.patch
 
 build:
   number: 0
