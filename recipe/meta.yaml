@@ -7,6 +7,11 @@ package:
 source:
   url: https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-{{ version.replace(".rc", "-rc") }}.tar.gz
   sha256: edde69aa3e48a3892a8f01332ff79cfb6179151b42503c4ba77d2cd408b013bf
+  patches:
+    # when we build flang with clang (because MSVC takes too long and runs into the 6h timeout),
+    # but then want to use said flang with MSVC, we need to ensure that symbols needed by flang
+    # (which are in compiler-rt) are actually found; clang does this by default, msvc doesn't
+    - patches/0001-explicitly-link-FLANG_RT_BUILTINS_LIBRARY-for-Fortra.patch
 
 build:
   number: 0
@@ -86,9 +91,45 @@ outputs:
         - {{ pin_subpackage('libflang', exact=True) }}
     test:
       commands:
-        # see naming discussion: https://discourse.llvm.org/t/reviving-rename-flang-new-to-flang/68130/2
-        - test -f $PREFIX/bin/flang-new                     # [linux]
-        - if not exist %LIBRARY_BIN%\flang-new.exe exit 1   # [win]
+        - test -f $PREFIX/bin/flang                     # [linux]
+        - if not exist %LIBRARY_BIN%\flang.exe exit 1   # [win]
+
+  - name: flang_impl_{{ cross_target_platform }}
+    script: install_flang_impl.sh   # [unix]
+    requirements:
+      - {{ pin_subpackage("flang", exact=True) }}
+      - {{ pin_subpackage("libflang", exact=True) }}
+      - lld                     # [win]
+      # for llvm-ar.exe
+      - llvm-tools              # [win]
+      - compiler-rt_{{ cross_target_platform }} ={{ version }}
+    test:
+      commands:
+        # we don't cross-compile on windows -> no symlinks
+        - {{ CBUILD }}-flang --version  # [unix]
+        - {{ CHOST }}-flang --version   # [unix]
+
+  - name: flang_{{ cross_target_platform }}
+    script: install_flang_scripts.sh    # [unix]
+    script: install_flang_scripts.bat   # [win]
+    run_exports:
+      strong:                           # [unix]
+        - libflang >={{ version }}      # [unix]
+    requirements:
+      build:
+        - sed       # [unix]
+        - m2-sed    # [win]
+      run:
+        - {{ pin_subpackage("flang_impl_" ~ cross_target_platform, exact=True) }}
+    test:
+      files:
+        - hello_world.f90
+      commands:
+        # on linux we point FC to the symlink; on windows, we point to the binary
+        - $FC hello_world.f90       # [unix]
+        - "%FC% hello_world.f90"    # [win]
+        - ./a.out   # [unix]
+        - a.exe     # [win]
 
 about:
   home: https://flang.llvm.org
