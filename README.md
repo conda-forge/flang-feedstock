@@ -56,6 +56,10 @@ Current release info
 | Name | Downloads | Version | Platforms |
 | --- | --- | --- | --- |
 | [![Conda Recipe](https://img.shields.io/badge/recipe-flang-green.svg)](https://anaconda.org/conda-forge/flang) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/flang.svg)](https://anaconda.org/conda-forge/flang) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/flang.svg)](https://anaconda.org/conda-forge/flang) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/flang.svg)](https://anaconda.org/conda-forge/flang) |
+| [![Conda Recipe](https://img.shields.io/badge/recipe-flang_impl_linux--64-green.svg)](https://anaconda.org/conda-forge/flang_impl_linux-64) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/flang_impl_linux-64.svg)](https://anaconda.org/conda-forge/flang_impl_linux-64) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/flang_impl_linux-64.svg)](https://anaconda.org/conda-forge/flang_impl_linux-64) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/flang_impl_linux-64.svg)](https://anaconda.org/conda-forge/flang_impl_linux-64) |
+| [![Conda Recipe](https://img.shields.io/badge/recipe-flang_impl_win--64-green.svg)](https://anaconda.org/conda-forge/flang_impl_win-64) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/flang_impl_win-64.svg)](https://anaconda.org/conda-forge/flang_impl_win-64) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/flang_impl_win-64.svg)](https://anaconda.org/conda-forge/flang_impl_win-64) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/flang_impl_win-64.svg)](https://anaconda.org/conda-forge/flang_impl_win-64) |
+| [![Conda Recipe](https://img.shields.io/badge/recipe-flang_linux--64-green.svg)](https://anaconda.org/conda-forge/flang_linux-64) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/flang_linux-64.svg)](https://anaconda.org/conda-forge/flang_linux-64) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/flang_linux-64.svg)](https://anaconda.org/conda-forge/flang_linux-64) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/flang_linux-64.svg)](https://anaconda.org/conda-forge/flang_linux-64) |
+| [![Conda Recipe](https://img.shields.io/badge/recipe-flang_win--64-green.svg)](https://anaconda.org/conda-forge/flang_win-64) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/flang_win-64.svg)](https://anaconda.org/conda-forge/flang_win-64) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/flang_win-64.svg)](https://anaconda.org/conda-forge/flang_win-64) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/flang_win-64.svg)](https://anaconda.org/conda-forge/flang_win-64) |
 | [![Conda Recipe](https://img.shields.io/badge/recipe-libflang-green.svg)](https://anaconda.org/conda-forge/libflang) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/libflang.svg)](https://anaconda.org/conda-forge/libflang) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/libflang.svg)](https://anaconda.org/conda-forge/libflang) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/libflang.svg)](https://anaconda.org/conda-forge/libflang) |
 
 Installing flang
@@ -68,16 +72,16 @@ conda config --add channels conda-forge
 conda config --set channel_priority strict
 ```
 
-Once the `conda-forge` channel has been enabled, `flang, libflang` can be installed with `conda`:
+Once the `conda-forge` channel has been enabled, `flang, flang_impl_linux-64, flang_impl_win-64, flang_linux-64, flang_win-64, libflang` can be installed with `conda`:
 
 ```
-conda install flang libflang
+conda install flang flang_impl_linux-64 flang_impl_win-64 flang_linux-64 flang_win-64 libflang
 ```
 
 or with `mamba`:
 
 ```
-mamba install flang libflang
+mamba install flang flang_impl_linux-64 flang_impl_win-64 flang_linux-64 flang_win-64 libflang
 ```
 
 It is possible to list all of the versions of `flang` available on your platform with `conda`:
