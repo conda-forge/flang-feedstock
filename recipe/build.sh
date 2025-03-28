@@ -25,6 +25,7 @@ cmake -G Ninja \
     -DLLVM_CMAKE_DIR=$PREFIX/lib/cmake/llvm \
     -DLLVM_DIR=$PREFIX/lib/cmake/llvm \
     -DCLANG_DIR=$PREFIX/lib/cmake/clang \
+    -DFLANG_INCLUDE_RUNTIME=OFF \
     -DFLANG_INCLUDE_TESTS=OFF \
     -DMLIR_DIR=$PREFIX/lib/cmake/mlir \
     ../flang
