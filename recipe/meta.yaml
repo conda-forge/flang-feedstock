@@ -53,8 +53,8 @@ outputs:
         - mlir =={{ version }}
     test:
       commands:
-        # static library (shared builds not supported yet)
-        # - test -f $PREFIX/lib/libflang_rt.a                              # [linux]
+        # shared library (not yet supported on windows)
+        - test -f $PREFIX/lib/libflang_rt.runtime.so                        # [linux]
         # - if not exist %LIBRARY_LIB%\windows\flang_rt.static.lib exit 1  # [win]
 
   # compatibility output for previous name
@@ -115,11 +115,11 @@ outputs:
         - {{ CHOST }}-flang --version   # [unix]
 
   - name: flang_{{ cross_target_platform }}
-    script: install_flang_scripts.sh   # [unix]
-    script: install_flang_scripts.bat  # [win]
-    # run_exports:
-    #   strong:                       # [unix]
-    #     - flang-rt >={{ version }}  # [unix]
+    script: install_flang_scripts.sh    # [unix]
+    script: install_flang_scripts.bat   # [win]
+    run_exports:
+      strong:                           # [unix]
+        - flang-rt >={{ version }}      # [unix]
     requirements:
       build:
         - sed       # [unix]
