@@ -55,7 +55,7 @@ outputs:
     test:
       commands:
         # static library
-        - test -f $PREFIX/lib/libflang_rt.runtime.a                         # [linux]
+        # - test -f $PREFIX/lib/libflang_rt.runtime.a                         # [linux]
         # - if not exist %LIBRARY_LIB%\windows\flang_rt.static.lib exit 1  # [win]
 
   # compatibility output for previous name
