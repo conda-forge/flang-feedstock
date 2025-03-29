@@ -29,3 +29,5 @@ cmake -G Ninja \
 
 cmake --build . -j2
 cmake --install .
+
+ln -s $PREFIX/lib/clang/21/lib/x86_64-unknown-linux-gnu/libflang_rt.runtime.a $PREFIX/lib/libflang_rt.runtime.a
