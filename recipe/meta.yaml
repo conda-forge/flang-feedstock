@@ -86,9 +86,8 @@ outputs:
         - {{ pin_subpackage('libflang', exact=True) }}
     test:
       commands:
-        # see naming discussion: https://discourse.llvm.org/t/reviving-rename-flang-new-to-flang/68130/2
-        - test -f $PREFIX/bin/flang-new                     # [linux]
-        - if not exist %LIBRARY_BIN%\flang-new.exe exit 1   # [win]
+        - test -f $PREFIX/bin/flang                     # [linux]
+        - if not exist %LIBRARY_BIN%\flang.exe exit 1   # [win]
 
 about:
   home: https://flang.llvm.org
