@@ -6,8 +6,6 @@ channel_sources:
 - conda-forge/label/llvm_dev,conda-forge
 channel_targets:
 - conda-forge llvm_dev
-cross_target_platform:
-- win-64
 cxx_compiler:
 - vs2022
 target_platform:
