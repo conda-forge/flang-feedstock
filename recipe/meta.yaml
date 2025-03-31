@@ -35,39 +35,6 @@ requirements:
     - zlib
 
 outputs:
-  - name: flang-rt
-    script: install_flang-rt.sh   # [unix]
-    script: install_flang-rt.bat  # [win]
-    requirements:
-      build:
-        - cmake
-        - ninja
-        - {{ stdlib('c') }}
-        - {{ compiler('c') }}
-        - {{ compiler('cxx') }}
-        - {{ pin_subpackage('flang', exact=True) }}
-      host:
-        - clangdev =={{ version }}
-        - compiler-rt =={{ version }}
-        - llvmdev =={{ version }}
-        - mlir =={{ version }}
-    test:
-      commands:
-        # static library
-        # - test -f $PREFIX/lib/libflang_rt.runtime.a                         # [linux]
-        # - if not exist %LIBRARY_LIB%\windows\flang_rt.static.lib exit 1  # [win]
-
-  # compatibility output for previous name
-  - name: libflang
-    requirements:
-      host:
-        - {{ pin_subpackage('flang-rt', exact=True) }}
-      run:
-        - {{ pin_subpackage('flang-rt', exact=True) }}
-    test:
-      commands:
-        - echo "pure metapackage"
-
   - name: flang
     script: install_flang.sh  # [unix]
     script: install_flang.bat  # [win]
@@ -98,43 +65,6 @@ outputs:
       commands:
         - test -f $PREFIX/bin/flang                     # [linux]
         - if not exist %LIBRARY_BIN%\flang.exe exit 1   # [win]
-
-  - name: flang_impl_{{ cross_target_platform }}
-    script: install_flang_impl.sh   # [unix]
-    requirements:
-      - {{ pin_subpackage("flang", exact=True) }}
-      - {{ pin_subpackage("flang-rt", exact=True) }}
-      - lld                     # [win]
-      # for llvm-ar.exe
-      - llvm-tools              # [win]
-      - compiler-rt_{{ cross_target_platform }} ={{ version }}
-    test:
-      commands:
-        # we don't cross-compile on windows -> no symlinks
-        - {{ CBUILD }}-flang --version  # [unix]
-        - {{ CHOST }}-flang --version   # [unix]
-
-  - name: flang_{{ cross_target_platform }}
-    script: install_flang_scripts.sh    # [unix]
-    script: install_flang_scripts.bat   # [win]
-    # run_exports:
-    #   strong:                           # [unix]
-    #     - flang-rt >={{ version }}      # [unix]
-    requirements:
-      build:
-        - sed       # [unix]
-        - m2-sed    # [win]
-      run:
-        - {{ pin_subpackage("flang_impl_" ~ cross_target_platform, exact=True) }}
-    test:
-      files:
-        - hello_world.f90
-      commands:
-        # on linux we point FC to the symlink; on windows, we point to the binary
-        - $FC hello_world.f90       # [unix]
-        - "%FC% hello_world.f90"    # [win]
-        - ./a.out   # [unix]
-        - a.exe     # [win]
 
 about:
   home: https://flang.llvm.org
