@@ -23,6 +23,7 @@ cmake -G "Ninja" ^
     -DLLVM_CMAKE_DIR=%LIBRARY_LIB%/cmake/llvm ^
     -DLLVM_DIR=%LIBRARY_LIB%/cmake/llvm ^
     -DCLANG_DIR=%LIBRARY_LIB%/cmake/clang ^
+    -DFLANG_INCLUDE_RUNTIME=OFF ^
     -DFLANG_INCLUDE_TESTS=OFF ^
     -DMLIR_DIR=%LIBRARY_LIB%/cmake/mlir ^
     ..\flang
