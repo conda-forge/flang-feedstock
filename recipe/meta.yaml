@@ -20,7 +20,8 @@ requirements:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
     - cmake
-    - ninja
+    # some bug with misinterpreting `...\tools` as a tab (`\t`)
+    - ninja <1.13
     - mlir =={{ version }}     # [build_platform != target_platform]
     # for showing CPU info of CI agent
     - numpy *
@@ -39,7 +40,7 @@ outputs:
     requirements:
       build:
         - cmake
-        - ninja
+        - ninja <1.13
         # for strong run-exports
         - {{ stdlib('c') }}
         - {{ compiler('c') }}
