@@ -31,4 +31,4 @@ cmake -G Ninja \
     -DMLIR_DIR=$PREFIX/lib/cmake/mlir \
     ../flang
 
-cmake --build . -j2
+cmake --build . -j1
