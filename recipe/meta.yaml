@@ -1,4 +1,4 @@
-{% set version = "20.1.0.rc3" %}
+{% set version = "21.1.0.rc1" %}
 
 package:
   name: flang-split
@@ -6,7 +6,7 @@ package:
 
 source:
   url: https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-{{ version.replace(".rc", "-rc") }}.tar.gz
-  sha256: 5e8e26a61f8339c020fdf6c5037b4dfb3cd015a2237f17cd6b5bbefc9179a2c6
+  sha256: 43c05ada2449f545d35a2530a44ef64a3de7e9dd54e6c53eaa7ffb419daa4f9e
 
 build:
   number: 0
@@ -15,11 +15,12 @@ build:
 
 requirements:
   build:
-    - {{ compiler('c') }}
     - {{ stdlib('c') }}
+    - {{ compiler('c') }}
     - {{ compiler('cxx') }}
     - cmake
-    - ninja
+    # some bug with misinterpreting `...\tools` as a tab (`\t`)
+    - ninja <1.13
     - mlir =={{ version }}     # [build_platform != target_platform]
     # for showing CPU info of CI agent
     - numpy *
@@ -32,40 +33,16 @@ requirements:
     - zlib
 
 outputs:
-  - name: libflang
-    script: install_libflang.sh  # [unix]
-    script: install_libflang.bat  # [win]
-    requirements:
-      build:
-        # for strong run-exports
-        - {{ compiler('c') }}
-        - {{ stdlib('c') }}
-        - {{ compiler('cxx') }}
-      host:
-        - clangdev =={{ version }}
-        - compiler-rt =={{ version }}
-        - llvmdev =={{ version }}
-        - mlir =={{ version }}
-    test:
-      commands:
-        # shared lib on linux
-        - test -f $PREFIX/lib/libFortranRuntime.so              # [linux]
-        # static lib on win (fails to export symbols for shared build)
-        - if not exist %LIBRARY_LIB%\FortranRuntime.lib exit 1  # [win]
-
   - name: flang
     script: install_flang.sh  # [unix]
     script: install_flang.bat  # [win]
-    run_exports:
-      strong:
-        - libflang >={{ version }}
     requirements:
       build:
         - cmake
-        - ninja
+        - ninja <1.13
         # for strong run-exports
-        - {{ compiler('c') }}
         - {{ stdlib('c') }}
+        - {{ compiler('c') }}
         - {{ compiler('cxx') }}
       host:
         - clangdev =={{ version }}
@@ -78,17 +55,14 @@ outputs:
         # ninja really wants to find z.lib on win
         - zlib  # [win]
         - zstd  # [win]
-        - {{ pin_subpackage('libflang', exact=True) }}
       run:
         - sysroot_{{ target_platform }} >={{ c_stdlib_version }}    # [linux]
         - clang =={{ version }}
         - compiler-rt =={{ version }}   # [win]
-        - {{ pin_subpackage('libflang', exact=True) }}
     test:
       commands:
-        # see naming discussion: https://discourse.llvm.org/t/reviving-rename-flang-new-to-flang/68130/2
-        - test -f $PREFIX/bin/flang-new                     # [linux]
-        - if not exist %LIBRARY_BIN%\flang-new.exe exit 1   # [win]
+        - test -f $PREFIX/bin/flang                     # [linux]
+        - if not exist %LIBRARY_BIN%\flang.exe exit 1   # [win]
 
 about:
   home: https://flang.llvm.org

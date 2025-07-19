@@ -56,7 +56,6 @@ Current release info
 | Name | Downloads | Version | Platforms |
 | --- | --- | --- | --- |
 | [![Conda Recipe](https://img.shields.io/badge/recipe-flang-green.svg)](https://anaconda.org/conda-forge/flang) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/flang.svg)](https://anaconda.org/conda-forge/flang) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/flang.svg)](https://anaconda.org/conda-forge/flang) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/flang.svg)](https://anaconda.org/conda-forge/flang) |
-| [![Conda Recipe](https://img.shields.io/badge/recipe-libflang-green.svg)](https://anaconda.org/conda-forge/libflang) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/libflang.svg)](https://anaconda.org/conda-forge/libflang) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/libflang.svg)](https://anaconda.org/conda-forge/libflang) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/libflang.svg)](https://anaconda.org/conda-forge/libflang) |
 
 Installing flang
 ================
@@ -68,16 +67,16 @@ conda config --add channels conda-forge/label/llvm_rc
 conda config --set channel_priority strict
 ```
 
-Once the `conda-forge/label/llvm_rc` channel has been enabled, `flang, libflang` can be installed with `conda`:
+Once the `conda-forge/label/llvm_rc` channel has been enabled, `flang` can be installed with `conda`:
 
 ```
-conda install flang libflang
+conda install flang
 ```
 
 or with `mamba`:
 
 ```
-mamba install flang libflang
+mamba install flang
 ```
 
 It is possible to list all of the versions of `flang` available on your platform with `conda`:
