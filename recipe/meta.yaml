@@ -1,4 +1,4 @@
-{% set version = "20.1.8" %}
+{% set version = "21.1.0.rc3" %}
 
 package:
   name: flang-split
@@ -6,7 +6,7 @@ package:
 
 source:
   url: https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-{{ version.replace(".rc", "-rc") }}.tar.gz
-  sha256: a6cbad9b2243b17e87795817cfff2107d113543a12486586f8a055a2bb044963
+  sha256: f54cd5397f60a9f22f0b4a24fb9e9a1625a2499aca97c6cf3b418a77d039923a
 
 build:
   number: 0
@@ -15,8 +15,8 @@ build:
 
 requirements:
   build:
-    - {{ compiler('c') }}
     - {{ stdlib('c') }}
+    - {{ compiler('c') }}
     - {{ compiler('cxx') }}
     - cmake
     # some bug with misinterpreting `...\tools` as a tab (`\t`)
@@ -33,40 +33,16 @@ requirements:
     - zlib
 
 outputs:
-  - name: libflang
-    script: install_libflang.sh  # [unix]
-    script: install_libflang.bat  # [win]
-    requirements:
-      build:
-        # for strong run-exports
-        - {{ compiler('c') }}
-        - {{ stdlib('c') }}
-        - {{ compiler('cxx') }}
-      host:
-        - clangdev =={{ version }}
-        - compiler-rt =={{ version }}
-        - llvmdev =={{ version }}
-        - mlir =={{ version }}
-    test:
-      commands:
-        # shared lib on linux
-        - test -f $PREFIX/lib/libFortranRuntime.so              # [linux]
-        # static lib on win (fails to export symbols for shared build)
-        - if not exist %LIBRARY_LIB%\FortranRuntime.lib exit 1  # [win]
-
   - name: flang
     script: install_flang.sh  # [unix]
     script: install_flang.bat  # [win]
-    run_exports:
-      strong:
-        - libflang >={{ version }}
     requirements:
       build:
         - cmake
         - ninja <1.13
         # for strong run-exports
-        - {{ compiler('c') }}
         - {{ stdlib('c') }}
+        - {{ compiler('c') }}
         - {{ compiler('cxx') }}
       host:
         - clangdev =={{ version }}
@@ -79,12 +55,10 @@ outputs:
         # ninja really wants to find z.lib on win
         - zlib  # [win]
         - zstd  # [win]
-        - {{ pin_subpackage('libflang', exact=True) }}
       run:
         - sysroot_{{ target_platform }} >={{ c_stdlib_version }}    # [linux]
         - clang =={{ version }}
         - compiler-rt =={{ version }}   # [win]
-        - {{ pin_subpackage('libflang', exact=True) }}
     test:
       commands:
         - test -f $PREFIX/bin/flang                     # [linux]
