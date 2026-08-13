@@ -5,12 +5,6 @@ github:
 conda_build:
   pkg_format: '2'
 workflow_settings:
-  build_workspace_dir:
-    - value: C:\bld
-      os: win
   pagefile_size:
     - value: 16
-      os: win
-  tools_install_dir:
-    - value: C:\Miniforge
       os: win
