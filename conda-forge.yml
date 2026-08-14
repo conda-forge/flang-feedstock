@@ -7,4 +7,3 @@ conda_build:
 workflow_settings:
   pagefile_size:
     - value: 16
-      os: win
