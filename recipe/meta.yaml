@@ -10,8 +10,6 @@ source:
 
 build:
   number: 0
-  # intentionally only windows (main target) & linux (debuggability)
-  skip: true  # [osx]
 
 requirements:
   build:
@@ -61,8 +59,11 @@ outputs:
         - compiler-rt =={{ version }}   # [win]
     test:
       commands:
-        - test -f $PREFIX/bin/flang                     # [linux]
+        - test -f $PREFIX/bin/flang                     # [unix]
         - if not exist %LIBRARY_BIN%\flang.exe exit 1   # [win]
+        # compile smoke test: exercises the frontend (where the original
+        # osx segfault lived) without needing the runtime for linking
+        - echo end > hello.f90 && flang -c hello.f90    # [unix]
 
 about:
   home: https://flang.llvm.org
