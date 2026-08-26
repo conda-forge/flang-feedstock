@@ -35,10 +35,10 @@ Current release info
 Installing flang
 ================
 
-Installing `flang` from the `conda-forge/label/llvm_rc` channel can be achieved by adding `conda-forge/label/llvm_rc` to your channels with:
+Installing `flang` from the `conda-forge` channel can be achieved by adding `conda-forge` to your channels with:
 
 ```
-conda config --add channels conda-forge/label/llvm_rc
+conda config --add channels conda-forge
 conda config --set channel_priority strict
 ```
 
@@ -84,7 +84,7 @@ It is possible to list all of the versions of `flang` available on your platform
 <summary>With conda</summary>
 
 ```
-conda search flang --channel conda-forge/label/llvm_rc
+conda search flang --channel conda-forge
 ```
 
 </details>
@@ -93,7 +93,7 @@ conda search flang --channel conda-forge/label/llvm_rc
 <summary>With mamba</summary>
 
 ```
-mamba search flang --channel conda-forge/label/llvm_rc
+mamba search flang --channel conda-forge
 ```
 
 </details>
@@ -102,7 +102,7 @@ mamba search flang --channel conda-forge/label/llvm_rc
 <summary>With pixi</summary>
 
 ```
-pixi search flang --channel conda-forge/label/llvm_rc
+pixi search flang --channel conda-forge
 ```
 
 </details>
@@ -112,13 +112,13 @@ pixi search flang --channel conda-forge/label/llvm_rc
 
 ```
 # Search all versions available on your platform:
-mamba repoquery search flang --channel conda-forge/label/llvm_rc
+mamba repoquery search flang --channel conda-forge
 
 # List packages depending on `flang`:
-mamba repoquery whoneeds flang --channel conda-forge/label/llvm_rc
+mamba repoquery whoneeds flang --channel conda-forge
 
 # List dependencies of `flang`:
-mamba repoquery depends flang --channel conda-forge/label/llvm_rc
+mamba repoquery depends flang --channel conda-forge
 ```
 
 </details>
