@@ -9,9 +9,7 @@ source:
   sha256: ad18b70e287954c3d62bc7e0b86e7b7af2adf87bcfce21c15fe717f101d7aace
 
 build:
-  number: 0
-  # intentionally only windows (main target) & linux (debuggability)
-  skip: true  # [osx]
+  number: 1
 
 requirements:
   build:
@@ -59,10 +57,16 @@ outputs:
         - sysroot_{{ target_platform }} >={{ c_stdlib_version }}    # [linux]
         - clang =={{ version }}
         - compiler-rt =={{ version }}   # [win]
+        # flang links libMLIR.22.1.dylib on osx (shared MLIR), unlike linux
+        # where MLIR is statically embedded
+        - libmlir22 =={{ version }}     # [osx]
     test:
       commands:
-        - test -f $PREFIX/bin/flang                     # [linux]
+        - test -f $PREFIX/bin/flang                     # [unix]
         - if not exist %LIBRARY_BIN%\flang.exe exit 1   # [win]
+        # compile smoke test: exercises the frontend (where the original
+        # osx segfault lived) without needing the runtime for linking
+        - echo end > hello.f90 && flang -c hello.f90    # [unix]
 
 about:
   home: https://flang.llvm.org

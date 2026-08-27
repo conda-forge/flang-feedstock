@@ -11,6 +11,15 @@ if [[ "$CONDA_BUILD_CROSS_COMPILATION" == "1" ]]; then
     CMAKE_ARGS="$CMAKE_ARGS -DLLVM_CONFIG_PATH=$BUILD_PREFIX/bin/llvm-config -DMLIR_TABLEGEN_EXE=$BUILD_PREFIX/bin/mlir-tblgen"
 fi
 
+# On macOS, BUILD_SHARED_LIBS alone duplicates MLIR TypeIDs across the many
+# flang dylibs, causing a segfault during dialect registration.  Route all
+# MLIR/LLVM code through the monolithic dylibs shipped by conda-forge's
+# llvmdev/mlir to avoid the collision (see PR #29 / #31 for the original
+# macOS attempt, and Homebrew's Formula/f/flang.rb for the proven combo).
+if [[ "$target_platform" == osx-* ]]; then
+    CMAKE_ARGS="$CMAKE_ARGS -DMLIR_LINK_MLIR_DYLIB=ON -DLLVM_LINK_LLVM_DYLIB=ON"
+fi
+
 cmake -G Ninja \
     ${CMAKE_ARGS} \
     -DBUILD_SHARED_LIBS=ON \
