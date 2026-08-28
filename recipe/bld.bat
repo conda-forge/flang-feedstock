@@ -1,8 +1,5 @@
 @echo on
 
-:: show CPU arch to detect slow CI agents early (rather than wait for 6h timeout)
-if not "%target_platform%"=="win-arm64" python -c "import numpy; numpy.show_config()"
-
 mkdir build
 cd build
 
