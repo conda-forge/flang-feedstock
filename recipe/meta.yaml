@@ -23,7 +23,7 @@ requirements:
     - ninja <1.13
     - mlir =={{ version }}     # [build_platform != target_platform]
     # for showing CPU info of CI agent
-    - numpy *
+    - numpy *  # [target_platform != "win-arm64"]
   host:
     - clangdev =={{ version }}
     - compiler-rt =={{ version }}
