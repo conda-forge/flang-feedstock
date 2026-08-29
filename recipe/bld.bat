@@ -1,12 +1,13 @@
 @echo on
 
-:: show CPU arch to detect slow CI agents early (rather than wait for 6h timeout)
-python -c "import numpy; numpy.show_config()"
-
 mkdir build
 cd build
 
-set "PROCESSOR_ARCHITECTURE=AMD64"
+if "%target_platform%"=="win-arm64" (
+    set "PROCESSOR_ARCHITECTURE=ARM64"
+) else (
+    set "PROCESSOR_ARCHITECTURE=AMD64"
+)
 
 :: necessary when compiling with clang (which has a native uint128 type; msvc doesn't)
 :: set "CXXFLAGS=%CXXFLAGS% -DAVOID_NATIVE_UINT128_T=1"
