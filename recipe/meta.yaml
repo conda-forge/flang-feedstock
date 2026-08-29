@@ -22,8 +22,6 @@ requirements:
     # some bug with misinterpreting `...\tools` as a tab (`\t`)
     - ninja <1.13
     - mlir =={{ version }}     # [build_platform != target_platform]
-    # for showing CPU info of CI agent
-    - numpy *
   host:
     - clangdev =={{ version }}
     - compiler-rt =={{ version }}
