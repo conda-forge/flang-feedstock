@@ -1,3 +1,7 @@
+bot:
+  abi_migration_branches:
+  - 22.x
+  - 21.x
 conda_build:
   error_overlinking: true
   pkg_format: '2'
